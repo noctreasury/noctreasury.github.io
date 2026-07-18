@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Fatpipe Device | Complaint Report - Master Match Warning (Enhanced)</title>
+    
+    <!-- Local CSS Resources -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
+    <link rel="stylesheet" href="../css/flatpickr.min.css">
+    <link rel="stylesheet" href="../css/sweetalert2.min.css">
+    
+    <style>
+        * { box-sizing: border-box; }
+        body {
+             background: #fff0;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 20px 16px;
+            margin: 0;
+        }
+        .app-card {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+.page-header {
+    padding: 15px 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+   
+}
+.page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-header-left i {
+    font-size: 1.8rem !important;
+    background: rgb(56 143 251 / 15%) !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    color: #184f83 !important;
+}
+
+
+.page-header-left h1 {
+    margin: 0 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    color: #184f83!important;
+}
+ .page-header-left p {
+            margin: 2px 0 0;
+            opacity: 0.7;
+            font-size: 0.75rem;
+ }
+
+
+        .form-label {
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+        .btn-primary-custom {
+            background: #0f3b5f;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-primary-custom:hover {
+            background: #0a2c46;
+            transform: translateY(-1px);
+        }
+        .btn-success-custom {
+            background: #10b981;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-success-custom:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+        .btn-secondary-custom {
+            background: #64748b;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-secondary-custom:hover {
+            background: #475569;
+        }
+        .form-control, .form-select {
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            padding: 8px 12px;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #0f3b5f;
+            box-shadow: 0 0 0 3px rgba(15,59,95,0.1);
+        }
+        .filter-row {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+        }
+        .filter-group {
+            flex: 1;
+            min-width: 100px;
+        }
+        .filter-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .filter-group select {
+            width: 100%;
+        }
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex: 1;
+            min-width: 200px;
+            flex-wrap: wrap;
+        }
+        .checkbox-group .form-check {
+            margin-bottom: 0;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .stats-badge {
+            background: #e6f0fa;
+            padding: 8px 15px;
+            border-radius: 40px;
+            color: #0f5b9c;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+   #global-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+              background: #fff0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            /*backdrop-filter: blur(3px);*/
+        }
+        .table-responsive {
+            margin-top: 20px;
+        }
+        .table thead th {
+            background: linear-gradient(135deg, #1a4b7a 0%, #1a4b7a 100%);
+            color: white;
+            font-weight: 500;
+            font-size: 0.8rem;
+            vertical-align: middle;
+            white-space: nowrap;
+            padding: 10px 8px;
+        }
+        .table td {
+            padding: 8px;
+            vertical-align: middle;
+            font-size: 0.8rem;
+        }
+        /* Status Badges */
+        .badge-initiated { background-color: #f59e0b; color: white; padding: 4px 12px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; display: inline-block; }
+        .badge-on-transit { background-color: #f97316; color: white; padding: 4px 12px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; }
+        .badge-received { background-color: #06b6d4; color: white; padding: 4px 12px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; }
+        .badge-submitted-oem { background-color:#0d6efd; color: white; padding: 4px 12px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; }
+        .badge-in-stock { background-color: #10b981; color: white; padding: 4px 12px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; }
+        .badge-processed { background-color: #a3a0a0; color: white; padding: 4px 12px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; }
+        .badge-spare { background-color: #ec489a; color: white; padding: 4px 12px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; }
+        
+        .placeholder-message {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+        .content-pane {
+            padding: 25px;
+        }
+        .status-count-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+        .serial-number {
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+        .to-branch-highlight {
+            font-weight: 600;
+            color: #0d6efd;
+            background-color: #f5f5f5;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 2px;
+            border-radius: 16px;
+        }
+        .address-highlight {
+            font-weight: 500;
+            color: #2c3e50;
+            background-color: #f8f9fa;
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 16px;
+            font-size: 0.75rem;
+        }
+        .warning-icon-master {
+            font-size: 1rem;
+            cursor: pointer;
+            margin-left: 4px;
+            vertical-align: middle;
+            transition: 0.2s;
+        }
+        .warning-icon-master.yellow-warning {
+            color: #f7d73b;
+        }
+        .warning-icon-master.red-warning {
+            color: #dc2626;
+        }
+        .warning-icon-master.yellow-warning:hover {
+            color: #d39c00;
+            transform: scale(1.1);
+        }
+        .warning-icon-master.red-warning:hover {
+            color: #b91c1c;
+            transform: scale(1.1);
+        }
+        .master-match-tooltip {
+            cursor: help;
+        }
+    </style>
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                            <i class="bi bi-file-text-fill"></i>
+                    <div>
+                        <h1>Fatpipe Device - Complaint & Movement Report</h1>
+                        <p>Fatpipe Device - Complaint & Movement Report</p>
+                    </div>
+                </div>
+            </div>
+<div class="app-card">
+    
+    <div class="content-pane">
+        <!-- Filter Section -->
+        <div class="filter-row">
+            <div class="filter-group">
+                <label><i class="bi bi-building"></i> Select Branch</label>
+                <select id="branchSelect" class="form-select">
+                    <option value="">-- All Branches --</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label><i class="bi bi-calendar"></i> From Date</label>
+                <input type="text" id="fromDate" class="form-control flatpickr-from" placeholder="DD/MM/YYYY">
+            </div>
+            <div class="filter-group">
+                <label><i class="bi bi-calendar"></i> To Date</label>
+                <input type="text" id="toDate" class="form-control flatpickr-to" placeholder="DD/MM/YYYY">
+            </div>
+            <div class="filter-group">
+                <label><i class="bi bi-funnel"></i> Status</label>
+                <select id="statusFilterSelect" class="form-select">
+                    <option value="all">-- All Statuses --</option>
+                    <option value="initiated">Initiated</option>
+                    <option value="on_transit">On Transit</option>
+                    <option value="received">Received</option>
+                    <option value="submitted_oem">Submitted to OEM</option>
+                    <option value="in_stock">In Stock</option>
+                    <option value="processed">Processed</option>
+                    <option value="spare">Spare Device</option>
+                </select>
+            </div>
+            <div class="checkbox-group">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="showPending" checked>
+                    <label class="form-check-label" for="showPending">Pending</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="showProcessed" checked>
+                    <label class="form-check-label" for="showProcessed">Processed</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="includeSpareDevices" checked>
+                    <label class="form-check-label" for="includeSpareDevices">Spare</label>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button id="generateReportBtn" class="btn btn-primary-custom"><i class="bi bi-search"></i> View</button>
+                <button id="resetBtn" class="btn btn-secondary-custom"><i class="bi bi-arrow-repeat"></i> Reset</button>
+                <button id="exportCsvBtn" class="btn btn-success-custom" disabled><i class="bi bi-filetype-csv"></i> CSV</button>
+            </div>
+        </div>
+        
+        <!-- Stats Dashboard -->
+        <div id="statsContainer" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                <div class="status-count-bar">
+                    <span class="stats-badge" id="recordCount">0 Records</span>
+                    <span class="stats-badge" id="initiatedCount" style="background:#fef3c7;color:#b45309;">Initiated:0</span>
+                    <span class="stats-badge" id="onTransitCount" style="background:#fff3e6;color:#ea580c;">On Transit:0</span>
+                    <span class="stats-badge" id="receivedCount" style="background:#e0f2fe;color:#0891b2;">Received:0</span>
+                    <span class="stats-badge" id="submittedOemCount" style="background:#ede9fe;color:#6d28d9;">Submitted to OEM:0</span>
+                    <span class="stats-badge" id="inStockCount" style="background:#d1fae5;color:#059669;">In Stock:0</span>
+                    <span class="stats-badge" id="processedCount" style="background:#a7f3d0;color:#047857;">Processed:0</span>
+                    <span class="stats-badge" id="spareCount" style="background:#fce7f3;color:#db2777;">Spare:0</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Table - Sent To Address column and To Branch with warning icon based on Master Sheet (Enhanced: multiple mismatches -> last red, others yellow) -->
+        <div class="table-responsive">
+            <table id="reportTable" class="table table-striped table-hover" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Treasury</th>
+                        <th>Device Serial No.</th>
+                        <th>Device Type</th>
+                        <th>From Branch</th>
+                        <th>Complaint Remarks</th>
+                        <th>Complaint Date</th>
+                        <th>Sent Date</th>
+                        <th>Sent To Address</th>
+                        <th>Received Date</th>
+                        <th>Date of Movement to OEM</th>
+                        <th>Date of return from OEM</th>
+                        <th>To Branch</th>
+                        <th>Date of Transfer</th>
+                        <th>Remarks</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="placeholder-row">
+                        <td colspan="16" class="placeholder-message">
+                            <i class="bi bi-search-heart"></i>
+                            <h5>No Report Generated</h5>
+                            <p>Select filters & click "View"</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script src="../js/jquery.dataTables.min.js"></script>
+<script src="../js/dataTables.bootstrap5.min.js"></script>
+<script src="../js/select2.min.js"></script>
+<script src="../js/flatpickr.min.js"></script>
+<script src="../js/sweetalert2.all.min.js"></script>
+
+<script>
+    // ================= CONFIGURATION =================
+    const SPREADSHEET_ID = "1MpftwfNIe82kORjP6xeLo1qUh3v6Cr8HHo0oSW2grYA";
+    const MOVEMENT_SHEET = "Movement_Data";
+    const API_KEY = "AIzaSyDc8tegwi2rgHyDFYm7uWBqVqQ7Fwb3uWM";
+    
+    // Master sheet configuration (Installation Status)
+    const MASTER_SPREADSHEET_ID = "1HvCqLHC8IyllKskBXX1MtMfjQMGUyhMP7KuTuJxDhmU";
+    const MASTER_SHEET_NAME = "Installation Status";
+    
+    let allRecords = [];
+    let filteredRecords = [];
+    let branchesList = [];
+    let dataTable = null;
+    let flatpickrFrom, flatpickrTo;
+    let isReportGenerated = false;
+    
+    // Master lookup map: key = branch code (from column D), value = expected Device Serial No (from column E)
+    let masterSerialMap = new Map(); // branchCode -> expectedSerialNo (trimmed, normalized)
+    
+    // Helper functions
+    function parseDMYToDate(dateStr) {
+        if(!dateStr) return null;
+        const trimmed = String(dateStr).trim();
+        if(trimmed === "" || trimmed.toUpperCase() === "N/A" || trimmed === "NA") return null;
+        let parts = trimmed.split('/');
+        if(parts.length === 3) {
+            let day = parseInt(parts[0],10);
+            let month = parseInt(parts[1],10)-1;
+            let year = parseInt(parts[2],10);
+            if(!isNaN(day) && !isNaN(month) && !isNaN(year) && day >= 1 && day <= 31 && month >= 0 && month <= 11) {
+                return new Date(year, month, day);
+            }
+        }
+        return null;
+    }
+    
+    function formatDateForCompare(dateStr) {
+        const d = parseDMYToDate(dateStr);
+        return d ? d.getTime() : null;
+    }
+    
+    function isDateValid(dateStr) {
+        if(!dateStr) return false;
+        const trimmed = String(dateStr).trim();
+        if(trimmed === "" || trimmed.toUpperCase() === "N/A" || trimmed === "NA") return false;
+        const parts = trimmed.split('/');
+        if(parts.length === 3) {
+            const day = parseInt(parts[0],10);
+            const month = parseInt(parts[1],10);
+            const year = parseInt(parts[2],10);
+            if(!isNaN(day) && !isNaN(month) && !isNaN(year) && day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    function isTextFieldValid(value) {
+        if(!value) return false;
+        const trimmed = String(value).trim();
+        return trimmed !== "" && trimmed !== "N/A" && trimmed !== "NA" && trimmed !== "-";
+    }
+    
+    // Status conditions based on last populated field
+    function getLifecycleStatus(record) {
+        if(isDateValid(record.transferDate)) {
+            return "processed";
+        }
+        if(isDateValid(record.returnFromOem)) {
+            return "in_stock";
+        }
+        if(isDateValid(record.moveToOem)) {
+            return "submitted_oem";
+        }
+        if(isDateValid(record.receivedDate)) {
+            return "received";
+        }
+        if(isDateValid(record.sentDate)) {
+            return "on_transit";
+        }
+        if(isDateValid(record.complaintDate)) {
+            return "initiated";
+        }
+        return "initiated";
+    }
+    
+    function isSpareRecord(record, fromDate, toDate, includeSpareFlag) {
+        if(!includeSpareFlag) return false;
+        const complaintInvalid = !isDateValid(record.complaintDate);
+        if(!complaintInvalid) return false;
+        const transferDateTime = formatDateForCompare(record.transferDate);
+        if(transferDateTime === null) return false;
+        const fromTime = fromDate ? formatDateForCompare(fromDate) : null;
+        const toTime = toDate ? formatDateForCompare(toDate) : null;
+        if(fromTime && toTime) return (transferDateTime >= fromTime && transferDateTime <= toTime);
+        else if(fromTime) return (transferDateTime >= fromTime);
+        else if(toTime) return (transferDateTime <= toTime);
+        return true;
+    }
+    
+    function isRecordInDateRange(record, fromDateStr, toDateStr, includeSpare) {
+        const complaintDateValid = isDateValid(record.complaintDate);
+        const complaintTime = complaintDateValid ? formatDateForCompare(record.complaintDate) : null;
+        const fromTime = fromDateStr ? formatDateForCompare(fromDateStr) : null;
+        const toTime = toDateStr ? formatDateForCompare(toDateStr) : null;
+        
+        let complaintInRange = false;
+        if(complaintTime !== null) {
+            if(fromTime && toTime) complaintInRange = (complaintTime >= fromTime && complaintTime <= toTime);
+            else if(fromTime) complaintInRange = (complaintTime >= fromTime);
+            else if(toTime) complaintInRange = (complaintTime <= toTime);
+            else complaintInRange = true;
+        }
+        if(complaintInRange) return true;
+        
+        if(includeSpare && !complaintDateValid) {
+            const transferTime = formatDateForCompare(record.transferDate);
+            if(transferTime !== null) {
+                if(fromTime && toTime) return (transferTime >= fromTime && transferTime <= toTime);
+                else if(fromTime) return (transferTime >= fromTime);
+                else if(toTime) return (transferTime <= toTime);
+                else return true;
+            }
+        }
+        return false;
+    }
+    
+    // Fetch master installation data: Branch code (Col D) and Device Serial No (Col E)
+    async function fetchMasterInstallationMap() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${MASTER_SPREADSHEET_ID}/values/${encodeURIComponent(MASTER_SHEET_NAME)}!D:E?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            const tempMap = new Map();
+            // Start from row 1 to skip header if present (assuming row0 header)
+            for(let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if(row && row.length >= 2) {
+                    let branchCode = row[0] ? String(row[0]).trim() : "";
+                    let expectedSerial = row[1] ? String(row[1]).trim() : "";
+                    if(branchCode !== "" && expectedSerial !== "" && expectedSerial !== "NaN" && expectedSerial !== "null") {
+                        tempMap.set(branchCode, expectedSerial);
+                    }
+                }
+            }
+            console.log("Master map loaded with", tempMap.size, "entries");
+            return tempMap;
+        } catch(e) {
+            console.error("Error fetching master sheet:", e);
+            return new Map();
+        }
+    }
+    
+    // Function to check if device serial number mismatches with master record for a given branch (To Branch)
+    function isSerialMismatchWithMaster(branchToCheck, deviceSerial) {
+        if(!branchToCheck || !deviceSerial) return false;
+        const trimmedBranch = String(branchToCheck).trim();
+        const trimmedSerial = String(deviceSerial).trim();
+        if(trimmedSerial === "" || trimmedSerial === "NaN" || trimmedSerial === "null") return false;
+        const expectedMasterSerial = masterSerialMap.get(trimmedBranch);
+        if(!expectedMasterSerial) return false; // No master record for this branch, no warning
+        
+        // Compare normalized (trimmed, case-insensitive optional but strict match recommended)
+        const normalizedDevice = trimmedSerial.replace(/\s+/g, '');
+        const normalizedMaster = expectedMasterSerial.replace(/\s+/g, '');
+        return normalizedDevice !== normalizedMaster;
+    }
+    
+    async function fetchBranches() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(MOVEMENT_SHEET)}!E:E?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            const set = new Set();
+            for(let i=1; i<rows.length; i++) {
+                const b = rows[i]?.[0]?.trim();
+                if(b) set.add(b);
+            }
+            return Array.from(set).sort();
+        } catch(e) { return []; }
+    }
+    
+    function populateBranchDropdown(branches) {
+        const $sel = $('#branchSelect');
+        $sel.empty().append('<option value="">-- All Branches --</option>');
+        branches.forEach(b => $sel.append(`<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`));
+        $sel.select2({ theme: 'bootstrap-5', width: '100%', placeholder: 'Select branch', allowClear: true });
+    }
+    
+    async function fetchMovementRecords() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(MOVEMENT_SHEET)}!A:O?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            const records = [];
+            for(let i=1; i<rows.length; i++) {
+                const row = rows[i];
+                if(row && row[0]) {
+                    records.push({
+                        id: i,
+                        refId: row[0] || "",
+                        treasury: row[1] || "",
+                        serialNo: row[2] || "",
+                        deviceType: row[3] || "",
+                        fromBranch: row[4] || "",
+                        complaintRemarks: row[5] || "",
+                        complaintDate: row[6] || "",
+                        sentToAddress: row[7] || "",
+                        sentDate: row[8] || "",
+                        receivedDate: row[9] || "",
+                        moveToOem: row[10] || "",
+                        returnFromOem: row[11] || "",
+                        toBranch: row[12] || "",
+                        transferDate: row[13] || "",
+                        remarks: row[14] || ""
+                    });
+                }
+            }
+            allRecords = records;
+            return records;
+        } catch(e) { console.error(e); return []; }
+    }
+    
+    function applyAllFilters() {
+        const selectedBranch = $('#branchSelect').val();
+        const fromDate = $('#fromDate').val();
+        const toDate = $('#toDate').val();
+        const showPending = $('#showPending').is(':checked');
+        const showProcessed = $('#showProcessed').is(':checked');
+        const includeSpare = $('#includeSpareDevices').is(':checked');
+        const statusFilter = $('#statusFilterSelect').val();
+        
+        filteredRecords = allRecords.filter(record => {
+            if(selectedBranch && selectedBranch !== "" && record.fromBranch !== selectedBranch) return false;
+            if(!isRecordInDateRange(record, fromDate, toDate, includeSpare)) return false;
+            
+            const status = getLifecycleStatus(record);
+            const isSpare = isSpareRecord(record, fromDate, toDate, includeSpare);
+            
+            let isPendingStatus = (status === "initiated" || status === "on_transit");
+            let passesLegacy = false;
+            if(isPendingStatus && showPending) passesLegacy = true;
+            if(!isPendingStatus && showProcessed) passesLegacy = true;
+            if(!showPending && !showProcessed) passesLegacy = false;
+            if(!passesLegacy) return false;
+            
+            if(statusFilter !== "all") {
+                if(statusFilter === "spare" && !isSpare) return false;
+                if(statusFilter === "initiated" && status !== "initiated") return false;
+                if(statusFilter === "on_transit" && status !== "on_transit") return false;
+                if(statusFilter === "received" && status !== "received") return false;
+                if(statusFilter === "submitted_oem" && status !== "submitted_oem") return false;
+                if(statusFilter === "in_stock" && status !== "in_stock") return false;
+                if(statusFilter === "processed" && status !== "processed") return false;
+            }
+            return true;
+        });
+        
+        filteredRecords.sort((a,b) => {
+            const da = parseDMYToDate(a.complaintDate);
+            const db = parseDMYToDate(b.complaintDate);
+            if(da && db) return da - db;
+            if(da) return -1;
+            if(db) return 1;
+            return 0;
+        });
+        
+        const initiated = filteredRecords.filter(r => getLifecycleStatus(r) === "initiated").length;
+        const onTransit = filteredRecords.filter(r => getLifecycleStatus(r) === "on_transit").length;
+        const received = filteredRecords.filter(r => getLifecycleStatus(r) === "received").length;
+        const submittedOem = filteredRecords.filter(r => getLifecycleStatus(r) === "submitted_oem").length;
+        const inStock = filteredRecords.filter(r => getLifecycleStatus(r) === "in_stock").length;
+        const processed = filteredRecords.filter(r => getLifecycleStatus(r) === "processed").length;
+        const spare = filteredRecords.filter(r => isSpareRecord(r, fromDate, toDate, includeSpare)).length;
+        
+        $('#recordCount').text(`${filteredRecords.length} Records`);
+        $('#initiatedCount').text(`Initiated:${initiated}`);
+        $('#onTransitCount').text(`On Transit:${onTransit}`);
+        $('#receivedCount').text(`Received:${received}`);
+        $('#submittedOemCount').text(`Submitted to OEM:${submittedOem}`);
+        $('#inStockCount').text(`In Stock:${inStock}`);
+        $('#processedCount').text(`Processed:${processed}`);
+        $('#spareCount').text(`Spare:${spare}`);
+        
+        return filteredRecords;
+    }
+    
+    // Enhanced render function: identify all mismatched rows and apply red for last mismatched, yellow for others
+    function renderTable() {
+        const data = applyAllFilters();
+        if(dataTable) { dataTable.destroy(); $('#reportTable tbody').empty(); }
+        
+        if(data.length === 0) {
+            $('#reportTable tbody').html(`<tr class="placeholder-row"><td colspan="16" class="placeholder-message"><i class="bi bi-inbox"></i><h5>No matching records</h5><p>Adjust filters or try different status</p></td></tr>`);
+            dataTable = null;
+            $('#exportCsvBtn').prop('disabled', true);
+            return;
+        }
+        
+        // Precompute mismatch info for each row to know which rows are mismatched
+        const mismatchPositions = [];
+        data.forEach((row, idx) => {
+            const toBranchVal = row.toBranch && row.toBranch !== "NaN" ? row.toBranch : '';
+            const serial = row.serialNo && row.serialNo !== "NaN" ? row.serialNo : '';
+            const isMismatch = (toBranchVal && serial && isSerialMismatchWithMaster(toBranchVal, serial));
+            if(isMismatch) {
+                mismatchPositions.push({ idx, row });
+            }
+        });
+        
+        // Determine which mismatch gets red (last in data order)
+        const lastMismatchIndex = mismatchPositions.length > 0 ? mismatchPositions[mismatchPositions.length - 1].idx : -1;
+        
+        dataTable = $('#reportTable').DataTable({
+            data: data,
+            columns: [
+                { data: null, render: function(data, type, row, meta) { return meta.row + 1; } },
+                { data: "treasury", render: v => (v && v !== "NaN") ? escapeHtml(v) : '—' },
+                { data: "serialNo", render: function(v) {
+                    if(!v || v === "NaN" || v === "null" || v === "undefined") return '—';
+                    const cleaned = String(v).replace(/NaN/g, '').trim();
+                    return cleaned ? `<span class="serial-number">${escapeHtml(cleaned)}</span>` : '—';
+                } },
+                { data: "deviceType", render: v => (v && v !== "NaN") ? escapeHtml(v) : '—' },
+                { data: "fromBranch", render: v => (v && v !== "NaN") ? escapeHtml(v) : '—' },
+                { data: "complaintRemarks", render: v => (v && v !== "NaN") ? escapeHtml(v) : '—' },
+                { data: "complaintDate", render: d => isDateValid(d) ? d : '<span class="text-muted fst-italic">N/A</span>' },
+                { data: "sentDate", render: d => isDateValid(d) ? d : '—' },
+                { data: "sentToAddress", render: function(v) {
+                    if(isTextFieldValid(v)) {
+                        return `<span class="address-highlight">${escapeHtml(v)}</span>`;
+                    }
+                    return '—';
+                } },
+                { data: "receivedDate", render: d => isDateValid(d) ? d : '—' },
+                { data: "moveToOem", render: d => isDateValid(d) ? d : '—' },
+                { data: "returnFromOem", render: d => isDateValid(d) ? d : '—' },
+                { data: null, render: (row, type, full, meta) => {
+                    const toBranchVal = row.toBranch && row.toBranch !== "NaN" ? row.toBranch : '';
+                    const serial = row.serialNo && row.serialNo !== "NaN" ? row.serialNo : '';
+                    const mismatch = (toBranchVal && serial && isSerialMismatchWithMaster(toBranchVal, serial));
+                    const branchDisplay = isTextFieldValid(toBranchVal) ? escapeHtml(toBranchVal) : '—';
+                    const rowIndex = meta.row;
+                    const isLastMismatch = (mismatch && rowIndex === lastMismatchIndex);
+                    
+                    if(mismatch && branchDisplay !== '—') {
+                        const warningClass = isLastMismatch ? "red-warning" : "yellow-warning";
+                        const tooltipMsg = isLastMismatch ? 
+                            `⚠️ LAST MISMATCH: Device Serial ${escapeHtml(serial)} does NOT match Master record for branch '${escapeHtml(toBranchVal)}'` :
+                            `⚠️ Device Serial ${escapeHtml(serial)} does NOT match Master record for branch '${escapeHtml(toBranchVal)}'`;
+                        return `<span class="to-branch-highlight master-match-tooltip" title="${tooltipMsg}">
+                                    ${branchDisplay}
+                                    <i class="bi bi-exclamation-triangle warning-icon-master ${warningClass}"></i>
+                                </span>`;
+                    } else if(branchDisplay !== '—') {
+                        return `<span class="to-branch-highlight">${branchDisplay}</span>`;
+                    }
+                    return '—';
+                } },
+                { data: "transferDate", render: d => isDateValid(d) ? d : '—' },
+                { data: "remarks", render: v => (v && v !== "NaN") ? escapeHtml(v) : '—' },
+                { data: null, render: (row) => {
+                    const status = getLifecycleStatus(row);
+                    const fromDate = $('#fromDate').val();
+                    const toDate = $('#toDate').val();
+                    const includeSpare = $('#includeSpareDevices').is(':checked');
+                    const isSpare = isSpareRecord(row, fromDate, toDate, includeSpare);
+                    if(isSpare && status !== "processed") {
+                        return '<span class="badge-spare">Spare Device</span>';
+                    }
+                    switch(status) {
+                        case "initiated": return '<span class="badge-initiated">Initiated</span>';
+                        case "on_transit": return '<span class="badge-on-transit">On Transit</span>';
+                        case "received": return '<span class="badge-received">Received</span>';
+                        case "submitted_oem": return '<span class="badge-submitted-oem">Submitted to OEM</span>';
+                        case "in_stock": return '<span class="badge-in-stock">In Stock</span>';
+                        case "processed": return '<span class="badge-processed">Processed</span>';
+                        default: return '<span class="badge-initiated">Initiated</span>';
+                    }
+                } }
+            ],
+            order: [[0, 'asc']],
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'All']],
+            scrollX: true,
+            autoWidth: false,
+            drawCallback: function() {
+                $('#exportCsvBtn').prop('disabled', false);
+                $('.master-match-tooltip').attr('data-bs-toggle', 'tooltip');
+                // Reinitialize tooltips optionally (Bootstrap 5)
+                if(typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                    $('[data-bs-toggle="tooltip"]').each(function() {
+                        new bootstrap.Tooltip(this);
+                    });
+                }
+            }
+        });
+        $('#exportCsvBtn').prop('disabled', false);
+    }
+    
+    async function generateReport() {
+        showGlobalLoading("Loading movement data & master installation records...");
+        await fetchMovementRecords();
+        // Load master map before rendering
+        masterSerialMap = await fetchMasterInstallationMap();
+        renderTable();
+        hideGlobalLoading();
+        $('#statsContainer').show();
+        if(filteredRecords.length === 0 && allRecords.length > 0) {
+            Swal.fire({ icon: 'info', title: 'No Records', text: 'Try adjusting filters or enabling Spare Device Inclusion.' });
+        } else if(allRecords.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'No Data', text: 'No records found in the Movement sheet.' });
+        } else {
+            let warnMsg = '';
+            if(masterSerialMap.size === 0) warnMsg = ' (No master data loaded)';
+            Swal.fire({ icon: 'success', title: 'Report Generated', text: `${filteredRecords.length} records loaded${warnMsg}. `, timer: 2800, showConfirmButton: false });
+        }
+        isReportGenerated = true;
+    }
+    
+    function exportToCSV() {
+        if(!isReportGenerated || filteredRecords.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'No Data', text: 'Please generate report first.' });
+            return;
+        }
+        let exportData = filteredRecords;
+        if(dataTable && dataTable.search() !== "") exportData = dataTable.rows({ search: 'applied' }).data().toArray();
+        
+        const headers = ['Sl No', 'Treasury', 'Device Serial No.', 'Device Type', 'From Branch', 'Complaint Remarks', 'Complaint Date', 'Sent Date', 'Sent To Address', 'Received Date', 'Date of Movement to OEM', 'Date of return from OEM', 'To Branch', 'Date of Transfer', 'Remarks', 'Status', 'Master Match Warning'];
+        const rows = [];
+        exportData.forEach((rec, idx) => {
+            const statusVal = getLifecycleStatus(rec);
+            let statusLabel = '';
+            switch(statusVal) {
+                case 'initiated': statusLabel = 'Initiated'; break;
+                case 'on_transit': statusLabel = 'On Transit'; break;
+                case 'received': statusLabel = 'Received'; break;
+                case 'submitted_oem': statusLabel = 'Submitted to OEM'; break;
+                case 'in_stock': statusLabel = 'In Stock'; break;
+                case 'processed': statusLabel = 'Processed'; break;
+                default: statusLabel = 'Initiated';
+            }
+            const fromDate = $('#fromDate').val();
+            const toDate = $('#toDate').val();
+            const includeSpare = $('#includeSpareDevices').is(':checked');
+            const isSpare = isSpareRecord(rec, fromDate, toDate, includeSpare);
+            if(isSpare && statusVal !== 'processed') statusLabel = 'Spare Device';
+            
+            let cleanSerial = rec.serialNo;
+            if(cleanSerial === "NaN" || cleanSerial === "null") cleanSerial = '';
+            const mismatchFlag = (rec.toBranch && rec.toBranch !== "NaN" && cleanSerial && isSerialMismatchWithMaster(rec.toBranch, cleanSerial)) ? '⚠️ Mismatch with Master' : '';
+            
+            rows.push([
+                idx+1, rec.treasury, cleanSerial, rec.deviceType, rec.fromBranch, rec.complaintRemarks,
+                isDateValid(rec.complaintDate) ? rec.complaintDate : 'N/A',
+                rec.sentDate || '', rec.sentToAddress || '', rec.receivedDate || '', rec.moveToOem || '', rec.returnFromOem || '',
+                rec.toBranch || '', rec.transferDate || '', rec.remarks || '', statusLabel, mismatchFlag
+            ]);
+        });
+        
+        const csvStr = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob(["\uFEFF" + csvStr], {type: 'text/csv;charset=utf-8;'});
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = `fatpipe_report_${Date.now()}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        Swal.fire({ icon: 'success', title: 'Export Successful', text: `${exportData.length} records exported.`, timer: 1500, showConfirmButton: false });
+    }
+    
+    function resetFilters() {
+        $('#branchSelect').val('').trigger('change');
+        $('#fromDate').val('');
+        $('#toDate').val('');
+        $('#statusFilterSelect').val('all');
+        $('#showPending').prop('checked', true);
+        $('#showProcessed').prop('checked', true);
+        $('#includeSpareDevices').prop('checked', true);
+        if(flatpickrFrom) flatpickrFrom.clear();
+        if(flatpickrTo) flatpickrTo.clear();
+        if(dataTable) dataTable.destroy();
+        $('#reportTable tbody').html(`<tr class="placeholder-row"><td colspan="16" class="placeholder-message"><i class="bi bi-search-heart"></i><h5>No Report Generated</h5><p>Select filters & click "View"</p></td></tr>`);
+        $('#statsContainer').hide();
+        $('#exportCsvBtn').prop('disabled', true);
+        isReportGenerated = false;
+        filteredRecords = [];
+        Swal.fire({ icon: 'info', title: 'Reset Complete', text: 'All filters cleared.', timer: 1500, showConfirmButton: false });
+    }
+    
+    function initFlatpickr() {
+        flatpickrFrom = flatpickr("#fromDate", { dateFormat: "d/m/Y" });
+        flatpickrTo = flatpickr("#toDate", { dateFormat: "d/m/Y" });
+    }
+    
+    function showGlobalLoading(msg) {
+        if($('#global-loading-overlay').length) return;
+        $('body').append(`<div id="global-loading-overlay"><div style="background:white;padding:30px;border-radius:24px;text-align:center;"><i class="bi bi-arrow-repeat" style="font-size:48px;color:#0f3b5f;animation:spin 1s linear infinite;"></i><p>${msg}</p></div></div>`);
+    }
+    function hideGlobalLoading() { $('#global-loading-overlay').remove(); }
+    function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
+    
+    $(async function() {
+        showGlobalLoading("Loading branches...");
+        const branches = await fetchBranches();
+        populateBranchDropdown(branches);
+        initFlatpickr();
+        hideGlobalLoading();
+        
+        $('#generateReportBtn').on('click', generateReport);
+        $('#exportCsvBtn').on('click', exportToCSV);
+        $('#resetBtn').on('click', resetFilters);
+        $('#statusFilterSelect, #branchSelect, #showPending, #showProcessed, #includeSpareDevices').on('change', function() { if(isReportGenerated) renderTable(); });
+        $('#exportCsvBtn').prop('disabled', true);
+    });
+</script>
+<style>
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .serial-number { font-family: monospace; font-size: 0.85rem; }
+    .table td { word-break: break-word; }
+    .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter { margin-bottom: 10px; }
+    .to-branch-highlight {
+        font-weight: 600;
+        color: #0d6efd;
+        background-color: #f5f5f500;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 2px;
+        border-radius: 16px;
+    }
+    .address-highlight {
+        font-weight: 500;
+        color: #2c3e50;
+        background-color: #e8f4f8;
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 16px;
+        font-size: 0.75rem;
+    }
+    .warning-icon-master.yellow-warning {
+        color: #e67e226b;
+    }
+    .warning-icon-master.red-warning {
+        color: ##ff0000;
+    }
+    .warning-icon-master.yellow-warning:hover {
+        color: #d35400;
+        transform: scale(1.1);
+    }
+    .warning-icon-master.red-warning:hover {
+        color: ##ff0000;
+        transform: scale(1.1);
+    }
+    .master-match-tooltip {
+        cursor: help;
+    }
+</style>
+</body>
+</html>

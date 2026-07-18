@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>NMS Data Monitor | Auto Scraper + Report Generator</title>
+    
+    <!-- CSS - Using local resources from parent folders -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/flatpickr.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    
+    <!-- Chart.js for graphical representation -->
+    <script src="../js/chart.min.js"></script>
+    
+    <!-- JS Libraries -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/jquery.dataTables.min.js"></script>
+    <script src="../js/dataTables.bootstrap5.min.js"></script>
+    <script src="../js/flatpickr.min.js"></script>
+    <script src="../js/select2.min.js"></script>
+    <script src="../js/jspdf.umd.min.js"></script>
+    <script src="../js/jspdf.plugin.autotable.min.js"></script>
+    
+  <style>
+    :root {
+        --primary: #0f5b9c;
+        --primary-dark: #1a4b7a;
+        --success: #10b981;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --gray-bg: #f0f5fa;
+    }
+    
+    body {
+         background: #fff0;
+        padding: 20px 16px;
+        font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+        color: #1e293b;
+    }
+    
+    .main-wrapper {
+        max-width: 100%;
+        margin: 0 auto;
+    }
+    
+.page-header {
+    padding: 15px 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+   
+}
+.page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-header-left i {
+    font-size: 1.8rem !important;
+    background: rgb(56 143 251 / 15%) !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    color: #184f83 !important;
+}
+
+
+.page-header-left h1 {
+    margin: 0 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    color: #184f83!important;
+}
+ .page-header-left p {
+            margin: 2px 0 0;
+            opacity: 0.7;
+            font-size: 0.75rem;
+ }
+
+
+    
+    .card-db {
+        background: white;
+        border-radius: 20px;
+        padding: 0;
+        box-shadow: 0 10px 30px rgba(0,20,40,0.12);
+        border: 1px solid #e9ecef;
+        overflow: hidden;
+    }
+    
+    .nav-tabs-custom {
+        background: #f8fafc;
+        border-bottom: 1px solid #e9ecef;
+        padding: 12px 20px 0 20px;
+    }
+    
+    .nav-tabs-custom .nav-link {
+        border: none;
+        font-weight: 600;
+        color: #64748b;
+        padding: 12px 28px;
+        border-radius: 10px 10px 0 0;
+        background: transparent;
+        transition: all 0.2s;
+        margin-right: 4px;
+    }
+    
+    .nav-tabs-custom .nav-link i {
+        margin-right: 8px;
+        font-size: 1.1rem;
+    }
+    
+    .nav-tabs-custom .nav-link:hover {
+        color: #0f5b9c;
+        background: rgba(15, 91, 156, 0.05);
+    }
+    
+    .nav-tabs-custom .nav-link.active {
+        background: white;
+        color: #0f5b9c;
+        border-bottom: 3px solid #0f5b9c;
+        box-shadow: 0 -2px 8px rgba(15, 91, 156, 0.08);
+    }
+    
+    .tab-content {
+        background: white;
+        padding: 28px !important;
+    }
+    
+    .compact-card {
+        background: #f8fbfe;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 24px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    }
+    
+    .compact-card h6 {
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 16px;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .compact-card h6 i {
+        color: var(--primary);
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 0.85rem;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .form-label i {
+        color: var(--primary);
+        font-size: 0.9rem;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 40px;
+        border: 1px solid #e2e8f0;
+        padding: 8px 18px;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(15, 91, 156, 0.1);
+        outline: none;
+    }
+    
+    .btn-primary-custom {
+        background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+        border: none;
+        padding: 8px 24px;
+        border-radius: 40px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: white;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-primary-custom:hover {
+        background: linear-gradient(135deg, #1a4b7a 0%, #0f5b9c 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(15, 91, 156, 0.3);
+        color: white;
+    }
+    
+    .btn-primary-custom:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .btn-outline-custom {
+        background: transparent;
+        border: 1px solid #cbd5e1;
+        border-radius: 40px;
+        padding: 8px 20px;
+        font-weight: 500;
+        color: #475569;
+        transition: all 0.2s;
+    }
+    
+    .btn-outline-custom:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: rgba(15, 91, 156, 0.05);
+    }
+    
+    .btn-outline-custom:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .btn-danger-custom {
+        background: #ef4444;
+        border: none;
+        border-radius: 40px;
+        padding: 8px 24px;
+        font-weight: 600;
+        color: white;
+        transition: 0.2s;
+    }
+    
+    .btn-danger-custom:hover {
+        background: #dc2626;
+    }
+    
+    .iframe-wrapper {
+        background: #f8fafc;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+        margin-top: 8px;
+    }
+    
+    iframe {
+        width: 100%;
+        height: 520px;
+        border: none;
+        background: #fff;
+    }
+    
+    .status-badge {
+        padding: 4px 14px;
+        border-radius: 40px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .status-running {
+        background: #e0f2fe;
+        color: #0369a1;
+    }
+    
+    .status-stopped {
+        background: #ffe4e2;
+        color: #b91c1c;
+    }
+    
+    .value-badge {
+        background: #eef2ff;
+        color: var(--primary);
+        padding: 6px 16px;
+        border-radius: 40px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .date-range-panel {
+        background: #f8fbfe;
+        border-radius: 20px;
+        padding: 20px;
+        margin-bottom: 24px;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .global-date-section {
+        background: linear-gradient(135deg, #eef2ff 0%, #ffffff 100%);
+        border-radius: 20px;
+        padding: 16px 20px;
+        margin-bottom: 24px;
+        border: 1px solid #cbd5e1;
+    }
+    
+    .global-date-label {
+        font-weight: 700;
+        color: var(--primary);
+        margin-right: 12px;
+    }
+    
+    .flatpickr-input {
+        background-color: #fff;
+        border-radius: 40px !important;
+        padding: 8px 18px !important;
+        font-size: 0.9rem;
+        border: 1px solid #e2e8f0;
+        width: 100%;
+    }
+    
+    .btn-generate {
+        background: linear-gradient(135deg, #0f5b9c, #1a4b7a);
+        border: none;
+        border-radius: 40px;
+        padding: 8px 28px;
+        font-weight: 600;
+        color: white;
+        transition: 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-generate:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(15, 91, 156, 0.3);
+    }
+    
+    .chart-container {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 20px;
+        margin-bottom: 24px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    
+    .chart-header h6 {
+        margin: 0;
+        font-weight: 700;
+        color: #1e293b;
+    }
+    
+    .btn-download-chart {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 40px;
+        padding: 6px 18px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #475569;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .btn-download-chart:hover {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: white;
+    }
+    
+    canvas {
+        max-height: 350px;
+        width: 100%;
+    }
+    
+    /* Stats Summary Cards */
+    .stats-summary {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid #e2e8f0;
+        justify-content: center;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+        border-radius: 20px;
+        padding: 16px 24px;
+        flex: 1;
+        min-width: 140px;
+        text-align: center;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        border-color: var(--primary);
+    }
+    
+    .stat-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 700;
+        color: #64748b;
+        margin-bottom: 8px;
+    }
+    
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--primary);
+        line-height: 1.2;
+    }
+    
+    .stat-sub {
+        font-size: 0.7rem;
+        color: #94a3b8;
+        margin-top: 4px;
+    }
+       #global-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+              background: #fff0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            /*backdrop-filter: blur(3px);*/
+        }
+    .stat-card.success .stat-value { color: #10b981; }
+    .stat-card.warning .stat-value { color: #f59e0b; }
+    .stat-card.info .stat-value { color: #0f5b9c; }
+    
+    /* Manual Backdate Table Styles */
+    .manual-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    .manual-table th {
+        background: #f1f5f9;
+        padding: 12px 12px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #1e293b;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    
+    .manual-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #e9ecef;
+        vertical-align: middle;
+    }
+    
+    .manual-table input, .manual-table select {
+        width: 100%;
+        border-radius: 30px;
+        border: 1px solid #e2e8f0;
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+    }
+    
+    .manual-table input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(15, 91, 156, 0.1);
+        outline: none;
+    }
+    
+    .delete-row-btn {
+        background: #fee2e2;
+        border: none;
+        border-radius: 30px;
+        padding: 5px 12px;
+        color: #b91c1c;
+        font-size: 0.75rem;
+        transition: 0.2s;
+        cursor: pointer;
+    }
+    
+    .delete-row-btn:hover {
+        background: #fecaca;
+        transform: scale(1.05);
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 20px;
+        flex-wrap: wrap;
+    }
+    
+    .dataTables_wrapper .dataTables_filter input,
+    .dataTables_wrapper .dataTables_length select {
+        border-radius: 40px;
+        padding: 6px 16px;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(15, 91, 156, 0.1);
+    }
+    
+    .table thead th {
+        background: linear-gradient(135deg, #1a4b7a 0%, #1a4b7a 100%);
+        color: white;
+        font-weight: 500;
+        font-size: 0.85rem;
+        padding: 12px;
+    }
+    
+    .table td {
+        padding: 10px 12px;
+        vertical-align: middle;
+        font-size: 0.85rem;
+    }
+    
+    .toast-notify {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #1e293b;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 40px;
+        z-index: 1100;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        pointer-events: none;
+        font-size: 0.85rem;
+    }
+    
+    .toast-notify.show {
+        opacity: 1;
+    }
+    
+    .interval-group {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+    
+    .interval-group > div {
+        flex: 1;
+        min-width: 80px;
+    }
+    
+    .loading-spinner {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid var(--primary);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-right: 8px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .dataTable thead th.sorting,
+    .dataTable thead th.sorting_asc,
+    .dataTable thead th.sorting_desc {
+        cursor: default;
+    }
+    
+    .dataTable thead th.sorting:before,
+    .dataTable thead th.sorting:after,
+    .dataTable thead th.sorting_asc:before,
+    .dataTable thead th.sorting_asc:after,
+    .dataTable thead th.sorting_desc:before,
+    .dataTable thead th.sorting_desc:after {
+        display: none !important;
+    }
+    
+    /* Alert customization */
+    .alert-info {
+        background-color: #e0f2fe;
+        border-color: #bae6fd;
+        color: #0369a1;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        body { 
+            padding: 12px; 
+        }
+        
+        iframe { 
+            height: 350px; 
+        }
+        
+        .tab-content { 
+            padding: 16px !important; 
+        }
+        
+        canvas { 
+            max-height: 250px; 
+        }
+        
+        .stat-card { 
+            min-width: 120px; 
+            padding: 12px 16px; 
+        }
+        
+        .stat-value { 
+            font-size: 1.3rem; 
+        }
+        
+        .manual-table th, 
+        .manual-table td { 
+            padding: 8px 6px; 
+            font-size: 0.75rem; 
+        }
+        
+        .action-buttons { 
+            justify-content: center; 
+        }
+        
+        .nav-tabs-custom .nav-link {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .btn-primary-custom, 
+        .btn-outline-custom {
+            padding: 6px 16px;
+            font-size: 0.75rem;
+        }
+    }
+    
+    /* Additional hover effects */
+    .btn-primary-custom, 
+    .btn-outline-custom, 
+    .btn-generate,
+    .btn-download-chart {
+        cursor: pointer;
+    }
+    
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--primary);
+    }
+</style>
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                <i class="bi bi-graph-up me-3"></i>
+                    <div>
+                        <h1>NMS Data Monitor - Logs</h1>
+                        <p>NMS Data Monitor - Logs</p>
+                    </div>
+                </div>
+            </div>
+<div class="main-wrapper">
+    
+    <div class="card-db">
+        <ul class="nav nav-tabs-custom nav-tabs" id="mainTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" id="config-tab" data-bs-toggle="tab" data-bs-target="#configPane">
+                    <i class="bi bi-gear-fill"></i> Configuration
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="monitor-tab" data-bs-toggle="tab" data-bs-target="#monitorPane">
+                    <i class="bi bi-display"></i> Monitor & Log
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link " id="manualBackdate-tab" data-bs-toggle="tab" data-bs-target="#manualBackdatePane">
+                    <i class="bi bi-calendar-plus"></i> Manual Backdate
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logsPane">
+                    <i class="bi bi-journal-bookmark-fill"></i> Data Logs & Reports
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <!-- CONFIGURATION TAB -->
+            <div class="tab-pane fade show active" id="configPane" role="tabpanel">
+                <div class="compact-card">
+                    <h6><i class="bi bi-sliders2"></i> App Configuration</h6>
+                    <div class="alert alert-info py-2 d-flex justify-content-between align-items-center">
+                        <span class="small"><i class="bi bi-cloud-download-fill"></i> Load predefined configuration</span>
+                        <button id="loadConfigBtn" class="btn btn-sm btn-primary rounded-pill"><i class="bi bi-download"></i> Load Config</button>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label"><i class="bi bi-code-slash"></i> Apps Script URL</label>
+                            <input type="url" id="cfgAppScriptUrl" class="form-control" placeholder="https://script.google.com/.../exec">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="bi bi-key"></i> API Key</label>
+                            <input type="text" id="cfgApiKey" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="bi bi-table"></i> Sheet URL</label>
+                            <input type="text" id="cfgSheetUrl" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="bi bi-file-spreadsheet"></i> Sheet Name</label>
+                            <input type="text" id="cfgSheetName" class="form-control" value="Sheet1">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="bi bi-bounding-box"></i> Data Range</label>
+                            <input type="text" id="cfgDataRange" class="form-control" value="A2:D">
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button id="saveConfigBtn" class="btn-primary-custom w-100"><i class="bi bi-save"></i> Save Config</button>
+                        </div>
+                    </div>
+                    <div class="mt-3 p-2 bg-light rounded-3 small">
+                        <strong><i class="bi bi-database-check"></i> Status:</strong>
+                        <div id="configStatusText">Not configured</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MONITOR & LOG TAB -->
+            <div class="tab-pane fade" id="monitorPane" role="tabpanel">
+                <div class="compact-card">
+                    <h6><i class="bi bi-link-45deg"></i> Target URL</h6>
+                    <div class="d-flex gap-2">
+                        <input type="url" id="targetUrl" class="form-control" placeholder="https://example.com" value="https://10.5.93.176/">
+                        <button id="showPageBtn" class="btn-primary-custom"><i class="bi bi-play-fill"></i> Load</button>
+                    </div>
+                </div>
+                <div class="iframe-wrapper">
+                    <div class="d-flex justify-content-between align-items-center p-2 border-bottom bg-light">
+                        <div><span id="frameStatus" class="badge bg-secondary">Not loaded</span></div>
+                        <button id="reloadIframeBtn" class="btn btn-sm btn-outline-secondary rounded-pill"><i class="bi bi-arrow-repeat"></i> Reload</button>
+                    </div>
+                    <iframe id="targetIframe" src="about:blank" title="Target Webpage" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-top-navigation-by-user-activation"></iframe>
+                </div>
+                <div class="compact-card mt-3">
+                    <h6><i class="bi bi-pencil-square"></i> Manual Value Entry</h6>
+                    <div class="input-group">
+                        <input type="text" id="manualValue" class="form-control" placeholder="Paste any value to log manually">
+                        <button id="logManualValueBtn" class="btn-primary-custom">Add Log</button>
+                    </div>
+                    <div class="mt-2 text-end"><span id="lastValueDisplayManual" class="value-badge"><i class="bi bi-graph-up"></i> Last logged: —</span></div>
+                </div>
+            </div>
+
+            <!-- MANUAL BACKDATE DETAILS TAB - GLOBAL DATE PICKER -->
+            <div class="tab-pane fade " id="manualBackdatePane" role="tabpanel">
+                <div class="compact-card">
+                    <h6><i class="bi bi-calendar-week"></i> Manual Backdate Record Submission</h6>
+                    <p class="small text-muted">Set a global date once, then add multiple rows with different times and values. All rows share the same date.</p>
+                    
+                    <!-- Global Date Picker Section -->
+                    <div class="global-date-section">
+                        <div class="row align-items-center">
+                            <div class="col-md-4">
+                                <label class="form-label"><i class="bi bi-calendar-fill"></i> Global Date (applies to all rows)</label>
+                                <input type="text" id="globalDatePicker" class="form-control flatpickr-input" placeholder="DD/MM/YYYY">
+                            </div>
+                            <div class="col-md-8">
+                                <div class="alert alert-info mb-0 py-2">
+                                    <i class="bi bi-info-circle-fill"></i> This date will be used for ALL rows below. Each row has its own time.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Data Entry Table -->
+                    <div class="table-responsive">
+                        <table class="manual-table" id="backdateTable">
+                            <thead>
+                                <tr><th style="width: 20%">Time (HH:MM)</th><th style="width: 35%">Element / Selector</th><th style="width: 35%">Value (auto adds %)</th><th style="width: 10%">Action</th></tr>
+                            </thead>
+                            <tbody id="backdateTableBody">
+                                <!-- dynamic rows will appear here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button id="addRowBtn" class="btn-primary-custom"><i class="bi bi-plus-circle"></i> Add Row</button>
+                        <button id="submitAllBtn" class="btn-primary-custom" style="background: #10b981;"><i class="bi bi-cloud-upload"></i> Submit </button>
+                        <button id="resetRowsBtn" class="btn-outline-custom"><i class="bi bi-arrow-repeat"></i> Reset</button>
+                    </div>
+                    <div class="mt-3 small text-muted">
+                        <i class="bi bi-info-circle"></i> <strong>Info:</strong> 
+                    </div>
+                </div>
+            </div>
+
+            <!-- DATA LOGS & REPORTS TAB -->
+            <div class="tab-pane fade" id="logsPane" role="tabpanel">
+                <div class="date-range-panel">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label"><i class="bi bi-calendar-event"></i> From Date</label>
+                            <input type="text" id="fromDatePicker" class="form-control flatpickr-input" placeholder="Select start date">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label"><i class="bi bi-calendar-event"></i> To Date</label>
+                            <input type="text" id="toDatePicker" class="form-control flatpickr-input" placeholder="Select end date">
+                        </div>
+                        <div class="col-md-2">
+                            <button id="generateReportBtn" class="btn-generate w-100"><i class="bi bi-file-earmark-bar-graph"></i> Generate</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chart-container" id="chartSection" style="display: none;">
+                    <div class="chart-header">
+                        <h6><i class="bi bi-bar-chart-steps"></i>Captured Log Trend Analysis</h6>
+                        <button id="downloadChartBtn" class="btn-download-chart"><i class="bi bi-camera"></i> Download Graph</button>
+                    </div>
+                    <canvas id="trendChart" width="400" height="200" style="max-height: 350px;"></canvas>
+                    <div class="stats-summary" id="statsSummary">
+                        <div class="stat-card info"><div class="stat-label">Total Records</div><div class="stat-value" id="statCount">0</div></div>
+                        <div class="stat-card"><div class="stat-label">Average Value</div><div class="stat-value" id="statAvg">0.00</div></div>
+                        <div class="stat-card success"><div class="stat-label">Maximum</div><div class="stat-value" id="statMax">0.00</div></div>
+                        <div class="stat-card warning"><div class="stat-label">Minimum</div><div class="stat-value" id="statMin">0.00</div></div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <h5 class="mb-0"><i class="bi bi-database"></i>Captured Log Table</h5>
+                    <div><button id="exportCsvBtn" class="btn btn-sm btn-success rounded-pill">CSV</button> <button id="exportPdfBtn" class="btn btn-sm btn-danger rounded-pill">PDF</button> <button id="refreshTableBtn" class="btn btn-sm btn-primary-custom">Refresh</button></div>
+                </div>
+                <div class="table-responsive"><table id="logsTable" class="table table-hover" style="width:100%"><thead><tr><th>Date</th><th>Time</th><th>Selector</th><th>Value</th></tr></thead><tbody><tr><td colspan="4" class="text-center">Select date range</td></tr></tbody></table></div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="toastMsg" class="toast-notify"><i class="bi bi-info-circle-fill"></i> <span>Message</span></div>
+
+<script>
+// Core configuration and manual backdate with GLOBAL DATE
+
+let config = { appScriptUrl: '', apiKey: '', sheetUrl: '', sheetName: 'Sheet1', dataRange: 'A2:D' };
+let dataTable = null;
+let currentFilteredData = [];
+let trendChart = null;
+let globalFlatpickr = null;
+
+function showToast(msg, type='info') {
+    let toast = $('#toastMsg');
+    let icon = type==='success' ? 'bi-check-circle-fill' : (type==='error' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill');
+    toast.html(`<i class="bi ${icon}"></i> <span>${msg}</span>`);
+    toast.addClass('show');
+    setTimeout(()=>toast.removeClass('show'), 3500);
+}
+
+function loadConfigFromStorage() {
+    let saved = localStorage.getItem('webScraperConfig');
+    if(saved) try { Object.assign(config, JSON.parse(saved)); } catch(e) {}
+    $('#cfgAppScriptUrl').val(config.appScriptUrl);
+    $('#cfgApiKey').val(config.apiKey);
+    $('#cfgSheetUrl').val(config.sheetUrl);
+    $('#cfgSheetName').val(config.sheetName);
+    $('#cfgDataRange').val(config.dataRange);
+    updateConfigStatusText();
+}
+
+function saveConfigToStorage() {
+    config.appScriptUrl = $('#cfgAppScriptUrl').val().trim();
+    config.apiKey = $('#cfgApiKey').val().trim();
+    config.sheetUrl = $('#cfgSheetUrl').val().trim();
+    config.sheetName = $('#cfgSheetName').val().trim();
+    config.dataRange = $('#cfgDataRange').val().trim();
+    localStorage.setItem('webScraperConfig', JSON.stringify(config));
+    updateConfigStatusText();
+    showToast('Configuration saved', 'success');
+}
+
+function updateConfigStatusText() {
+    let status = '';
+    if (config.appScriptUrl) status += `✅ Apps Script URL<br>`;
+    else status += `❌ Apps Script URL missing<br>`;
+    if (config.apiKey) status += `✅ API Key set<br>`;
+    else status += `❌ API Key missing<br>`;
+    if (config.sheetUrl) status += `✅ Sheet URL set`;
+    else status += `❌ Sheet URL missing`;
+    $('#configStatusText').html(status);
+}
+
+function loadPredefinedConfig() {
+    let predefined = {
+        appScriptUrl: "https://script.google.com/macros/s/AKfycbwwDk0uEt5HpWCZ6LLanTPBlQnZQ4qq2nyfeX4lGlgV3U7Sh8apiEbic8_DwxWU6NVc/exec",
+        apiKey: "AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0",
+        sheetUrl: "https://docs.google.com/spreadsheets/d/1lKOxplbRL6mNj-t36g9OJKoJv3xBO-37-2BYUAvJrOY/edit?gid=0#gid=0",
+        sheetName: "Sheet1",
+        dataRange: "A2:D",
+        targetUrl: "https://10.5.93.176/"
+    };
+    $('#cfgAppScriptUrl').val(predefined.appScriptUrl);
+    $('#cfgApiKey').val(predefined.apiKey);
+    $('#cfgSheetUrl').val(predefined.sheetUrl);
+    $('#cfgSheetName').val(predefined.sheetName);
+    $('#cfgDataRange').val(predefined.dataRange);
+    $('#targetUrl').val(predefined.targetUrl);
+    Object.assign(config, predefined);
+    localStorage.setItem('webScraperConfig', JSON.stringify(config));
+    updateConfigStatusText();
+    showToast('Predefined config loaded', 'success');
+}
+
+// Send single row to Apps Script
+async function sendToSheetBackend(dateStr, timeStr, selector, value) {
+    if (!config.appScriptUrl) { showToast('Apps Script URL missing', 'error'); return false; }
+    try {
+        await fetch(config.appScriptUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date: dateStr, time: timeStr, selector: selector, value: value, timestamp: new Date().toISOString() })
+        });
+        return true;
+    } catch(err) { 
+        console.error(err);
+        return false; 
+    }
+}
+
+// Format value: add % if not present
+function ensurePercentSuffix(val) {
+    if(!val || val.trim() === '') return '';
+    let trimmed = val.trim();
+    if(trimmed.endsWith('%')) return trimmed;
+    return trimmed + '%';
+}
+
+// Get global date value
+function getGlobalDate() {
+    let globalDate = $('#globalDatePicker').val().trim();
+    if(!globalDate) {
+        showToast('Please set the global date first', 'warning');
+        return null;
+    }
+    // validate DD/MM/YYYY format roughly
+    let parts = globalDate.split('/');
+    if(parts.length !== 3 || parts[0].length!==2 || parts[1].length!==2 || parts[2].length!==4) {
+        showToast('Date must be in DD/MM/YYYY format', 'error');
+        return null;
+    }
+    return globalDate;
+}
+
+// Add new row (no date column, only time, selector, value)
+function addBackdateRow(timeVal='', elementVal='CPU Utilization', valueVal='') {
+    let rowId = 'row_' + Date.now() + '_' + Math.random();
+    let newRow = $('<tr>').attr('data-rowid', rowId);
+    newRow.html(`
+        <td><input type="time" class="form-control backdate-time" value="${escapeHtml(timeVal)}" step="60" placeholder="HH:MM"></td>
+        <td><input type="text" class="form-control backdate-selector" value="${escapeHtml(elementVal)}" placeholder="e.g., CPU Utilization, Memory Usage"></td>
+        <td><input type="text" class="form-control backdate-value" value="${escapeHtml(valueVal)}" placeholder="e.g., 87.5 or 92%"></td>
+        <td class="text-center"><button type="button" class="delete-row-btn"><i class="bi bi-trash3"></i> Delete</button></td>
+    `);
+    $('#backdateTableBody').append(newRow);
+    newRow.find('.delete-row-btn').on('click', function() { $(this).closest('tr').remove(); });
+}
+
+function escapeHtml(str) { return String(str || '').replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
+// Reset rows: clear all and add 3 default rows with empty values
+function resetAllRows() {
+    $('#backdateTableBody').empty();
+    addBackdateRow('09:00', 'CPU Utilization', '');
+    addBackdateRow('13:30', 'CPU Utilization', '');
+    addBackdateRow('17:45', 'CPU Utilization', '');
+    showToast('All rows reset to defaults', 'info');
+}
+
+// Validate and collect rows using global date
+function validateAndCollectRows() {
+    let globalDate = getGlobalDate();
+    if(!globalDate) return null;
+    
+    let rows = [];
+    let isValid = true;
+    $('#backdateTableBody tr').each(function(idx){
+        let time = $(this).find('.backdate-time').val().trim();
+        let selector = $(this).find('.backdate-selector').val().trim();
+        let rawValue = $(this).find('.backdate-value').val().trim();
+        
+        if(!time) { showToast(`Row ${idx+1}: Time is required`, 'error'); isValid=false; return false; }
+        if(!selector) selector = 'CPU Utilization'; // default if empty
+        if(rawValue === '') { showToast(`Row ${idx+1}: Value cannot be empty`, 'error'); isValid=false; return false; }
+        
+        let finalValue = ensurePercentSuffix(rawValue);
+        rows.push({ date: globalDate, time: time, selector: selector, value: finalValue });
+        return true;
+    });
+    if(!isValid) return null;
+    if(rows.length === 0) { showToast('No rows to submit', 'warning'); return null; }
+    return rows;
+}
+
+// Submit rows one by one
+async function submitAllRowsOneByOne() {
+    if(!config.appScriptUrl) { showToast('Apps Script URL not configured! Please save config first.', 'error'); return; }
+    
+    let rowsData = validateAndCollectRows();
+    if(!rowsData || rowsData.length===0) return;
+    
+    $('#submitAllBtn').prop('disabled', true).html('<span class="loading-spinner"></span> Submitting...');
+    let successCount = 0, failCount = 0;
+    
+    for(let i=0; i<rowsData.length; i++) {
+        let r = rowsData[i];
+        let ok = await sendToSheetBackend(r.date, r.time, r.selector, r.value);
+        if(ok !== false) { 
+            successCount++; 
+            showToast(`[${i+1}/${rowsData.length}] ✅ ${r.date} ${r.time} - ${r.value}`, 'success'); 
+        } else { 
+            failCount++; 
+            showToast(`[${i+1}/${rowsData.length}] ❌ Failed: ${r.date} ${r.time}`, 'error'); 
+        }
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    $('#submitAllBtn').prop('disabled', false).html('<i class="bi bi-cloud-upload"></i> Submit All (One by One)');
+    showToast(`Submission complete. Success: ${successCount}, Failed: ${failCount}`, successCount>0?'success':'error');
+    if(successCount>0) {
+        showToast(`${successCount} record(s) sent to Google Sheet`, 'success');
+    }
+}
+
+// Helper functions for logs/reports (preserved from original)
+function parseDate(str){ if(!str) return null; let parts=str.split('/'); if(parts.length===3) return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`); return null; }
+function extractNumericValue(v){ if(!v) return null; let m=v.toString().match(/-?\d+(?:\.\d+)?/); return m?parseFloat(m[0]):null; }
+async function loadLogsWithDateFilter(fromDate, toDate) {
+    if(!config.apiKey || !config.sheetUrl) return [];
+    let sheetIdMatch = config.sheetUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if(!sheetIdMatch && config.sheetUrl.match(/^[a-zA-Z0-9_-]+$/)) sheetIdMatch=[null,config.sheetUrl];
+    if(!sheetIdMatch) return [];
+    let sheetId=sheetIdMatch[1], range=`${config.sheetName}!${config.dataRange}`;
+    let url=`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${config.apiKey}`;
+    try{
+        let resp=await fetch(url);
+        if(!resp.ok) return [];
+        let data=await resp.json();
+        if(!data.values) return [];
+        let allRows=data.values.map((row,idx)=>({date:row[0]||'', time:row[1]||'', selector:row[2]||'', value:row[3]||'', sheetOrder:idx}));
+        if(fromDate && toDate){
+            let fromDt=parseDate(fromDate), toDt=parseDate(toDate);
+            if(fromDt && toDt){ toDt.setHours(23,59,59,999);
+            return allRows.filter(r=>{ let rd=parseDate(r.date); return rd && rd>=fromDt && rd<=toDt; });
+            }
+        }
+        return allRows;
+    }catch(e){ return []; }
+}
+
+function renderChartAndStats(rows){
+    if(!rows || rows.length===0){ $('#chartSection').hide(); return; }
+    let nums=[];
+    rows.forEach(r=>{ let n=extractNumericValue(r.value); if(n!==null) nums.push(n); });
+    let count=rows.length, avg=nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:0, max=nums.length?Math.max(...nums):0, min=nums.length?Math.min(...nums):0;
+    $('#statCount').text(count); $('#statAvg').text(avg.toFixed(2)); $('#statMax').text(max.toFixed(2)); $('#statMin').text(min.toFixed(2));
+    if(trendChart) trendChart.destroy();
+    let ctx=document.getElementById('trendChart').getContext('2d');
+    let labels=rows.map(r=>`${r.date} ${r.time}`).slice(0,80);
+    let dataVals=rows.map(r=>{ let n=extractNumericValue(r.value); return n!==null?n:0; }).slice(0,80);
+    trendChart=new Chart(ctx,{ type:'line', data:{ labels:labels, datasets:[{ label:'Value Trend', data:dataVals, borderColor:'#0f5b9c', fill:true, tension:0.3 }] }, options:{ responsive:true, maintainAspectRatio:true } });
+    $('#chartSection').show();
+}
+
+// Manual value log from Monitor tab
+async function logManualValue() {
+    let val = $('#manualValue').val().trim();
+    if(!val) { showToast('Enter a value', 'warning'); return; }
+    let now = new Date();
+    let dateStr = now.toLocaleDateString('en-GB');
+    let timeStr = now.toLocaleTimeString('en-GB');
+    let success = await sendToSheetBackend(dateStr, timeStr, 'CPU Utilization', val);
+    if(success !== false) { 
+        showToast(`Logged: ${val}`, 'success'); 
+        $('#lastValueDisplayManual').html(`<i class="bi bi-graph-up"></i> Last logged: ${val}`);
+        $('#manualValue').val(''); 
+    } else showToast('Failed to log', 'error');
+}
+
+$(document).ready(function() {
+    loadConfigFromStorage();
+    
+    // Initialize global date picker (DD/MM/YYYY) - default to today
+    flatpickr("#globalDatePicker", { 
+        dateFormat: "d/m/Y", 
+        defaultDate: new Date(),
+        allowInput: true,
+        maxDate: new Date()
+    });
+    $('#globalDatePicker').val(new Date().toLocaleDateString('en-GB'));
+    
+    // Initialize log date pickers
+    flatpickr("#fromDatePicker", { dateFormat: "d/m/Y", defaultDate: new Date(), maxDate: new Date() });
+    flatpickr("#toDatePicker", { dateFormat: "d/m/Y", defaultDate: new Date(), maxDate: new Date() });
+    $('#fromDatePicker').val(new Date().toLocaleDateString('en-GB'));
+    $('#toDatePicker').val(new Date().toLocaleDateString('en-GB'));
+    
+    // Initialize backdate table with default rows (no date column)
+    resetAllRows();
+    
+    // Attach button events for backdate tab
+    $('#addRowBtn').on('click', () => addBackdateRow('12:00', 'CPU Utilization', ''));
+    $('#resetRowsBtn').on('click', resetAllRows);
+    $('#submitAllBtn').on('click', submitAllRowsOneByOne);
+    
+    // Config events
+    $('#saveConfigBtn').on('click', saveConfigToStorage);
+    $('#loadConfigBtn').on('click', loadPredefinedConfig);
+    $('#showPageBtn').on('click', function() { let url=$('#targetUrl').val(); if(url && !url.startsWith('http')) url='https://'+url; $('#targetIframe').attr('src', url||'about:blank'); $('#frameStatus').text('Loading...'); });
+    $('#reloadIframeBtn').on('click', ()=> { let src=$('#targetIframe').attr('src'); if(src && src!=='about:blank') $('#targetIframe').attr('src', src); });
+    $('#logManualValueBtn').on('click', logManualValue);
+    
+    // Logs & reports generation
+    $('#generateReportBtn, #refreshTableBtn').on('click', async function(){
+        let from=$('#fromDatePicker').val(), to=$('#toDatePicker').val();
+        if(!from || !to){ showToast('Select both dates','warning'); return; }
+        let rows=await loadLogsWithDateFilter(from,to);
+        currentFilteredData=rows;
+        if($.fn.DataTable.isDataTable('#logsTable')) dataTable.destroy();
+        dataTable=$('#logsTable').DataTable({ data:rows, columns:[{data:"date"},{data:"time"},{data:"selector"},{data:"value"}], pageLength:25, ordering:false, language:{search:"",searchPlaceholder:"Search..."} });
+        renderChartAndStats(rows);
+        if(rows.length===0) $('#chartSection').hide();
+        else $('#chartSection').show();
+        showToast(`Loaded ${rows.length} records`, 'info');
+    });
+    
+    $('#exportCsvBtn').on('click',()=>{ if(!currentFilteredData.length){showToast('No data','warning');return;} let csvRows=[['Date','Time','Selector','Value']]; currentFilteredData.forEach(r=>csvRows.push([r.date,r.time,r.selector,r.value])); let blob=new Blob([csvRows.map(row=>row.join(',')).join('\n')],{type:'text/csv'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='logs.csv'; a.click(); });
+    $('#exportPdfBtn').on('click',async()=>{ if(!currentFilteredData.length){showToast('No data','warning');return;} try{ let {jsPDF}=window.jspdf; let doc=new jsPDF({orientation:'landscape'}); doc.autoTable({ head:[['Date','Time','Selector','Value']], body:currentFilteredData.map(r=>[r.date,r.time,r.selector,r.value]), styles:{fontSize:8} }); doc.save('report.pdf'); }catch(e){showToast('PDF error','error');} });
+    $('#downloadChartBtn').on('click',()=>{ if(trendChart){ let link=document.createElement('a'); link.download='chart.png'; link.href=document.getElementById('trendChart').toDataURL(); link.click(); } else showToast('No chart','warning'); });
+    
+    // Disable old auto-monitor buttons to avoid confusion (they are not functional in this version)
+    $('#startAutoBtn, #pauseAutoBtn, #stopAutoBtn, #testExtractBtn').on('click', (e) => e.preventDefault());
+});
+</script>
+</body>
+</html>

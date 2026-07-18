@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Fatpipe Device | Complaint Report</title>
+    
+    <!-- Local CSS Resources -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
+    <link rel="stylesheet" href="../css/flatpickr.min.css">
+    <link rel="stylesheet" href="../css/sweetalert2.min.css">
+    
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background: #eef2f7;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 20px 16px;
+            margin: 0;
+        }
+        .app-card {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .page-header {
+            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+            color: white;
+            padding: 15px 25px;
+        }
+        .page-header h4 {
+            margin: 0;
+            font-weight: 600;
+        }
+        .page-header i {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+        .btn-primary-custom {
+            background: #0f3b5f;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-primary-custom:hover {
+            background: #0a2c46;
+            transform: translateY(-1px);
+        }
+        .btn-success-custom {
+            background: #10b981;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-success-custom:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+        .btn-secondary-custom {
+            background: #64748b;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-secondary-custom:hover {
+            background: #475569;
+        }
+        .form-control, .form-select {
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            padding: 8px 12px;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #0f3b5f;
+            box-shadow: 0 0 0 3px rgba(15,59,95,0.1);
+        }
+        .filter-row {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+        }
+        .filter-group {
+            flex: 1;
+            min-width: 160px;
+        }
+        .filter-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .filter-group select {
+            width: 100%;
+        }
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex: 1;
+            min-width: 200px;
+        }
+        .checkbox-group .form-check {
+            margin-bottom: 0;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .stats-badge {
+            background: #e6f0fa;
+            padding: 8px 15px;
+            border-radius: 40px;
+            color: #0f5b9c;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        #global-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(3px);
+        }
+        .table-responsive {
+            margin-top: 20px;
+        }
+        .table thead th {
+            background: linear-gradient(135deg, #1a4b7a 0%, #1a4b7a 100%);
+            color: white;
+            font-weight: 500;
+            font-size: 0.8rem;
+            vertical-align: middle;
+            white-space: nowrap;
+            padding: 10px 8px;
+        }
+        .table td {
+            padding: 8px;
+            vertical-align: middle;
+            font-size: 0.8rem;
+        }
+        .badge-pending { background-color: #f59e0b; color: white; padding: 3px 8px; border-radius: 30px; font-size: 0.7rem; }
+        .badge-processing { background-color: #3b82f6; color: white; padding: 3px 8px; border-radius: 30px; font-size: 0.7rem; }
+        .badge-completed { background-color: #10b981; color: white; padding: 3px 8px; border-radius: 30px; font-size: 0.7rem; }
+        .placeholder-message {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+        .placeholder-message i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #cbd5e1;
+        }
+        @media (max-width: 768px) {
+            .filter-row { flex-direction: column; }
+            .action-buttons { width: 100%; }
+            .action-buttons button { flex: 1; }
+        }
+        .content-pane {
+            padding: 25px;
+        }
+    </style>
+</head>
+<body>
+<div class="app-card">
+    <div class="page-header d-flex align-items-center">
+        <i class="bi bi-file-text-fill"></i>
+        <div>
+            <h4>Fatpipe Device - Complaint Report</h4>
+            <small class="opacity-75">Generate and export complaint reports with date filters</small>
+        </div>
+    </div>
+    
+    <div class="content-pane">
+        <!-- Filter Section -->
+        <div class="filter-row">
+            <div class="filter-group">
+                <label><i class="bi bi-building"></i> Select Branch</label>
+                <select id="branchSelect" class="form-select">
+                    <option value="">-- All Branches --</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label><i class="bi bi-calendar"></i> From Date (Complaint Date)</label>
+                <input type="text" id="fromDate" class="form-control flatpickr-from" placeholder="DD/MM/YYYY">
+            </div>
+            <div class="filter-group">
+                <label><i class="bi bi-calendar"></i> To Date (Complaint Date)</label>
+                <input type="text" id="toDate" class="form-control flatpickr-to" placeholder="DD/MM/YYYY">
+            </div>
+            <div class="checkbox-group">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="showPending" checked>
+                    <label class="form-check-label" for="showPending">
+                        <i class="bi bi-clock-history"></i> Show Pending
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="showProcessed" checked>
+                    <label class="form-check-label" for="showProcessed">
+                        <i class="bi bi-check-circle"></i> Show Processed
+                    </label>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button id="generateReportBtn" class="btn btn-primary-custom"><i class="bi bi-search"></i> View</button>
+                <button id="resetBtn" class="btn btn-secondary-custom"><i class="bi bi-arrow-repeat"></i> Reset</button>
+                <button id="exportCsvBtn" class="btn btn-success-custom" disabled><i class="bi bi-filetype-csv"></i> Export to CSV</button>
+            </div>
+        </div>
+        
+        <!-- Stats Row (hidden initially) -->
+        <div id="statsContainer" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                <div>
+                    <span class="stats-badge" id="recordCount">0 Records</span>
+                </div>
+                <div>
+                    <span class="stats-badge" id="pendingCount">Pending: 0</span>
+                    <span class="stats-badge ms-2" id="processedCount">Processed: 0</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Table -->
+        <div class="table-responsive">
+            <table id="reportTable" class="table table-striped table-hover" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Treasury</th>
+                        <th>Device Serial No.</th>
+                        <th>Device Type</th>
+                        <th>From Branch</th>
+                        <th>Complaint Remarks</th>
+                        <th>Complaint Date</th>
+                        <th>Sent Date</th>
+                        <th>Received Date</th>
+                        <th>Date of Movement to OEM</th>
+                        <th>Date of return from OEM</th>
+                        <th>To Branch</th>
+                        <th>Date of Transfer</th>
+                        <th>Remarks</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="placeholder-row">
+                        <td colspan="15" class="placeholder-message">
+                            <i class="bi bi-search-heart"></i>
+                            <h5>No Report Generated</h5>
+                         </td>
+                    </tr>
+                </tbody>
+             </table>
+        </div>
+    </div>
+</div>
+
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script src="../js/jquery.dataTables.min.js"></script>
+<script src="../js/dataTables.bootstrap5.min.js"></script>
+<script src="../js/select2.min.js"></script>
+<script src="../js/flatpickr.min.js"></script>
+<script src="../js/sweetalert2.all.min.js"></script>
+
+<script>
+    // ================= CONFIGURATION =================
+    const SPREADSHEET_ID = "1MpftwfNIe82kORjP6xeLo1qUh3v6Cr8HHo0oSW2grYA";
+    const MOVEMENT_SHEET = "Movement_Data";
+    const API_KEY = "AIzaSyDc8tegwi2rgHyDFYm7uWBqVqQ7Fwb3uWM";
+    
+    let allRecords = [];
+    let filteredRecords = [];
+    let branchesList = [];
+    let dataTable = null;
+    let flatpickrFrom, flatpickrTo;
+    let isReportGenerated = false;
+    
+    function showGlobalLoading(msg) {
+        if($('#global-loading-overlay').length) return;
+        $('body').append(`<div id="global-loading-overlay"><div style="background:white;padding:30px;border-radius:24px;text-align:center;"><i class="bi bi-arrow-repeat" style="font-size:48px;color:#0f3b5f;animation:spin 1s linear infinite;"></i><p>${msg}</p></div></div>`);
+    }
+    function hideGlobalLoading() { $('#global-loading-overlay').remove(); }
+    
+    function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
+    
+    function parseDMYToDate(dateStr) {
+        if(!dateStr) return null;
+        let parts = dateStr.split('/');
+        if(parts.length === 3) {
+            return new Date(parts[2], parts[1]-1, parts[0]);
+        }
+        return null;
+    }
+    
+    function formatDateForCompare(dateStr) {
+        const date = parseDMYToDate(dateStr);
+        if(!date) return null;
+        return date.getTime();
+    }
+    
+    function isDateInRange(dateStr, fromDate, toDate) {
+        const dateTime = formatDateForCompare(dateStr);
+        if(!dateTime) return false;
+        
+        const fromTime = fromDate ? formatDateForCompare(fromDate) : null;
+        const toTime = toDate ? formatDateForCompare(toDate) : null;
+        
+        if(fromTime && toTime) {
+            return dateTime >= fromTime && dateTime <= toTime;
+        } else if(fromTime) {
+            return dateTime >= fromTime;
+        } else if(toTime) {
+            return dateTime <= toTime;
+        }
+        return true;
+    }
+    
+    function getRecordStatus(row) {
+        if(row.receivedDate && row.receivedDate.trim() !== "") {
+            return "Completed";
+        } else if(row.moveToOem || row.returnFromOem || row.toBranch) {
+            return "Processing";
+        } else {
+            return "Pending";
+        }
+    }
+    
+    // Fetch unique branches from Movement_Data sheet column E (From Branch)
+    async function fetchBranchesFromMovementData() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(MOVEMENT_SHEET)}!E:E?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            const branchesSet = new Set();
+            
+            for(let i=1; i<rows.length; i++) { // Skip header row (index 0)
+                const branch = rows[i] && rows[i][0] ? rows[i][0].trim() : "";
+                if(branch && branch !== "") {
+                    branchesSet.add(branch);
+                }
+            }
+            
+            // Convert Set to Array and sort ascending
+            const branches = Array.from(branchesSet).sort((a, b) => a.localeCompare(b));
+            return branches;
+        } catch(e) { 
+            console.error("Error fetching branches from Movement_Data:", e); 
+            return []; 
+        }
+    }
+    
+    function populateBranchDropdown(branches) {
+        const $select = $('#branchSelect');
+        $select.empty();
+        $select.append('<option value="">-- All Branches --</option>');
+        branches.forEach(branch => {
+            $select.append(`<option value="${escapeHtml(branch)}">${escapeHtml(branch)}</option>`);
+        });
+        $select.select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Select branch to filter',
+            allowClear: true
+        });
+    }
+    
+    async function fetchMovementRecords() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(MOVEMENT_SHEET)}!A:O?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            const records = [];
+            for(let i=1; i<rows.length; i++) {
+                const row = rows[i];
+                if(row.length > 0 && row[0]) {
+                    records.push({
+                        id: i,
+                        refId: row[0] || "",
+                        treasury: row[1] || "",
+                        serialNo: row[2] || "",
+                        deviceType: row[3] || "",
+                        fromBranch: row[4] || "",
+                        complaintRemarks: row[5] || "",
+                        complaintDate: row[6] || "",
+                        sentDate: row[8] || "",
+                        receivedDate: row[9] || "",
+                        moveToOem: row[10] || "",
+                        returnFromOem: row[11] || "",
+                        toBranch: row[12] || "",
+                        transferDate: row[13] || "",
+                        remarks: row[14] || ""
+                    });
+                }
+            }
+            allRecords = records;
+            return records;
+        } catch(e) { console.error("Error fetching records:", e); return []; }
+    }
+    
+    function applyFilters() {
+        const selectedBranch = $('#branchSelect').val();
+        const fromDate = $('#fromDate').val();
+        const toDate = $('#toDate').val();
+        const showPending = $('#showPending').is(':checked');
+        const showProcessed = $('#showProcessed').is(':checked');
+        
+        filteredRecords = allRecords.filter(record => {
+            // Branch filter
+            if(selectedBranch && selectedBranch !== "" && record.fromBranch !== selectedBranch) return false;
+            
+            // Date filter
+            if(!isDateInRange(record.complaintDate, fromDate, toDate)) return false;
+            
+            // Status filter
+            const status = getRecordStatus(record);
+            if(status === "Pending" && !showPending) return false;
+            if(status !== "Pending" && !showProcessed) return false;
+            
+            return true;
+        });
+        
+        // Sort by Complaint Date ASCENDING (oldest first)
+        filteredRecords.sort((a, b) => {
+            const dateA = parseDMYToDate(a.complaintDate);
+            const dateB = parseDMYToDate(b.complaintDate);
+            if(!dateA && !dateB) return 0;
+            if(!dateA) return 1;
+            if(!dateB) return -1;
+            return dateA - dateB;
+        });
+        
+        // Update stats
+        const pendingCount = filteredRecords.filter(r => getRecordStatus(r) === "Pending").length;
+        const processedCount = filteredRecords.length - pendingCount;
+        $('#recordCount').text(`${filteredRecords.length} Records`);
+        $('#pendingCount').text(`Pending: ${pendingCount}`);
+        $('#processedCount').text(`Processed: ${processedCount}`);
+        
+        return filteredRecords;
+    }
+    
+    function renderTable() {
+        const filtered = applyFilters();
+        
+        if(dataTable) {
+            dataTable.destroy();
+            $('#reportTable tbody').empty();
+        }
+        
+        if(filtered.length === 0) {
+            $('#reportTable tbody').html(`
+                <tr class="placeholder-row">
+                    <td colspan="15" class="placeholder-message">
+                        <i class="bi bi-inbox"></i>
+                        <h5>No Records Found</h5>
+                        <p>No records match the selected filters. Try changing your criteria.</p>
+                      <tr>
+                </tr>
+            `);
+            dataTable = null;
+            $('#exportCsvBtn').prop('disabled', true);
+            return;
+        }
+        
+        dataTable = $('#reportTable').DataTable({
+            data: filtered,
+            columns: [
+                { data: null, render: (row, type, rowData, meta) => meta.row + 1 },
+                { data: "treasury" },
+                { data: "serialNo" },
+                { data: "deviceType" },
+                { data: "fromBranch" },
+                { data: "complaintRemarks", render: d => d ? d : '—' },
+                { data: "complaintDate", render: d => d ? d : '—' },
+                { data: "sentDate", render: d => d ? d : '—' },
+                { data: "receivedDate", render: d => d ? d : '—' },
+                { data: "moveToOem", render: d => d ? d : '—' },
+                { data: "returnFromOem", render: d => d ? d : '—' },
+                { data: "toBranch", render: d => d ? d : '—' },
+                { data: "transferDate", render: d => d ? d : '—' },
+                { data: "remarks", render: d => d ? d : '—' },
+                { data: null, render: (row) => {
+                    const status = getRecordStatus(row);
+                    if(status === "Pending") return '<span class="badge-pending"><i class="bi bi-clock-history me-1"></i>Pending</span>';
+                    if(status === "Processing") return '<span class="badge-processing"><i class="bi bi-arrow-repeat me-1"></i>Processing</span>';
+                    return '<span class="badge-completed"><i class="bi bi-check-circle-fill me-1"></i>Delivered</span>';
+                } }
+            ],
+            order: [[0, 'asc']], // Sort by Serial Number column (index 0) in ascending order
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'All']],
+            language: { search: "Filter:", searchPlaceholder: "Search records..." },
+            scrollX: true,
+            autoWidth: false,
+            drawCallback: function() {
+                $('#exportCsvBtn').prop('disabled', false);
+            }
+        });
+        
+        // After DataTable is initialized, sort by Serial Number column (column 0) ascending
+        dataTable.order([0, 'asc']).draw();
+        
+        $('#exportCsvBtn').prop('disabled', false);
+    }
+    
+    async function generateReport() {
+        showGlobalLoading("Loading data...");
+        await fetchMovementRecords();
+        renderTable();
+        hideGlobalLoading();
+        
+        $('#statsContainer').show();
+        
+        if(filteredRecords.length === 0 && allRecords.length > 0) {
+            Swal.fire({ icon: 'info', title: 'No Records', text: 'No records match the selected filters.', timer: 2000 });
+        } else if(allRecords.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'No Data', text: 'No records found in the sheet.' });
+        } else {
+            Swal.fire({ icon: 'success', title: 'Report Generated', text: `${filteredRecords.length} records found.`, timer: 1500, showConfirmButton: false });
+        }
+        isReportGenerated = true;
+    }
+    
+    function exportToCSV() {
+        if(!isReportGenerated || filteredRecords.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'No Data', text: 'No records to export. Please generate report first.' });
+            return;
+        }
+        
+        // Get current DataTable data (respects search/filter in the table itself)
+        let dataToExport = filteredRecords;
+        
+        // If DataTable has search applied, use the currently displayed data
+        if(dataTable) {
+            const searchTerm = dataTable.search();
+            if(searchTerm && searchTerm !== "") {
+                // Use DataTable's filtered data if search is applied
+                dataToExport = dataTable.rows({ search: 'applied' }).data().toArray();
+            }
+        }
+        
+        const headers = [
+            'Sl No',
+            'Treasury',
+            'Device Serial No.',
+            'Device Type',
+            'From Branch',
+            'Complaint Remarks',
+            'Complaint Date',
+            'Sent Date',
+            'Received Date',
+            'Date of Movement to OEM',
+            'Date of return from OEM',
+            'To Branch',
+            'Date of Transfer',
+            'Remarks',
+            'Status'
+        ];
+        
+        const rows = [];
+        let serialNo = 1;
+        
+        // Sort dataToExport by Serial Number (column index 2) for CSV export
+        const sortedForExport = [...dataToExport].sort((a, b) => {
+            const serialA = a.serialNo || '';
+            const serialB = b.serialNo || '';
+            return serialA.localeCompare(serialB);
+        });
+        
+        sortedForExport.forEach(record => {
+            rows.push([
+                serialNo++,
+                record.treasury || '',
+                record.serialNo || '',
+                record.deviceType || '',
+                record.fromBranch || '',
+                record.complaintRemarks || '',
+                record.complaintDate || '',
+                record.sentDate || '',
+                record.receivedDate || '',
+                record.moveToOem || '',
+                record.returnFromOem || '',
+                record.toBranch || '',
+                record.transferDate || '',
+                record.remarks || '',
+                getRecordStatus(record)
+            ]);
+        });
+        
+        const csvContent = [headers, ...rows];
+        const csvString = csvContent.map(row => 
+            row.map(cell => {
+                const cellStr = String(cell);
+                if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                    return `"${cellStr.replace(/"/g, '""')}"`;
+                }
+                return cellStr;
+            }).join(',')
+        ).join('\n');
+        
+        const blob = new Blob(['\uFEFF' + csvString], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        const selectedBranch = $('#branchSelect').val() || 'all';
+        const fromDate = $('#fromDate').val() || 'start';
+        const toDate = $('#toDate').val() || 'end';
+        const fileName = `fatpipe_report_${selectedBranch}_${fromDate}_to_${toDate}.csv`;
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        Swal.fire({ icon: 'success', title: 'Export Successful!', text: `${sortedForExport.length} records exported.`, timer: 1500, showConfirmButton: false });
+    }
+    
+    function resetFilters() {
+        $('#branchSelect').val('').trigger('change');
+        $('#fromDate').val('');
+        $('#toDate').val('');
+        $('#showPending').prop('checked', true);
+        $('#showProcessed').prop('checked', true);
+        
+        if(flatpickrFrom) flatpickrFrom.clear();
+        if(flatpickrTo) flatpickrTo.clear();
+        
+        if(dataTable) {
+            dataTable.destroy();
+            dataTable = null;
+        }
+        $('#reportTable tbody').html(`
+            <tr class="placeholder-row">
+                <td colspan="15" class="placeholder-message">
+                    <i class="bi bi-search-heart"></i>
+                    <h5>No Report Generated</h5>
+                    <p>Select your filters and click "View" button to get data</p>
+                  </td>
+                </tr>
+            `);
+        $('#statsContainer').hide();
+        $('#exportCsvBtn').prop('disabled', true);
+        isReportGenerated = false;
+        filteredRecords = [];
+        allRecords = [];
+        
+        Swal.fire({ icon: 'info', title: 'Reset Complete', text: 'Filters have been cleared. Click View button to load data.', timer: 1500, showConfirmButton: false });
+    }
+    
+    function initFlatpickr() {
+        flatpickrFrom = flatpickr("#fromDate", { dateFormat: "d/m/Y" });
+        flatpickrTo = flatpickr("#toDate", { dateFormat: "d/m/Y" });
+    }
+    
+    $(async function() {
+        showGlobalLoading("Loading branches...");
+        
+        // Fetch branches from Movement_Data sheet column E
+        const branches = await fetchBranchesFromMovementData();
+        branchesList = branches;
+        populateBranchDropdown(branchesList);
+        
+        initFlatpickr();
+        hideGlobalLoading();
+        
+        $('#generateReportBtn').on('click', generateReport);
+        $('#exportCsvBtn').on('click', exportToCSV);
+        $('#resetBtn').on('click', resetFilters);
+        
+        $('#exportCsvBtn').prop('disabled', true);
+    });
+</script>
+</body>
+</html>

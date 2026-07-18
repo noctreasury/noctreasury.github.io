@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>NOC Mobile</title>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="NOC Mobile">
+    <!-- Bootstrap 5.3 + icons -->
+    <link href="./css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./css/bootstrap-icons.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=Noto+Sans+Malayalam:wght@400;500&display=swap" rel="stylesheet">
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="mobile-manifest.json">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <meta name="theme-color" content="#f8fafc">
+    
+    <!-- Mobile/Desktop Redirect Script -->
+    <script>
+        const currentPage = window.location.pathname.split('/').pop() || 'app.html';
+        const isMobile = (window.innerWidth <= 768 || /Mobile|iPhone|iPad|Android/i.test(navigator.userAgent));
+        
+        if (isMobile && currentPage !== 'app.html') {
+            window.location.href = "app.html";
+        } else if (!isMobile && currentPage !== 'index.html') {
+            window.location.href = "index.html";
+        }
+    </script>
+</head>
+<body class="mobile-app light-theme">
+
+<!-- LOGIN SCREEN -->
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-card glass-card">
+        <div class="login-header">
+            <div class="login-logo">
+                <img class="logo-img" id="loginLogo" src="https://profile.mgovcloud.in/file?fs=thumb&amp;ID=2109903&amp;nps=404&amp;allowCORP=true" alt="NOC">
+            </div>
+            <h2>NOC Mobile</h2>
+            <p>Network Operations Center</p>
+        </div>
+        <div class="login-body">
+            <div class="mb-3">
+                <label class="form-label">Username</label>
+                <input type="text" class="form-control" id="mobileUsername" placeholder="Enter username">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-control" id="mobilePassword" placeholder="Enter password">
+            </div>
+            <div class="login-error" id="loginErrorMsg" style="display:none;">
+                <i class="bi bi-exclamation-triangle-fill"></i> <span>Invalid credentials</span>
+            </div>
+            <button class="btn btn-primary w-100" id="mobileLoginBtn">
+                <span class="spinner-border spinner-border-sm d-none" id="loginSpinner"></span>
+                <span id="loginBtnText">Sign in</span>
+            </button>
+         <div style="text-align: center;" ><a href="password-manager.html" target="_blank"> Forgot Password</a></div>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN DASHBOARD -->
+<div class="dashboard-main" id="dashboardMain" style="display: none;">
+    <!-- Top Bar -->
+    <div class="mobile-top-bar">
+        <div class="brand-area">
+            <img class="mini-logo" src="https://profile.mgovcloud.in/file?fs=thumb&amp;ID=2109903&amp;nps=404&amp;allowCORP=true" alt="logo">
+            <div class="brand-titles">
+                <h1>NOC Mobile</h1>
+                <span>Operations Hub</span>
+            </div>
+        </div>
+        <div class="top-actions">
+            <div class="user-badge" id="userBadgeMobile">
+                <i class="bi bi-person-circle"></i>
+                <span id="userShortName"></span>
+            </div>
+            <button class="logout-mobile-btn" id="mobileLogoutBtn"><i class="bi bi-box-arrow-right"></i></button>
+        </div>
+    </div>
+    
+    <!-- Flash News Ticker -->
+    <div id="flashNewsStrip" class="flash-strip hidden">
+        <div class="ticker-wrap"><div class="ticker-content" id="mobileTicker"></div></div>
+    </div>
+    
+    <!-- Main Menu Grid -->
+    <div class="menu-grid-container">
+        <div class="section-header"><i class="bi bi-grid-3x3-gap-fill"></i> Applications</div>
+        <div class="tiles-grid" id="mobileMenuGrid">
+            <div class="loading-spinner m-auto">Loading menu...</div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="app-footer">NOC Admin · Secure Access</div>
+</div>
+
+<!-- POPUP IFRAME MODAL -->
+<div class="iframe-modal" id="iframeModal" style="display: none;">
+    <div class="modal-header-bar">
+        <button class="back-to-menu-btn" id="closeIframeBtn"><i class="bi bi-arrow-left-short"></i> Menu</button>
+        <div class="modal-title-text" id="modalTitleText">Content</div>
+        <div style="width: 48px;"></div>
+    </div>
+    <iframe id="popupIframe" src="about:blank" frameborder="0" class="modal-iframe"></iframe>
+    <div class="iframe-loading" id="iframeLoading"><div class="spinner-grow text-primary"></div> Loading...</div>
+</div>
+
+<script>
+    // ========== CONFIGURATION ==========
+    const SPREADSHEET_ID = '1jd1xZe9x2mrZm5KAwGT12vMNYjbrnynsmelNKeK95jc';
+    const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+    const MENU_SHEET = 'Menu';
+    const ICON_SHEET = 'icons';
+    const LOGIN_SHEET = 'Login';
+    const FLASH_SHEET = 'scroll texts';
+    
+    let currentUserData = null;
+    let menuStructure = [];
+    let iconMap = new Map();
+    
+    // ========== HELPER FUNCTIONS ==========
+    function escapeHtml(str) { 
+        if(!str) return ''; 
+        return str.replace(/[&<>]/g, function(m){ 
+            if(m==='&') return '&amp;'; 
+            if(m==='<') return '&lt;'; 
+            if(m==='>') return '&gt;'; 
+            return m;
+        });
+    }
+    
+    async function fetchSheetJSON(url) {
+        try {
+            const res = await fetch(url);
+            return await res.json();
+        } catch(e) { 
+            return { error: true }; 
+        }
+    }
+    
+    // Icon processor
+    function processIcons(rows) {
+        if(!rows || rows.length<2) return;
+        for(let i=1; i<rows.length; i++) {
+            const row = rows[i];
+            if(row.length<6) continue;
+            const [mainMenu, mainIcon, subMenu, subIcon, linkItem, linkIcon] = row;
+            if(mainMenu && subMenu && linkItem) {
+                const key = `${mainMenu}|${subMenu}|${linkItem}`;
+                iconMap.set(key, { linkIcon: linkIcon || '<i class="bi bi-box-arrow-up-right"></i>' });
+                const mainKey = `${mainMenu}||`;
+                if(!iconMap.has(mainKey)) iconMap.set(mainKey, { mainIcon: mainIcon || '<i class="bi bi-app-indicator"></i>' });
+                const subKey = `${mainMenu}|${subMenu}|`;
+                if(!iconMap.has(subKey)) iconMap.set(subKey, { subIcon: subIcon || '<i class="bi bi-folder"></i>' });
+            }
+        }
+    }
+    
+    function getIconFor(mainMenu, subMenu='', linkItem='', type) {
+        const full = `${mainMenu}|${subMenu}|${linkItem}`;
+        if(iconMap.has(full) && type==='link') return iconMap.get(full).linkIcon;
+        if(type==='main') {
+            const mkey = `${mainMenu}||`;
+            return iconMap.has(mkey) ? iconMap.get(mkey).mainIcon : '<i class="bi bi-grid"></i>';
+        }
+        if(type==='sub') {
+            const skey = `${mainMenu}|${subMenu}|`;
+            return iconMap.has(skey) ? iconMap.get(skey).subIcon : '<i class="bi bi-folder2"></i>';
+        }
+        return '<i class="bi bi-link"></i>';
+    }
+    
+    function buildMenuFromRows(rows) {
+        if(!rows || rows.length<2) return [];
+        const menuMap = new Map();
+        for(let i=1; i<rows.length; i++) {
+            const row = rows[i];
+            if(row.length<4) continue;
+            const [mainMenu, subMenu, linkItem, url] = row;
+            if(!mainMenu || !subMenu || !linkItem || !url) continue;
+            if(!menuMap.has(mainMenu)) menuMap.set(mainMenu, new Map());
+            const subMap = menuMap.get(mainMenu);
+            if(!subMap.has(subMenu)) subMap.set(subMenu, []);
+            subMap.get(subMenu).push({ title: linkItem, url: url, icon: getIconFor(mainMenu, subMenu, linkItem, 'link') });
+        }
+        const result = [];
+        for(let [mainTitle, subMap] of menuMap.entries()) {
+            const subArr = [];
+            for(let [subTitle, items] of subMap.entries()) {
+                subArr.push({ title: subTitle, icon: getIconFor(mainTitle, subTitle, '', 'sub'), items: items });
+            }
+            result.push({ title: mainTitle, icon: getIconFor(mainTitle, '', '', 'main'), subMenus: subArr });
+        }
+        return result;
+    }
+    
+    async function loadMenusAndIcons(menuSheetName) {
+        try {
+            const menuUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${menuSheetName}!A:D?key=${API_KEY}`;
+            const iconUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${ICON_SHEET}!A:F?key=${API_KEY}`;
+            const [menuRes, iconRes] = await Promise.all([fetchSheetJSON(menuUrl), fetchSheetJSON(iconUrl)]);
+            if(menuRes.error) throw new Error(`Menu sheet error: ${menuSheetName}`);
+            if(iconRes.values) processIcons(iconRes.values);
+            return buildMenuFromRows(menuRes.values);
+        } catch(e) { 
+            console.error(e); 
+            return []; 
+        }
+    }
+    
+    // Flash news
+    async function loadFlashNews() {
+        const strip = document.getElementById('flashNewsStrip');
+        const tickerDiv = document.getElementById('mobileTicker');
+        if(!strip || !tickerDiv) return;
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${FLASH_SHEET}!A2:A?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            if(data.error || !data.values || data.values.length===0) { 
+                strip.classList.add('hidden'); 
+                return; 
+            }
+            const texts = data.values.map(row => row[0] ? row[0].toString().trim() : '').filter(t => t!=='');
+            if(texts.length===0) { 
+                strip.classList.add('hidden'); 
+                return; 
+            }
+            let html = '';
+            texts.forEach(t => { html += `<span><i class="bi bi-megaphone-fill"></i> ${escapeHtml(t)}</span>`; });
+            tickerDiv.innerHTML = html;
+            strip.classList.remove('hidden');
+            const tickerWrap = document.querySelector('.ticker-wrap');
+            if(tickerWrap) tickerWrap.style.animation = 'none';
+            setTimeout(()=> { if(tickerWrap) tickerWrap.style.animation = 'tickerScroll 25s linear infinite'; }, 10);
+        } catch(e) { 
+            strip.classList.add('hidden'); 
+        }
+    }
+    
+    // Render TILES
+    function renderMobileTiles(menuData) {
+        const container = document.getElementById('mobileMenuGrid');
+        if(!container) return;
+        if(!menuData || menuData.length===0) {
+            container.innerHTML = '<div class="empty-state"><i class="bi bi-info-circle"></i> No applications found</div>';
+            return;
+        }
+        let allLinks = [];
+        for(let main of menuData) {
+            for(let sub of main.subMenus) {
+                for(let link of sub.items) {
+                    allLinks.push({
+                        title: link.title,
+                        url: link.url,
+                        iconHtml: link.icon || '<i class="bi bi-link-45deg"></i>',
+                        mainCat: main.title,
+                        subCat: sub.title
+                    });
+                }
+            }
+        }
+        if(allLinks.length === 0) {
+            container.innerHTML = '<div class="empty-state"><i class="bi bi-diagram-3"></i> No links in menu</div>';
+            return;
+        }
+        let tileHtml = '';
+        allLinks.forEach(link => {
+            tileHtml += `
+                <div class="menu-tile" data-url="${escapeHtml(link.url)}" data-title="${escapeHtml(link.title)}">
+                    <div class="tile-icon">${link.iconHtml}</div>
+                    <div class="tile-label">${escapeHtml(link.title)}</div>
+                </div>
+            `;
+        });
+        container.innerHTML = tileHtml;
+        document.querySelectorAll('.menu-tile').forEach(tile => {
+            tile.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const url = tile.dataset.url;
+                const title = tile.dataset.title || 'Content';
+                openPopupIframe(url, title);
+            });
+        });
+    }
+    
+    // POPUP IFRAME
+    const iframeModal = document.getElementById('iframeModal');
+    const popupIframe = document.getElementById('popupIframe');
+    const modalTitle = document.getElementById('modalTitleText');
+    const iframeLoading = document.getElementById('iframeLoading');
+    
+    function openPopupIframe(url, title) {
+        if(!url) return;
+        modalTitle.innerText = title || 'Document';
+        iframeModal.style.display = 'flex';
+        iframeLoading.style.display = 'flex';
+        popupIframe.style.opacity = '0';
+        popupIframe.src = url;
+        popupIframe.onload = () => {
+            iframeLoading.style.display = 'none';
+            popupIframe.style.opacity = '1';
+        };
+        popupIframe.onerror = () => {
+            iframeLoading.innerHTML = '<div class="alert alert-danger m-3">Failed to load content</div>';
+            iframeLoading.style.display = 'flex';
+        };
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeIframePopup() {
+        iframeModal.style.display = 'none';
+        popupIframe.src = 'about:blank';
+        popupIframe.style.opacity = '0';
+        iframeLoading.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+    
+    // ========== LOGIN & SESSION MANAGEMENT (FIXED) ==========
+    
+    // Store user data in BOTH localStorage and sessionStorage (like index.html)
+    function storeUserSession(userData) {
+        const sessionData = {
+            username: userData.username,
+            loginTime: new Date().toISOString(),
+            menuSheet: userData.menuSheet
+        };
+        
+        // Store in both storage mechanisms for redundancy
+        localStorage.setItem('currentUser', JSON.stringify(sessionData));
+        sessionStorage.setItem('currentUser', JSON.stringify(sessionData));
+        
+        // Also store mobile-specific key
+        localStorage.setItem('mobileUser', JSON.stringify({ 
+            username: userData.username, 
+            menuSheet: userData.menuSheet, 
+            loginTime: Date.now() 
+        }));
+        
+        console.log('User session stored:', userData.username);
+    }
+    
+    // Clear user session
+    function clearUserSession() {
+        localStorage.removeItem('currentUser');
+        sessionStorage.removeItem('currentUser');
+        localStorage.removeItem('mobileUser');
+        sessionStorage.removeItem('mobileUser');
+        console.log('User session cleared');
+    }
+    
+    // Check existing session (improved version)
+    function checkExistingSession() {
+        // First try to get from localStorage (persists across browser restarts)
+        let storedUser = localStorage.getItem('currentUser');
+        
+        // If not found, try sessionStorage
+        if (!storedUser) {
+            storedUser = sessionStorage.getItem('currentUser');
+        }
+        
+        // If still not found, try mobileUser key
+        if (!storedUser) {
+            const mobileUser = localStorage.getItem('mobileUser');
+            if (mobileUser) {
+                try {
+                    const parsed = JSON.parse(mobileUser);
+                    if (parsed.username && parsed.menuSheet) {
+                        storedUser = JSON.stringify({
+                            username: parsed.username,
+                            menuSheet: parsed.menuSheet,
+                            loginTime: parsed.loginTime ? new Date(parsed.loginTime).toISOString() : new Date().toISOString()
+                        });
+                    }
+                } catch(e) {}
+            }
+        }
+        
+        if (storedUser) {
+            try {
+                const userData = JSON.parse(storedUser);
+                const loginTime = new Date(userData.loginTime);
+                const now = new Date();
+                const hoursSinceLogin = (now - loginTime) / (1000 * 60 * 60);
+                
+                // Session expires after 24 hours
+                if (hoursSinceLogin <= 24) {
+                    currentUserData = {
+                        username: userData.username,
+                        menuSheet: userData.menuSheet
+                    };
+                    
+                    // Refresh the stored session
+                    storeUserSession(currentUserData);
+                    
+                    console.log('Valid session found for user:', userData.username);
+                    return true;
+                } else {
+                    console.log('Session expired (24h limit)');
+                    clearUserSession();
+                }
+            } catch(e) {
+                console.error('Error parsing stored user:', e);
+                clearUserSession();
+            }
+        }
+        return false;
+    }
+    
+    // Login validation
+    async function validateMobileLogin(username, password) {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${LOGIN_SHEET}!B:D?key=${API_KEY}`;
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            if(data.error) return null;
+            if(data.values) {
+                for(let row of data.values) {
+                    if(row.length >= 2) {
+                        const storedUser = row[0], storedPass = row[1];
+                        if(username === storedUser && password === storedPass) {
+                            const menuSheet = (row.length >= 3 && row[2]) ? row[2].trim() : 'Menu';
+                            return { username: storedUser, menuSheet: menuSheet };
+                        }
+                    }
+                }
+            }
+            return null;
+        } catch(e) { 
+            console.error('Login validation error:', e);
+            return null; 
+        }
+    }
+    
+    // Handle login
+    async function handleMobileLogin() {
+        const username = document.getElementById('mobileUsername').value.trim();
+        const password = document.getElementById('mobilePassword').value.trim();
+        const errDiv = document.getElementById('loginErrorMsg');
+        const loginBtn = document.getElementById('mobileLoginBtn');
+        const spinner = document.getElementById('loginSpinner');
+        const btnText = document.getElementById('loginBtnText');
+        
+        if(!username || !password) { 
+            showLoginErr('Enter username & password'); 
+            return; 
+        }
+        
+        errDiv.style.display = 'none';
+        loginBtn.disabled = true;
+        spinner.classList.remove('d-none');
+        btnText.innerText = 'Verifying...';
+        
+        try {
+            const user = await validateMobileLogin(username, password);
+            
+            if(user) {
+                currentUserData = user;
+                
+                // Store session data
+                storeUserSession(user);
+                
+                // Hide login with animation
+                const loginOverlay = document.getElementById('loginOverlay');
+                loginOverlay.style.opacity = '0';
+                
+                setTimeout(async () => {
+                    loginOverlay.style.display = 'none';
+                    document.getElementById('dashboardMain').style.display = 'block';
+                    document.body.style.overflow = 'auto';
+                    
+                    // Load menu data
+                    const menuData = await loadMenusAndIcons(user.menuSheet);
+                    menuStructure = menuData;
+                    renderMobileTiles(menuData);
+                    displayUserOnTop(user.username);
+                    loadFlashNews();
+                    
+                    console.log('Login successful, dashboard loaded');
+                }, 300);
+            } else {
+                loginBtn.disabled = false;
+                spinner.classList.add('d-none');
+                btnText.innerText = 'Sign in';
+                showLoginErr('Invalid username or password');
+                document.getElementById('mobilePassword').value = '';
+                document.getElementById('mobileUsername').focus();
+            }
+        } catch(error) {
+            console.error('Login error:', error);
+            loginBtn.disabled = false;
+            spinner.classList.add('d-none');
+            btnText.innerText = 'Sign in';
+            showLoginErr('Unable to verify credentials. Please try again.');
+        }
+    }
+    
+    function showLoginErr(msg) {
+        const errDiv = document.getElementById('loginErrorMsg');
+        errDiv.querySelector('span').innerText = msg;
+        errDiv.style.display = 'flex';
+        setTimeout(()=> errDiv.style.display = 'none', 3000);
+    }
+    
+    function displayUserOnTop(username) {
+        const shortSpan = document.getElementById('userShortName');
+        if(shortSpan) {
+            const displayName = username.split('@')[0].substring(0, 12);
+            shortSpan.innerText = displayName;
+            shortSpan.title = username;
+        }
+    }
+    
+    // Logout function
+    function logoutMobile() {
+        clearUserSession();
+        currentUserData = null;
+        
+        const dashboardMain = document.getElementById('dashboardMain');
+        const loginOverlay = document.getElementById('loginOverlay');
+        const iframeModal = document.getElementById('iframeModal');
+        
+        dashboardMain.style.display = 'none';
+        loginOverlay.style.display = 'flex';
+        loginOverlay.style.opacity = '1';
+        
+        // Clear input fields
+        document.getElementById('mobileUsername').value = '';
+        document.getElementById('mobilePassword').value = '';
+        
+        // Close iframe modal if open
+        if(iframeModal) iframeModal.style.display = 'none';
+        
+        document.body.style.overflow = '';
+        
+        // Focus on username field
+        setTimeout(() => {
+            document.getElementById('mobileUsername').focus();
+        }, 100);
+        
+        console.log('User logged out');
+    }
+    
+    // ========== INITIALIZATION ==========
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM loaded, initializing app...');
+        
+        // Set up event listeners
+        const loginBtn = document.getElementById('mobileLoginBtn');
+        if(loginBtn) loginBtn.addEventListener('click', handleMobileLogin);
+        
+        const logoutBtn = document.getElementById('mobileLogoutBtn');
+        if(logoutBtn) logoutBtn.addEventListener('click', logoutMobile);
+        
+        const closeBtn = document.getElementById('closeIframeBtn');
+        if(closeBtn) closeBtn.addEventListener('click', closeIframePopup);
+        
+        // Enter key handlers
+        const pwdField = document.getElementById('mobilePassword');
+        if(pwdField) {
+            pwdField.addEventListener('keypress', (e) => { 
+                if(e.key === 'Enter') handleMobileLogin(); 
+            });
+        }
+        
+        const userField = document.getElementById('mobileUsername');
+        if(userField) {
+            userField.addEventListener('keypress', (e) => { 
+                if(e.key === 'Enter') pwdField.focus(); 
+            });
+        }
+        
+        // Input handlers to hide error
+        const usernameInput = document.getElementById('mobileUsername');
+        const passwordInput = document.getElementById('mobilePassword');
+        if(usernameInput) usernameInput.addEventListener('input', () => hideLoginError());
+        if(passwordInput) passwordInput.addEventListener('input', () => hideLoginError());
+        
+        function hideLoginError() {
+            const errDiv = document.getElementById('loginErrorMsg');
+            if(errDiv) errDiv.style.display = 'none';
+        }
+        
+        // Check for existing session
+        const hasSession = checkExistingSession();
+        
+        if(hasSession && currentUserData) {
+            console.log('Restoring session for:', currentUserData.username);
+            // Show dashboard immediately
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('dashboardMain').style.display = 'block';
+            
+            // Load menu data
+            loadMenusAndIcons(currentUserData.menuSheet).then(menu => {
+                menuStructure = menu;
+                renderMobileTiles(menu);
+                displayUserOnTop(currentUserData.username);
+                loadFlashNews();
+                console.log('Session restored successfully');
+            }).catch(err => {
+                console.error('Failed to restore session menu:', err);
+                logoutMobile();
+            });
+        } else {
+            console.log('No valid session found, showing login screen');
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('dashboardMain').style.display = 'none';
+            setTimeout(() => {
+                document.getElementById('mobileUsername').focus();
+            }, 100);
+        }
+    });
+    
+    // Service worker registration
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('mobile-sw.js')
+                .then(registration => {
+                    console.log('ServiceWorker registered successfully:', registration.scope);
+                })
+                .catch(err => console.log('ServiceWorker registration failed:', err));
+        });
+    }
+</script>
+
+<style>
+    /* mobile-style.css equivalent - same as before */
+    * { margin:0; padding:0; box-sizing: border-box; }
+    body.mobile-app { font-family: 'Inter', 'Noto Sans Malayalam', system-ui, -apple-system, sans-serif; background: #f1f5f9; overflow-x: hidden; height: 100vh; }
+    .light-theme { --bg-surface: #ffffff; --bg-soft: #f8fafc; --primary: #0f3b6a; --primary-dark: #0457a4; --text-primary: #0f172a; --text-secondary: #334155; --border: #e2e8f0; --card-shadow: 0 8px 20px rgba(0,0,0,0.03), 0 2px 6px rgba(0,0,0,0.05); }
+    /* LOGIN */
+    .login-overlay { position: fixed; inset:0; background: linear-gradient(145deg, #eef2ff 0%, #d9e2ef 100%); display: flex; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(2px); transition: opacity 0.3s;}
+    .login-card { width: 88%; max-width: 360px; background: white; border-radius: 36px; box-shadow: 0 25px 45px -12px rgba(0,0,0,0.2); overflow: hidden; animation: fadeUp 0.4s ease;}
+    .login-header { text-align: center; padding: 28px 20px 10px; background: white; }
+    .login-logo { width: 70px; height: 70px; margin: 0 auto 12px; background: #0f3b6a; border-radius: 22px; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 12px rgba(4,87,164,0.2);}
+    .logo-img { width: 55px; height: 55px; object-fit: contain; border-radius: 16px;}
+    .login-header h2 { font-size: 1.7rem; font-weight: 700; color: #0f3b6a; margin: 0;}
+    .login-body { padding: 20px 24px 32px; }
+    .form-control { border-radius: 44px; border: 1px solid #cbd5e1; padding: 12px 20px; background: #fefefe; font-size: 1rem;}
+    .btn-primary { background: #0f3b6a; border: none; border-radius: 44px; padding: 12px; font-weight: 600; letter-spacing: 0.3px; cursor: pointer;}
+    .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+    .login-error { background: #fee2e2; color: #b91c1c; border-radius: 60px; padding: 8px 16px; font-size: 0.85rem; gap:8px; margin-bottom: 16px; display: flex; align-items: center;}
+    /* DASHBOARD */
+    .dashboard-main { display: flex; flex-direction: column; height: 100vh; background: #f1f5f9; overflow-y: auto; }
+    .mobile-top-bar { background: white; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; position: sticky; top:0; z-index: 10; box-shadow: 0 1px 3px rgba(0,0,0,0.03);}
+    .brand-area { display: flex; align-items: center; gap: 10px; }
+    .mini-logo { width: 38px; height: 38px; border-radius: 12px; background: #0f3b6a; padding: 4px; object-fit: contain;}
+    .brand-titles h1 { font-size: 1.2rem; font-weight: 700; margin:0; color: #0f172a; line-height:1.2;}
+    .brand-titles span { font-size: 0.6rem; color: #5b6e8c;}
+    .top-actions { display: flex; align-items: center; gap: 12px;}
+    .user-badge { background: #eef2ff; padding: 5px 10px; border-radius: 40px; display: flex; align-items: center; gap: 6px; font-weight: 500; font-size:0.8rem;}
+    .logout-mobile-btn { background: none; border: none; font-size: 1.4rem; color: #4b5563; cursor: pointer; padding: 5px;}
+    /* Flash news */
+    .flash-strip { background: #0f3b6a; color: white; overflow: hidden; white-space: nowrap; padding: 8px 0; font-size: 0.75rem; border-radius: 0; margin-bottom: 6px;}
+    .flash-strip.hidden { display: none; }
+    .ticker-wrap { display: inline-block; white-space: nowrap; padding-left: 100%; animation: tickerScroll 20s linear infinite; }
+    .ticker-content span { display: inline-block; margin-right: 36px; }
+    .ticker-content i { margin-right: 8px; }
+    @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+    /* Menu Grid Tiles */
+    .menu-grid-container { flex:1; padding: 16px 14px; }
+    .section-header { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: #2c3e66; margin: 8px 0 12px 6px; display: flex; align-items: center; gap: 8px;}
+    .tiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 16px 10px; margin-bottom: 20px; }
+    .menu-tile { background: white; border-radius: 20px; display: flex; flex-direction: column; align-items: center; padding: 16px 6px 12px; transition: all 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #edf2f7; cursor: pointer;}
+    .menu-tile:active { transform: scale(0.97); background: #fef9e6;}
+    .tile-icon { font-size: 2.2rem; color: #0f3b6a; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; min-height: 52px;}
+    .tile-icon i { font-size: 2.2rem; }
+    .tile-label { font-size: 0.7rem; font-weight: 500; text-align: center; color: #1e293b; word-break: break-word; line-height: 1.3; max-width: 100%; }
+    .app-footer { text-align: center; font-size: 0.65rem; padding: 12px; color: #6c757d; border-top: 1px solid #e2e8f0; margin-top: 12px;}
+    /* IFRAME MODAL */
+    .iframe-modal { position: fixed; top:0; left:0; width:100%; height:100%; background: white; z-index: 20000; display: flex; flex-direction: column; }
+    .modal-header-bar { background: #0f3b6a; color: white; padding: 14px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e4a76; }
+    .back-to-menu-btn { background: rgba(255,255,255,0.2); border: none; border-radius: 40px; padding: 8px 16px; color: white; font-weight: 500; display: flex; align-items: center; gap: 6px; font-size: 0.9rem; cursor: pointer;}
+    .modal-title-text { font-weight: 600; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 50vw;}
+    .modal-iframe { width: 100%; flex: 1; border: none; background: #fff; transition: opacity 0.2s;}
+    .iframe-loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 12px 24px; border-radius: 100px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; z-index: 10;}
+    .empty-state { text-align: center; padding: 48px 16px; color: #6c757d; background: white; border-radius: 32px;}
+    .loading-spinner { text-align: center; padding: 20px; color: #6c757d; }
+    /* Responsive */
+    @media (max-width: 480px) { .tiles-grid { grid-template-columns: repeat(3, 1fr); } .menu-tile { padding: 12px 4px; } .tile-icon i { font-size: 1.8rem; } .tile-label { font-size: 0.65rem; } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: translateY(0);} }
+    ::-webkit-scrollbar { width: 4px; }
+</style>
+</body>
+</html>

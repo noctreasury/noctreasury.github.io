@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Power Down Hours Report | Treasury Downtime Analysis</title>
+    
+    <!-- LOCAL CSS -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/flatpickr.min.css">
+    <link rel="stylesheet" href="../css/sweetalert2.min.css">
+    
+    <style>
+        :root {
+            --primary: #0f5b9c;
+            --primary-dark: #1a4b7a;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --border: #e9ecef;
+        }
+        
+        * { box-sizing: border-box; }
+        body {
+            background: #eef2f7;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 20px;
+        }
+        .report-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        .report-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px -8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .page-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .page-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .page-header-left i {
+            font-size: 1.5rem;
+            background: rgba(255,255,255,0.15);
+            padding: 8px;
+            border-radius: 12px;
+        }
+        .page-header-left h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        .page-header-left p {
+            margin: 2px 0 0;
+            opacity: 0.7;
+            font-size: 0.7rem;
+        }
+        .export-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-export {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            border-radius: 30px;
+            padding: 5px 14px;
+            font-weight: 500;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-export:hover {
+            background: rgba(255,255,255,0.3);
+            color: white;
+        }
+        .filter-section {
+            padding: 12px 20px;
+            background: white;
+            border-bottom: 1px solid var(--border);
+        }
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            padding: 5px 10px;
+            font-size: 0.85rem;
+            height: 32px;
+        }
+        .time-input {
+            font-family: monospace;
+        }
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border: none;
+            padding: 5px 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            height: 32px;
+            color: white;
+        }
+        .btn-primary-custom:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(15, 91, 156, 0.3);
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: #f8f9fa;
+            padding: 3px 10px;
+            border-radius: 20px;
+            border: 1px solid #e9ecef;
+        }
+        .filter-item i {
+            font-size: 0.8rem;
+            color: var(--primary);
+        }
+        .filter-item input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            margin: 0;
+        }
+        .filter-item .form-check-input {
+            margin-top: 0;
+        }
+        .filter-item select, .filter-item input {
+            border: none;
+            background: transparent;
+            padding: 2px 5px;
+            width: auto;
+            font-size: 0.8rem;
+        }
+        .filter-item select:focus, .filter-item input:focus {
+            outline: none;
+            box-shadow: none;
+        }
+        .radio-group-inline {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .radio-group-inline .form-check {
+            margin: 0;
+            padding-left: 18px;
+        }
+        .radio-group-inline .form-check-label {
+            font-size: 0.75rem;
+            margin-left: 2px;
+        }
+        .form-check-input {
+            width: 12px;
+            height: 12px;
+            margin-top: 2px;
+        }
+        .summary-stats {
+            background: linear-gradient(135deg, #e8f0fe 0%, #dbeafe 100%);
+            border-radius: 12px;
+            padding: 12px 20px;
+            margin: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .stat-box {
+            text-align: center;
+            flex: 1;
+            min-width: 100px;
+        }
+        .stat-icon {
+            width: 32px;
+            height: 32px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 5px;
+            color: var(--primary);
+            font-size: 1rem;
+        }
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            line-height: 1.2;
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            color: #64748b;
+        }
+        .total-footer {
+            background: var(--light);
+            border-radius: 12px;
+            padding: 10px 20px;
+            margin: 12px 20px;
+            border-left: 3px solid var(--danger);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .total-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .total-time {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--danger);
+            font-family: monospace;
+        }
+        .table-container {
+            padding: 12px 20px;
+        }
+        .dataTables_wrapper .dataTables_filter input {
+            border-radius: 20px;
+            padding: 4px 10px;
+            height: 30px;
+            font-size: 0.8rem;
+        }
+        .dataTables_info, .dataTables_paginate {
+            font-size: 0.8rem;
+        }
+        .badge-down, .badge-up, .badge-ongoing {
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+        }
+        .datetime-display {
+            font-family: monospace;
+            font-size: 0.75rem;
+        }
+        .duration-badge {
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        .loading-content {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 16px;
+            text-align: center;
+        }
+        .loading-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e2e8f0;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .filter-disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        @media (max-width: 992px) {
+            .filter-group { flex-direction: column; align-items: stretch; }
+            .filter-item { justify-content: space-between; }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <div class="report-card">
+            <div class="page-header">
+                <div class="page-header-left">
+                    <i class="bi bi-graph-up"></i>
+                    <div>
+                        <h1>Power Down Hours Report Advanced</h1>
+                  
+                    </div>
+                </div>
+                <div class="export-buttons">
+                    <button id="exportExcelBtn" class="btn-export"><i class="bi bi-file-earmark-spreadsheet"></i> Excel</button>
+                    <button id="exportCsvBtn" class="btn-export"><i class="bi bi-filetype-csv"></i> CSV</button>
+                    <button id="exportPdfBtn" class="btn-export"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <div class="filter-group">
+                    <!-- Date Range -->
+                    <div class="filter-item">
+                        <i class="bi bi-calendar"></i>
+                        <input type="text" id="fromDate" class="flatpickr-from" placeholder="From" style="width:95px">
+                        <span>-</span>
+                        <input type="text" id="toDate" class="flatpickr-to" placeholder="To" style="width:95px">
+                    </div>
+                    
+                    <!-- Time Filter with Enable Checkbox -->
+                    <div class="filter-item">
+                        <input type="checkbox" id="enableTimeFilter">
+                        <i class="bi bi-clock"></i>
+                        <input type="time" id="fromTime" class="time-input" style="width:85px" value="10:00:00" disabled>
+                        <span>-</span>
+                        <input type="time" id="toTime" class="time-input" style="width:85px" value="17:15:00" disabled>
+                    </div>
+                    
+                    <!-- Confirm Filter with Enable Checkbox -->
+                    <div class="filter-item">
+                        <input type="checkbox" id="enableConfirmFilter">
+                        <i class="bi bi-check2-square"></i>
+                        <select id="confirmSelect" disabled style="width:100px">
+                            <option value="all">All</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="notconfirmed">Not Confirmed</option>
+                        </select>
+                    </div>
+                    
+                    <!-- View Button -->
+                    <button id="generateReportBtn" class="btn-primary-custom"><i class="bi bi-search"></i> View</button>
+                    
+                    <!-- Month Shortcuts -->
+                    <button id="currentMonthBtn" class="btn btn-outline-secondary btn-sm" style="height:32px; font-size:0.75rem"><i class="bi bi-calendar-month"></i> This Month</button>
+                    <button id="previousMonthBtn" class="btn btn-outline-secondary btn-sm" style="height:32px; font-size:0.75rem"><i class="bi bi-calendar-minus"></i> Prev Month</button>
+                </div>
+            </div>
+            
+            <!-- Summary Statistics -->
+            <div id="summaryStats" style="display: none;">
+                <div class="summary-stats">
+                    <div class="stat-box">
+                        <div class="stat-icon"><i class="bi bi-building"></i></div>
+                        <div class="stat-value" id="totalTreasuries">0</div>
+                        <div class="stat-label">Treasuries</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                        <div class="stat-value" id="totalIncidents">0</div>
+                        <div class="stat-label">Incidents</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
+                        <div class="stat-value" id="totalDowntime">0h</div>
+                        <div class="stat-label">Downtime</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-icon"><i class="bi bi-hourglass"></i></div>
+                        <div class="stat-value" id="ongoingIncidents">0</div>
+                        <div class="stat-label">Ongoing</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Data Table -->
+            <div id="tableContainer" class="table-container">
+                <div class="table-responsive">
+                    <table id="downtimeTable" class="table table-striped table-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Treasury</th>
+                                <th>Down Time</th>
+                                <th>Up Time</th>
+                                <th>Status</th>
+                                <th>Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="6" class="text-center py-3">Select date range and click View</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Total Footer -->
+            <div id="totalFooter" style="display: none;">
+                <div class="total-footer">
+                    <div class="total-label">
+                        <i class="bi bi-hourglass-bottom"></i>
+                        <span>Total Downtime (Resolved Only)</span>
+                    </div>
+                    <div class="total-time" id="totalDuration">0 Days 0 Hours 0 Minutes</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- SCRIPTS -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/jquery.dataTables.min.js"></script>
+    <script src="../js/dataTables.bootstrap5.min.js"></script>
+    <script src="../js/flatpickr.min.js"></script>
+    <script src="../js/sweetalert2.all.min.js"></script>
+    <script src="../js/xlsx.full.min.js"></script>
+    <script src="../js/fileSaver.min.js"></script>
+    <script src="../js/jspdf.umd.min.js"></script>
+    <script src="../js/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        // ======================== CONFIGURATION ========================
+        const DATA_SHEET_ID = "1dHllRe0lHgpX4LAKIP-3abKBcSvBqlIOR0TaheG4aRc";
+        const DATA_SHEET_NAME = "Data";
+        const API_KEY = "AIzaSyBAuS3Brpsw5JOJnjNJii1UlFa7ClXf8d4";
+        
+        let flatpickrFrom, flatpickrTo;
+        let dataTable = null;
+        let currentEventsData = [];
+        
+        // ======================== UTILITY FUNCTIONS ========================
+        function parseDMY(dateStr) {
+            if (!dateStr) return null;
+            const parts = dateStr.split('/');
+            if (parts.length !== 3) return null;
+            return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]), 12, 0, 0);
+        }
+        
+        function parseDateTime(dateStr, timeStr) {
+            if (!dateStr || !timeStr) return null;
+            const dateParts = dateStr.split('/');
+            const timeParts = timeStr.split(':');
+            if (dateParts.length !== 3 || timeParts.length < 2) return null;
+            const year = parseInt(dateParts[2]);
+            const month = parseInt(dateParts[1]) - 1;
+            const day = parseInt(dateParts[0]);
+            const hours = parseInt(timeParts[0]);
+            const minutes = parseInt(timeParts[1]);
+            const seconds = timeParts[2] ? parseInt(timeParts[2]) : 0;
+            return new Date(year, month, day, hours, minutes, seconds);
+        }
+        
+        function getTimeInSeconds(dateTimeObj) {
+            if (!dateTimeObj || isNaN(dateTimeObj.getTime())) return null;
+            return dateTimeObj.getHours() * 3600 + dateTimeObj.getMinutes() * 60 + dateTimeObj.getSeconds();
+        }
+        
+        function isTimeInRange(downDateTime, fromTimeSec, toTimeSec) {
+            if (!downDateTime) return false;
+            const timeSec = getTimeInSeconds(downDateTime);
+            if (timeSec === null) return false;
+            return timeSec >= fromTimeSec && timeSec <= toTimeSec;
+        }
+        
+        function formatDuration(seconds) {
+            if (seconds < 0) seconds = 0;
+            if (seconds === 0) return "0 Seconds";
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            const parts = [];
+            if (days > 0) parts.push(`${days}d`);
+            if (hours > 0) parts.push(`${hours}h`);
+            if (minutes > 0) parts.push(`${minutes}m`);
+            if (secs > 0 || parts.length === 0) parts.push(`${secs}s`);
+            return parts.join(' ');
+        }
+        
+        function formatDurationShort(seconds) {
+            if (seconds < 0) seconds = 0;
+            if (seconds === 0) return "0h";
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            if (days > 0) return `${days}d ${hours}h`;
+            return `${hours}h`;
+        }
+
+        function showLoading(msg) {
+            if ($('#global-loading-overlay').length) return;
+            $('body').append(`<div id="global-loading-overlay" class="loading-overlay"><div class="loading-content"><div class="loading-spinner"></div><p style="margin:0">${msg}</p></div></div>`);
+        }
+        
+        function hideLoading() { $('#global-loading-overlay').remove(); }
+
+        // ======================== FETCH & PROCESS ========================
+        async function generateReport() {
+            const fromDateStr = $('#fromDate').val();
+            const toDateStr = $('#toDate').val();
+            
+            if (!fromDateStr || !toDateStr) {
+                Swal.fire({ icon: 'warning', title: 'Missing Dates', text: 'Please select both From and To dates', confirmButtonColor: '#0f5b9c', toast: true, timer: 2000 });
+                return;
+            }
+            
+            showLoading('Loading data...');
+            
+            const range = `${DATA_SHEET_NAME}!A:G`;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${DATA_SHEET_ID}/values/${range}?key=${API_KEY}`;
+            
+            try {
+                const resp = await fetch(url);
+                const data = await resp.json();
+                
+                if (!data.values || data.values.length < 2) {
+                    hideLoading();
+                    Swal.fire({ icon: 'info', title: 'No Data', text: 'No power data found', confirmButtonColor: '#0f5b9c' });
+                    return;
+                }
+                
+                const sheetRows = data.values;
+                const startIdx = (sheetRows[0][0] && sheetRows[0][0].toString().toLowerCase().includes("id")) ? 1 : 0;
+                const fromDateObj = parseDMY(fromDateStr);
+                const toDateObj = parseDMY(toDateStr);
+                
+                // Get filter settings
+                const enableTime = $('#enableTimeFilter').is(':checked');
+                const enableConfirm = $('#enableConfirmFilter').is(':checked');
+                const confirmValue = $('#confirmSelect').val();
+                const fromTimeStr = $('#fromTime').val() || "10:00:00";
+                const toTimeStr = $('#toTime').val() || "17:15:00";
+                const fromTimeSec = (() => { const t = fromTimeStr.split(':'); return parseInt(t[0])*3600 + parseInt(t[1])*60 + parseInt(t[2]||0); })();
+                const toTimeSec = (() => { const t = toTimeStr.split(':'); return parseInt(t[0])*3600 + parseInt(t[1])*60 + parseInt(t[2]||0); })();
+                
+                let allRecords = [];
+                for (let i = startIdx; i < sheetRows.length; i++) {
+                    const row = sheetRows[i];
+                    if (row.length >= 6 && row[0]) {
+                        const recordDate = row[2] || "";
+                        const recordDateObj = parseDMY(recordDate);
+                        const confirmStatus = (row[6] || "").trim();
+                        
+                        let include = true;
+                        if (enableConfirm) {
+                            if (confirmValue === 'confirmed') include = (confirmStatus === "Yes");
+                            else if (confirmValue === 'notconfirmed') include = (confirmStatus === "");
+                        }
+                        
+                        if (recordDateObj && fromDateObj && toDateObj && recordDateObj >= fromDateObj && recordDateObj <= toDateObj && include) {
+                            allRecords.push({
+                                branch: row[1] || "", date: row[2] || "", time: row[3] || "",
+                                status: row[4] || "", timestampISO: row[5] || "", confirm: confirmStatus
+                            });
+                        }
+                    }
+                }
+                
+                allRecords.sort((a, b) => a.branch.localeCompare(b.branch) || (a.timestampISO || "").localeCompare(b.timestampISO || ""));
+                
+                const branchMap = new Map();
+                for (const record of allRecords) {
+                    if (!branchMap.has(record.branch)) branchMap.set(record.branch, []);
+                    branchMap.get(record.branch).push(record);
+                }
+                
+                let downtimeEvents = [];
+                let ongoingCount = 0;
+                
+                for (const [branch, records] of branchMap.entries()) {
+                    let i = 0;
+                    while (i < records.length) {
+                        const current = records[i];
+                        if (current.status === "Down") {
+                            const downDateTime = parseDateTime(current.date, current.time);
+                            
+                            // Apply time filter
+                            if (enableTime && !isTimeInRange(downDateTime, fromTimeSec, toTimeSec)) {
+                                i++;
+                                continue;
+                            }
+                            
+                            let j = i + 1;
+                            while (j < records.length && records[j].status !== "Up") j++;
+                            if (j < records.length && records[j].status === "Up") {
+                                const upEvent = records[j];
+                                const upDateTime = parseDateTime(upEvent.date, upEvent.time);
+                                let durationSeconds = (downDateTime && upDateTime) ? Math.max(0, Math.floor((upDateTime - downDateTime) / 1000)) : 0;
+                                downtimeEvents.push({
+                                    branch, downDateTime, downDate: current.date, downTime: current.time,
+                                    upDate: upEvent.date, upTime: upEvent.time, duration: durationSeconds,
+                                    status: "Resolved", hasValidPair: true
+                                });
+                                i = j + 1;
+                            } else {
+                                downtimeEvents.push({
+                                    branch, downDateTime, downDate: current.date, downTime: current.time,
+                                    upDate: "—", upTime: "Ongoing", duration: 0, status: "Ongoing", hasValidPair: false
+                                });
+                                ongoingCount++;
+                                i++;
+                            }
+                        } else { i++; }
+                    }
+                }
+                
+                downtimeEvents.sort((a, b) => (a.downDateTime||0) - (b.downDateTime||0));
+                currentEventsData = downtimeEvents;
+                
+                const totalDurationSeconds = downtimeEvents.filter(e => e.status === "Resolved").reduce((sum, e) => sum + e.duration, 0);
+                const uniqueTreasuries = new Set(downtimeEvents.map(e => e.branch)).size;
+                
+                $('#totalTreasuries').text(uniqueTreasuries);
+                $('#totalIncidents').text(downtimeEvents.length);
+                $('#totalDowntime').text(formatDurationShort(totalDurationSeconds));
+                $('#ongoingIncidents').text(ongoingCount);
+                $('#summaryStats').show();
+                $('#totalDuration').text(formatDuration(totalDurationSeconds));
+                $('#totalFooter').show();
+                
+                renderTable(downtimeEvents);
+                hideLoading();
+                
+                if (downtimeEvents.length === 0) {
+                    Swal.fire({ icon: 'info', title: 'No Events', text: 'No matching events found', confirmButtonColor: '#0f5b9c', toast: true, timer: 2000 });
+                }
+            } catch (err) {
+                console.error(err);
+                hideLoading();
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Could not fetch data', confirmButtonColor: '#0f5b9c' });
+            }
+        }
+
+        function renderTable(events) {
+            const tbody = $("#downtimeTable tbody");
+            if (dataTable) { dataTable.destroy(); tbody.empty(); }
+            if (events.length === 0) {
+                tbody.html('<td><td colspan="6" class="text-center py-3">No events found</td></tr>');
+                return;
+            }
+            let html = '';
+            for (let i = 0; i < events.length; i++) {
+                const e = events[i];
+                let statusBadge = e.status === "Resolved" ? `<span class="badge-up">✓ Resolved</span>` : `<span class="badge-ongoing">⚠ Ongoing</span>`;
+                let downDisplay = `<span class="badge-down" style="background:#ef4444; padding:2px 6px; border-radius:12px; font-size:0.65rem;">DOWN</span> ${e.downDate} ${e.downTime}`;
+                let upDisplay = e.upTime === "Ongoing" ? `<span class="badge-ongoing" style="background:#f59e0b; padding:2px 6px; border-radius:12px;">?</span> No restoration` : `<span class="badge-up" style="background:#10b981; padding:2px 6px; border-radius:12px;">UP</span> ${e.upDate} ${e.upTime}`;
+                let durationDisplay = e.status === "Resolved" ? `<span class="duration-badge">⏱ ${formatDuration(e.duration)}</span>` : `<span class="duration-badge">— Excluded</span>`;
+                html += `<tr><td>${i+1}</td><td><strong>${escapeHtml(e.branch)}</strong></td><td>${downDisplay}</td><td>${upDisplay}</td><td>${statusBadge}</td><td>${durationDisplay}</td></tr>`;
+            }
+            tbody.html(html);
+            dataTable = $("#downtimeTable").DataTable({ paging: false, searching: true, ordering: true, info: true, language: { search: "Filter:", info: "Showing _START_ to _END_ of _TOTAL_" } });
+        }
+
+        function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
+
+        // ======================== EXPORTS ========================
+        function getExportData() {
+            return currentEventsData.map((e, i) => ({
+                "#": i+1, "Treasury": e.branch, "Down Time": `${e.downDate} ${e.downTime}`,
+                "Up Time": e.upTime === "Ongoing" ? "No Up Record" : `${e.upDate} ${e.upTime}`,
+                "Status": e.status, "Duration": e.status === "Resolved" ? formatDuration(e.duration) : "Excluded"
+            }));
+        }
+        
+        function exportToExcel() {
+            if (!currentEventsData.length) { Swal.fire('No Data', '', 'info'); return; }
+            const ws = XLSX.utils.json_to_sheet(getExportData());
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Downtime_Report");
+            XLSX.writeFile(wb, `downtime_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+        
+        function exportToCSV() {
+            if (!currentEventsData.length) { Swal.fire('No Data', '', 'info'); return; }
+            const csv = XLSX.utils.sheet_to_csv(XLSX.utils.json_to_sheet(getExportData()));
+            saveAs(new Blob(["\uFEFF" + csv], {type:"text/csv;charset=utf-8"}), `downtime_${new Date().toISOString().slice(0,10)}.csv`);
+        }
+        
+        function exportToPDF() {
+            if (!currentEventsData.length) { Swal.fire('No Data', '', 'info'); return; }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm' });
+            const tableData = currentEventsData.map((e, i) => [i+1, e.branch, `${e.downDate} ${e.downTime}`, e.upTime==="Ongoing"?"Missing":`${e.upDate} ${e.upTime}`, e.status, e.status==="Resolved"?formatDuration(e.duration):"Excluded"]);
+            doc.setFontSize(12); doc.text("Power Down Report", 14, 12);
+            doc.setFontSize(8); doc.text(`Period: ${$('#fromDate').val()} to ${$('#toDate').val()}`, 14, 20);
+            doc.autoTable({ head: [["#","Treasury","Down Time","Up Time","Status","Duration"]], body: tableData, startY: 25, theme: 'striped', headStyles: { fillColor: [15,91,156] } });
+            doc.save(`downtime_${new Date().toISOString().slice(0,10)}.pdf`);
+        }
+
+        // ======================== DATE & FILTER CONTROLS ========================
+        function setDefaultDates() {
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            flatpickrFrom = flatpickr("#fromDate", { dateFormat: "d/m/Y", defaultDate: firstDay });
+            flatpickrTo = flatpickr("#toDate", { dateFormat: "d/m/Y", defaultDate: lastDay });
+        }
+        
+        function toggleTimeFilter() {
+            const enabled = $('#enableTimeFilter').is(':checked');
+            $('#fromTime, #toTime').prop('disabled', !enabled);
+        }
+        
+        function toggleConfirmFilter() {
+            const enabled = $('#enableConfirmFilter').is(':checked');
+            $('#confirmSelect').prop('disabled', !enabled);
+        }
+
+        $(document).ready(function() {
+            setDefaultDates();
+            $('#enableTimeFilter').on('change', toggleTimeFilter);
+            $('#enableConfirmFilter').on('change', toggleConfirmFilter);
+            $('#generateReportBtn, #currentMonthBtn, #previousMonthBtn').on('click', function() {
+                if (this.id === 'currentMonthBtn') {
+                    const now = new Date();
+                    flatpickrFrom.setDate(new Date(now.getFullYear(), now.getMonth(), 1));
+                    flatpickrTo.setDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+                } else if (this.id === 'previousMonthBtn') {
+                    const now = new Date();
+                    flatpickrFrom.setDate(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+                    flatpickrTo.setDate(new Date(now.getFullYear(), now.getMonth(), 0));
+                }
+                generateReport();
+            });
+            $('#exportExcelBtn, #exportCsvBtn, #exportPdfBtn').on('click', function() {
+                if (this.id === 'exportExcelBtn') exportToExcel();
+                else if (this.id === 'exportCsvBtn') exportToCSV();
+                else exportToPDF();
+            });
+            toggleTimeFilter();
+            toggleConfirmFilter();
+            setTimeout(() => generateReport(), 300);
+        });
+    </script>
+</body>
+</html>

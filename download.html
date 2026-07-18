@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download NOC Admin - Offline Version</title>
+    
+    <!-- LOCAL RESOURCES - Using existing project files -->
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <link rel="stylesheet" href="./css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="./css/font-awesome.min.css">
+    
+    <!-- Google Fonts (external but optional) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Favicon from your project -->
+    <link rel="icon" type="image/svg+xml" href="./images/favicon.svg">
+    <link rel="apple-touch-icon" href="./images/favicon-192x192.png">
+    
+    <style>
+        :root {
+            --primary: #0f5b9c;
+            --primary-dark: #1a4b7a;
+            --primary-light: #e8f0fe;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+            color: var(--dark);
+        }
+        
+        /* Animated Background Shapes */
+        .bg-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .shape {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 20s infinite ease-in-out;
+        }
+        
+        .shape:nth-child(1) {
+            width: 500px;
+            height: 500px;
+            top: -250px;
+            left: -250px;
+            animation-delay: 0s;
+        }
+        
+        .shape:nth-child(2) {
+            width: 400px;
+            height: 400px;
+            bottom: -200px;
+            right: -200px;
+            animation-delay: -5s;
+        }
+        
+        .shape:nth-child(3) {
+            width: 300px;
+            height: 300px;
+            top: 30%;
+            right: 10%;
+            animation-delay: -10s;
+        }
+        
+        .shape:nth-child(4) {
+            width: 200px;
+            height: 200px;
+            bottom: 20%;
+            left: 15%;
+            animation-delay: -15s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(50px, 50px) rotate(90deg); }
+            50% { transform: translate(0, 100px) rotate(180deg); }
+            75% { transform: translate(-50px, 50px) rotate(270deg); }
+        }
+        
+        /* Main Container */
+        .download-container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 1200px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 40px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            animation: slideUp 0.8s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Header Section */
+        .download-header {
+            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .download-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .logo-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .logo-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .logo-text {
+            text-align: left;
+        }
+        
+        .logo-text h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: white;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .logo-text p {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin: 5px 0 0;
+        }
+        
+        .version-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 20px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 500;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(5px);
+        }
+        
+        /* Content Section */
+        .download-content {
+            padding: 50px;
+            background: white;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .info-card {
+            background: #f8fafc;
+            border-radius: 24px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .info-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #0f5b9c, #1a4b7a);
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+        
+        .info-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .info-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(15, 91, 156, 0.15);
+        }
+        
+        .info-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            color: white;
+            font-size: 2rem;
+        }
+        
+        .info-card h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+        
+        .info-card p {
+            color: #64748b;
+            margin: 0;
+            font-size: 0.95rem;
+        }
+        
+        .info-card .badge {
+            background: #e8f0fe;
+            color: #0f5b9c;
+            padding: 5px 15px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-top: 15px;
+            display: inline-block;
+        }
+        
+        /* Features Section */
+        .features-title {
+            text-align: center;
+            margin: 40px 0 30px;
+        }
+        
+        .features-title h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+        
+        .features-title p {
+            color: #64748b;
+            font-size: 1.1rem;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .feature-item {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid #e9ecef;
+            transition: all 0.3s;
+        }
+        
+        .feature-item:hover {
+            background: #e8f0fe;
+            border-color: #0f5b9c;
+            transform: translateX(5px);
+        }
+        
+        .feature-icon {
+            width: 45px;
+            height: 45px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0f5b9c;
+            font-size: 1.3rem;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .feature-item span {
+            font-weight: 500;
+            color: #1e293b;
+        }
+        
+        /* Download Card */
+        .download-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+            border-radius: 30px;
+            padding: 40px;
+            text-align: center;
+            border: 2px dashed #0f5b9c;
+            margin: 40px 0;
+        }
+        
+        .download-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            color: white;
+            font-size: 3rem;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        
+        .download-card h3 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 15px;
+        }
+        
+        .download-card p {
+            color: #64748b;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+        
+        .file-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .file-info-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 10px 25px;
+            border-radius: 40px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .file-info-item i {
+            color: #0f5b9c;
+            font-size: 1.2rem;
+        }
+        
+        .btn-download {
+            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+            color: white;
+            border: none;
+            padding: 18px 60px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 25px rgba(15, 91, 156, 0.4);
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-download::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .btn-download:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn-download:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(15, 91, 156, 0.6);
+        }
+        
+        .btn-download i {
+            font-size: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .btn-download span {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .requirements {
+            margin-top: 30px;
+            padding: 20px;
+            background: #fff3cd;
+            border-radius: 16px;
+            color: #856404;
+            display: inline-block;
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .requirements i {
+            margin-right: 10px;
+            color: #f59e0b;
+        }
+        
+        /* Footer */
+        .download-footer {
+            text-align: center;
+            padding: 30px;
+            background: #f8fafc;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .footer-links {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .footer-links a {
+            color: #64748b;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: color 0.3s;
+        }
+        
+        .footer-links a:hover {
+            color: #0f5b9c;
+        }
+        
+        .copyright {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        
+        /* Alert Messages */
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 9999;
+            animation: slideInRight 0.3s ease-out;
+            border-left: 4px solid;
+            max-width: 400px;
+        }
+        
+        .alert.success {
+            border-left-color: #10b981;
+        }
+        
+        .alert.error {
+            border-left-color: #ef4444;
+        }
+        
+        .alert.warning {
+            border-left-color: #f59e0b;
+        }
+        
+        .alert i {
+            font-size: 1.5rem;
+        }
+        
+        .alert.success i {
+            color: #10b981;
+        }
+        
+        .alert.error i {
+            color: #ef4444;
+        }
+        
+        .alert.warning i {
+            color: #f59e0b;
+        }
+        
+        .alert-content {
+            flex: 1;
+        }
+        
+        .alert-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .alert-message {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+        
+        .close-alert {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #94a3b8;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .download-header { padding: 30px; }
+            .logo-wrapper { flex-direction: column; text-align: center; }
+            .logo-text { text-align: center; }
+            .logo-text h1 { font-size: 2rem; }
+            .download-content { padding: 30px; }
+            .info-grid { grid-template-columns: 1fr; }
+            .features-grid { grid-template-columns: 1fr; }
+            .btn-download { padding: 15px 40px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-shapes">
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+    
+    <!-- Alert Container -->
+    <div id="alertContainer"></div>
+
+    <!-- Main Container -->
+    <div class="download-container">
+        <!-- Header -->
+        <div class="download-header">
+            <div class="logo-wrapper">
+                <div class="logo-icon">
+                    <i class="bi bi-compass"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>NOC Admin</h1>
+                    <p>Network Operations Center</p>
+                </div>
+            </div>
+<!--
+            <div class="version-badge">
+                <i class="bi bi-tag me-2"></i>Version 2.0.0 · Offline Ready
+            </div> -->
+        </div>
+        
+        <!-- Content -->
+        <div class="download-content">
+            <!-- Info Cards 
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="info-icon">
+                        <i class="bi bi-hdd-stack"></i>
+                    </div>
+                    <h3>Complete Package</h3>
+                    <p>All CSS, JS, fonts and images included</p>
+                    <div class="badge">156 MB</div>
+                </div>
+                
+                <div class="info-card">
+                    <div class="info-icon">
+                        <i class="bi bi-plug"></i>
+                    </div>
+                    <h3>100% Offline</h3>
+                    <p>No internet connection required after download</p>
+                    <div class="badge">✓ Ready</div>
+                </div>
+                
+                <div class="info-card">
+                    <div class="info-icon">
+                        <i class="bi bi-window-sidebar"></i>
+                    </div>
+                    <h3>Multiple Modules</h3>
+                    <p>SD-WAN, MPLS, UPS, Admin Contacts</p>
+                    <div class="badge">6+ Pages</div>
+                </div>
+                
+                <div class="info-card">
+                    <div class="info-icon">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <h3>PWA Enabled</h3>
+                    <p>Install as app on desktop & mobile</p>
+                    <div class="badge">✓ Supported</div>
+                </div>
+            </div> -->
+            
+            <!-- Features Title -->
+            <div class="features-title">
+                <h2>What's Inside</h2>
+                <p>Complete NOC management solution</p>
+            </div>
+            
+            <!-- Features Grid -->
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="bi bi-speedometer2"></i></div>
+                    <span>SD-WAN Dashboard</span>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="bi bi-diagram-3"></i></div>
+                    <span>MPLS District View</span>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="bi bi-building"></i></div>
+                    <span>Treasury Contacts</span>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="bi bi-battery-charging"></i></div>
+                    <span>UPS Asset Management</span>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="bi bi-person-gear"></i></div>
+                    <span>Admin Updation</span>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="bi bi-pie-chart"></i></div>
+                    <span>Live Charts</span>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="bi bi-file-earmark-excel"></i></div>
+                    <span>Export to Excel/PDF</span>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="bi bi-moon-stars"></i></div>
+                    <span>Dark/Light Theme</span>
+                </div>
+            </div>
+            
+            <!-- Download Card -->
+            <div class="download-card">
+                <div class="download-icon">
+                    <i class="bi bi-cloud-download"></i>
+                </div>
+                
+                <h3>Ready to Download?</h3>
+                <p>Get the complete offline version of NOC Admin</p>
+                
+                <div class="file-info">
+                    <div class="file-info-item">
+                        <i class="bi bi-file-zip"></i>
+                        <span>ZIP Archive</span>
+                    </div>
+                    <div class="file-info-item">
+                        <i class="bi bi-hdd"></i>
+                        <span>2.5 MB</span>
+                    </div>
+                    <div class="file-info-item">
+                        <i class="bi bi-calendar"></i>
+                        <span>Updated: Mar 2025</span>
+                    </div>
+                </div>
+                
+                <!-- Download Button - UPDATE THIS LINK WITH YOUR PUBLIC DOWNLOAD URL -->
+                <button class="btn-download" id="downloadBtn" data-download-url="https://codeload.github.com/keralatreasury/network/zip/refs/heads/main">
+                    <i class="bi bi-download"></i>
+                    <span>Download Now</span>
+                </button>
+                
+                <div class="requirements">
+                    <i class="bi bi-info-circle"></i>
+                    Extract the ZIP file and open <strong>NOC_Admin_Installer.batch</strong> (for WINDOWS PC) and allow "RUN" will set an access link on Desktop.
+                </div>
+            </div>
+            
+            <!-- System Requirements 
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center gap-3 p-3">
+                        <i class="bi bi-windows fs-1" style="color: #0f5b9c;"></i>
+                        <div>
+                            <h6 class="mb-1 fw-bold">Windows</h6>
+                            <small class="text-muted">7, 8, 10, 11</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center gap-3 p-3">
+                        <i class="bi bi-apple fs-1" style="color: #0f5b9c;"></i>
+                        <div>
+                            <h6 class="mb-1 fw-bold">macOS</h6>
+                            <small class="text-muted">10.13+</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center gap-3 p-3">
+                        <i class="bi bi-browser-chrome fs-1" style="color: #0f5b9c;"></i>
+                        <div>
+                            <h6 class="mb-1 fw-bold">Browsers</h6>
+                            <small class="text-muted">Chrome, Firefox, Edge, Safari</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center gap-3 p-3">
+                        <i class="bi bi-phone fs-1" style="color: #0f5b9c;"></i>
+                        <div>
+                            <h6 class="mb-1 fw-bold">Mobile</h6>
+                            <small class="text-muted">iOS 12+, Android 8+</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div> -->
+        
+        <!-- Footer 
+        <div class="download-footer">
+            <div class="footer-links">
+                <a href="#"><i class="bi bi-github"></i> GitHub</a>
+                <a href="#"><i class="bi bi-file-text"></i> Documentation</a>
+                <a href="#"><i class="bi bi-envelope"></i> Support</a>
+                <a href="#"><i class="bi bi-shield-lock"></i> Privacy</a>
+            </div>
+            <div class="copyright">
+                <i class="bi bi-c-circle me-1"></i> 2025 NOC Admin. All rights reserved.
+            </div>
+        </div>
+    </div> -->
+
+    <!-- jQuery from local -->
+    <script src="./js/jquery.min.js"></script>
+    <!-- Bootstrap JS from local -->
+    <script src="./js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Show alert function
+            function showAlert(type, title, message) {
+                const alertHtml = `
+                    <div class="alert ${type}" id="alertMessage">
+                        <i class="bi ${type === 'success' ? 'bi-check-circle-fill' : type === 'error' ? 'bi-exclamation-triangle-fill' : 'bi-exclamation-circle-fill'}"></i>
+                        <div class="alert-content">
+                            <div class="alert-title">${title}</div>
+                            <div class="alert-message">${message}</div>
+                        </div>
+                        <button class="close-alert" onclick="this.parentElement.remove()">&times;</button>
+                    </div>
+                `;
+                
+                $('#alertContainer').html(alertHtml);
+                
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    $('#alertMessage').fadeOut(500, function() {
+                        $(this).remove();
+                    });
+                }, 5000);
+            }
+            
+            // Download button click handler
+            $('#downloadBtn').on('click', function() {
+                const downloadUrl = $(this).data('download-url');
+                
+                // Check if download URL is placeholder
+                if (downloadUrl === 'YOUR_PUBLIC_DOWNLOAD_LINK_HERE') {
+                    showAlert('warning', 'Download Link Not Configured', 
+                        'Please replace "YOUR_PUBLIC_DOWNLOAD_LINK_HERE" with your actual download URL in the button\'s data-download-url attribute.');
+                    return;
+                }
+                
+                // Validate URL
+                try {
+                    new URL(downloadUrl);
+                    
+                    // Show loading state
+                    const $btn = $(this);
+                    $btn.prop('disabled', true);
+                    const originalHtml = $btn.html();
+                    $btn.html('<span class="spinner-border spinner-border-sm me-2"></span>Preparing download...');
+                    
+                    // Create a temporary anchor element and trigger download
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = 'noc-admin-offline.zip';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // Reset button after a short delay
+                    setTimeout(() => {
+                        $btn.prop('disabled', false).html(originalHtml);
+                        showAlert('success', 'Download Started', 'Your download should begin shortly. Check your downloads folder.');
+                    }, 2000);
+                    
+                } catch (e) {
+                    showAlert('error', 'Invalid Download Link', 'The download URL is not valid. Please check the URL in the button\'s data-download-url attribute.');
+                }
+            });
+            
+            // Add hover animation to feature items
+            $('.feature-item').hover(
+                function() { $(this).find('.feature-icon').addClass('fa-beat'); },
+                function() { $(this).find('.feature-icon').removeClass('fa-beat'); }
+            );
+        });
+    </script>
+</body>
+</html>

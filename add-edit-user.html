@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>NOC Admin · User Management</title>
+    <!-- LOCAL CSS & JS -->
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <link rel="stylesheet" href="./css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="./css/dataTables.bootstrap5.min.css">
+    
+    <style>
+        :root {
+            --primary: #0f5b9c;
+            --primary-dark: #1a4b7a;
+            --primary-light: #e8f0fe;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --border: #e9ecef;
+        }
+        .modal-backdrop {background-color: #fff0;}
+        body {
+              background: #fff0;
+
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding: 28px 24px;
+            color: var(--dark);
+        }
+        
+        .dashboard-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+       .page-header {
+    padding: 15px 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+ 
+}
+.page-header-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+.page-header-left i {
+    font-size: 1.8rem !important;
+    background: rgb(56 143 251 / 15%) !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    color: #184f83 !important;
+}
+
+
+.page-header-left h1 {
+    margin: 0 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    color: #184f83!important;
+}
+ .page-header-left p {
+            margin: 2px 0 0 !important;
+            opacity: 0.7 !important;
+            font-size: 0.75rem !important;
+ }
+
+        
+        .nav-tabs {
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 25px;
+        }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            font-weight: 600;
+            padding: 12px 28px;
+            color: #64748b;
+            transition: all 0.2s;
+            border-radius: 12px 12px 0 0;
+        }
+        
+        .nav-tabs .nav-link:hover {
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--primary);
+            background: white;
+            border-bottom: 3px solid var(--primary);
+        }
+        
+        .form-card, .table-card {
+            background: white;
+            border-radius: 24px;
+            padding: 24px 28px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+        }
+        
+        .form-label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+            color: var(--dark);
+        }
+        
+        .form-control, .form-select {
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(15, 91, 156, 0.1);
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            border: none;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+        
+        .btn-outline-secondary {
+            border-radius: 40px;
+        }
+        
+        .table thead th {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 0.8rem;
+            padding: 12px 10px;
+            white-space: nowrap;
+        }
+        
+        .table td {
+            padding: 10px 10px;
+            vertical-align: middle;
+            font-size: 0.85rem;
+        }
+        
+        .edit-btn {
+            background: var(--primary-light);
+            border: none;
+            color: var(--primary);
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+        
+        .edit-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .alert-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .spinner-sm {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #e2e8f0;
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            display: inline-block;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .modal-content {
+            border-radius: 24px;
+            border: none;
+        }
+        
+        .modal-header {
+            border-bottom: 1px solid var(--border);
+            background: var(--primary-light);
+            border-radius: 24px 24px 0 0;
+        }
+        
+        .required:after {
+            content: " *";
+            color: var(--danger);
+        }
+        
+        .otp-input-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .otp-input {
+            width: 50px;
+            height: 55px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: white;
+        }
+        
+        .otp-input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(15, 91, 156, 0.2);
+        }
+        
+        .resend-timer {
+            font-size: 0.8rem;
+            color: #64748b;
+            text-align: center;
+            margin-top: 10px;
+        }
+        
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 2100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+        }
+        
+        .spinner-overlay.active {
+            visibility: visible;
+        }
+        
+        .spinner-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            body { padding: 16px; }
+            .form-card, .table-card { padding: 18px; }
+            .otp-input { width: 40px; height: 48px; font-size: 1.2rem; }
+        }
+        
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white !important;
+        }
+        
+        .dataTables_wrapper .dataTables_length select {
+            border-radius: 20px;
+            padding: 4px 8px;
+        }
+        
+        .dataTables_wrapper .dataTables_filter input {
+            border-radius: 30px;
+            padding: 6px 15px;
+            border: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                   <i class="bi bi-people"></i>
+                    <div>
+                        <h1>User & Branch Management</h1>
+                        <p>Add new users or edit existing users</p>
+                    </div>
+                </div>
+            </div>
+
+
+<div class="dashboard-container">
+
+    
+    <ul class="nav nav-tabs" id="userTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="add-tab" data-bs-toggle="tab" data-bs-target="#addPanel" type="button" role="tab">
+                <i class="bi bi-plus-circle"></i> Add New User
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="edit-tab" data-bs-toggle="tab" data-bs-target="#editPanel" type="button" role="tab">
+                <i class="bi bi-pencil-square"></i> Edit Users
+            </button>
+        </li>
+    </ul>
+    
+    <div class="tab-content">
+        <!-- ADD PANEL -->
+        <div class="tab-pane fade show active" id="addPanel" role="tabpanel">
+            <div class="form-card">
+                <h5 class="mb-4"><i class="bi bi-person-plus"></i> Add New Login Credential</h5>
+                <form id="addUserForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label required">User Type</label>
+                            <select class="form-select" id="addUserType" required>
+                                <option value="user">👤 User (Admin/Staff)</option>
+                                <option value="branch">🏢 Branch User</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required">User ID / Branch Code</label>
+                            <input type="text" class="form-control" id="addUserId" placeholder="e.g., admin / BR0101" required>
+                            <small class="text-muted">For branches use format: BR0101, BR0201 etc.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required">Display Name</label>
+                            <input type="text" class="form-control" id="addName" placeholder="Full name or Branch Name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required">Email ID</label>
+                            <input type="email" class="form-control" id="addEmail" placeholder="user@kerala.gov.in" required>
+                        </div>
+                        <input type="hidden" id="addMenu" value="user-menu">
+                        <div class="col-md-12">
+                            <div class="alert alert-info small">
+                                <i class="bi bi-info-circle"></i>  Password will be set by the user via "Forgot Password" or first login.
+.
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary" id="submitAddBtn">
+                                <i class="bi bi-save"></i> Add User
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary ms-2" id="resetAddBtn">Reset</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- EDIT PANEL -->
+        <div class="tab-pane fade" id="editPanel" role="tabpanel">
+            <div class="table-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><i class="bi bi-list-check"></i> Existing Users & Branches</h5>
+                    <button class="btn btn-sm btn-outline-primary" id="refreshTableBtn">
+                        <i class="bi bi-arrow-repeat"></i> Refresh
+                    </button>
+                </div>
+                <div id="editTableLoader" style="text-align:center; padding:40px;">
+                    <div class="spinner-sm" style="border-top-color:var(--primary); width:32px; height:32px;"></div>
+                    <p class="mt-2 text-muted">Loading users...</p>
+                </div>
+                <div id="editTableWrapper" style="display:none;">
+                    <table id="usersTable" class="table table-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>User ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Menu Access</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Edit User Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm">
+                    <input type="hidden" id="editOriginalId">
+                    <input type="hidden" id="editRowIndex">
+                    <input type="hidden" id="editOriginalEmail">
+                    <div class="mb-3">
+                        <label class="form-label">User ID (cannot change)</label>
+                        <input type="text" class="form-control" id="editUserId" readonly disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required">Display Name</label>
+                        <input type="text" class="form-control" id="editName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required">Email ID</label>
+                        <input type="email" class="form-control" id="editEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required">Menu Access</label>
+                        <select class="form-select" id="editMenu" required>
+                            <option value="Admin-menu">Admin Menu</option>
+                            <option value="BR-Menu">Branch Menu</option>
+                            <option value="user-menu">User Menu</option>
+                        </select>
+                    </div>
+                    <div class="alert alert-warning small">
+                        <i class="bi bi-shield-lock"></i> An OTP will be sent to verify before saving.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="requestOtpBtn">Send OTP & Proceed</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- OTP Verification Modal -->
+<div class="modal fade" id="otpModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-envelope-paper"></i> OTP Verification</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">OTP sent to <strong id="otpEmailDisplay"></strong></p>
+                <div class="otp-input-group">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" id="otp1">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" id="otp2">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" id="otp3">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" id="otp4">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" id="otp5">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" id="otp6">
+                </div>
+                <div class="resend-timer" id="resendTimer"></div>
+                <button type="button" class="btn btn-outline-secondary w-100 mt-3" id="resendOtpBtn">Resend OTP</button>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="verifyOtpAndSaveBtn">Verify & Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="spinnerOverlay" class="spinner-overlay">
+    <div class="spinner-box">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2 mb-0">Processing...</p>
+    </div>
+</div>
+
+<script src="./js/jquery.min.js"></script>
+<script src="./js/bootstrap.bundle.min.js"></script>
+<script src="./js/jquery.dataTables.min.js"></script>
+<script src="./js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+    const SPREADSHEET_ID = '1jd1xZe9x2mrZm5KAwGT12vMNYjbrnynsmelNKeK95jc';
+    const SHEET_NAME = 'Login';
+    const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwJJIEzODv0qun0e9HI2y0fhbYLh5sktuyoj_VorIIFqb5_krY8R2MZ3jAAzR0-jmf3/exec';
+
+    let usersDataTable = null;
+    let allUsersData = [];
+    let pendingEditData = null;
+    let resendTimer = null;
+    let timerSeconds = 60;
+
+    function showMessage(message, type = 'success') {
+        const alertDiv = $('<div class="alert alert-dismissible fade show alert-message" role="alert">' +
+            '<i class="bi ' + (type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle') + '"></i> ' + message +
+            '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
+        if (type === 'danger') alertDiv.addClass('alert-danger');
+        else if (type === 'warning') alertDiv.addClass('alert-warning');
+        else alertDiv.addClass('alert-success');
+        $('body').append(alertDiv);
+        setTimeout(() => alertDiv.fadeOut(500, function() { $(this).remove(); }), 4000);
+    }
+
+    function setLoading(loading) {
+        const spinner = document.getElementById('spinnerOverlay');
+        loading ? spinner.classList.add('active') : spinner.classList.remove('active');
+    }
+
+    async function fetchAllUsers() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_NAME}!A:G?key=${API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Failed to fetch data');
+            const data = await response.json();
+            if (!data.values || data.values.length < 2) return [];
+            
+            const rows = data.values.slice(1);
+            const users = [];
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length < 4) continue;
+                const branchUser = row[0] ? row[0].toString().trim() : '';
+                const userId = row[1] ? row[1].toString().trim() : '';
+                if (branchUser === '' && userId === '') continue;
+                
+                const isBranch = (branchUser && branchUser.toUpperCase().startsWith('BR')) || (userId && userId.toUpperCase().startsWith('BR'));
+                const displayId = isBranch ? (branchUser || userId) : (userId || branchUser);
+                const displayName = !isBranch ? (branchUser || userId) : (branchUser || 'Branch');
+                const email = row[4] ? row[4].toString().trim() : '';
+                const menu = row[3] ? row[3].toString().trim() : '';
+                
+                users.push({
+                    rowIndex: i + 2,
+                    type: isBranch ? 'branch' : 'user',
+                    userId: displayId,
+                    name: displayName,
+                    email: email,
+                    menu: menu
+                });
+            }
+            return users;
+        } catch (err) {
+            console.error(err);
+            return [];
+        }
+    }
+
+    async function loadEditTable() {
+        $('#editTableLoader').show();
+        $('#editTableWrapper').hide();
+        if (usersDataTable) { usersDataTable.destroy(); usersDataTable = null; }
+        
+        allUsersData = await fetchAllUsers();
+        if (allUsersData.length === 0) {
+            $('#editTableLoader').html('<p class="text-muted">No users found.</p>');
+            return;
+        }
+        
+        const tbody = $('#usersTableBody');
+        tbody.empty();
+        
+        allUsersData.forEach((user) => {
+            const typeLabel = user.type === 'branch' ? '<span class="badge bg-primary bg-opacity-10 text-primary">🏢 Branch</span>' : '<span class="badge bg-success bg-opacity-10 text-success">👤 User</span>';
+            const row = `
+                <tr>
+                    <td>${typeLabel}</div>
+                    <td><code>${escapeHtml(user.userId)}</code></div>
+                    <td>${escapeHtml(user.name)}</div>
+                    <td><small>${escapeHtml(user.email)}</small></div>
+                    <td><span class="badge bg-light text-dark">${escapeHtml(user.menu)}</span></div>
+                    <td><button class="edit-btn" data-rowindex="${user.rowIndex}" data-id="${escapeHtml(user.userId)}" data-name="${escapeHtml(user.name)}" data-email="${escapeHtml(user.email)}" data-menu="${escapeHtml(user.menu)}"><i class="bi bi-pencil"></i> Edit</button></div>
+                </tr>
+            `;
+            tbody.append(row);
+        });
+        
+        usersDataTable = $('#usersTable').DataTable({ pageLength: 25, lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]], order: [[1, 'asc']] });
+        $('#editTableLoader').hide();
+        $('#editTableWrapper').show();
+        
+        $('#usersTable').off('click', '.edit-btn').on('click', '.edit-btn', function() {
+            $('#editOriginalId').val($(this).data('id'));
+            $('#editRowIndex').val($(this).data('rowindex'));
+            $('#editOriginalEmail').val($(this).data('email'));
+            $('#editUserId').val($(this).data('id'));
+            $('#editName').val($(this).data('name'));
+            $('#editEmail').val($(this).data('email'));
+            $('#editMenu').val($(this).data('menu'));
+            $('#editModal').modal('show');
+        });
+    }
+
+    function getOtpValue() {
+        let otp = '';
+        for (let i = 1; i <= 6; i++) { otp += document.getElementById(`otp${i}`).value; }
+        return otp;
+    }
+
+    function clearOtpInputs() {
+        for (let i = 1; i <= 6; i++) { document.getElementById(`otp${i}`).value = ''; }
+        if (document.getElementById('otp1')) document.getElementById('otp1').focus();
+    }
+
+    function startResendTimer() {
+        timerSeconds = 60;
+        const timerDiv = document.getElementById('resendTimer');
+        const resendBtn = document.getElementById('resendOtpBtn');
+        if (resendBtn) resendBtn.disabled = true;
+        if (resendTimer) clearInterval(resendTimer);
+        resendTimer = setInterval(() => {
+            timerSeconds--;
+            if (timerSeconds <= 0) {
+                clearInterval(resendTimer);
+                if (timerDiv) timerDiv.innerHTML = '';
+                if (resendBtn) resendBtn.disabled = false;
+            } else {
+                if (timerDiv) timerDiv.innerHTML = `Resend available in ${timerSeconds} seconds`;
+            }
+        }, 1000);
+    }
+
+    // All API calls using FormData - Send data as separate fields, not JSON string
+    async function callAppsScript(action, params) {
+        const formData = new FormData();
+        formData.append('action', action);
+        for (const [key, value] of Object.entries(params)) {
+            formData.append(key, value);
+        }
+        
+        try {
+            const response = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: formData });
+            const result = await response.json();
+            return result;
+        } catch (err) {
+            console.error('Fetch error:', err);
+            return { success: false, error: err.message };
+        }
+    }
+
+    async function isUserIdExists(userId, excludeUserId = null) {
+        const users = await fetchAllUsers();
+        return users.some(u => u.userId.toLowerCase() === userId.toLowerCase() && u.userId !== excludeUserId);
+    }
+
+    // ADD USER - Send each field separately
+    $('#addUserForm').on('submit', async function(e) {
+        e.preventDefault();
+        const userType = $('#addUserType').val();
+        const userId = $('#addUserId').val().trim();
+        const name = $('#addName').val().trim();
+        const email = $('#addEmail').val().trim();
+        const menu = 'user-menu';
+        
+        if (!userId || !name || !email) { showMessage('Please fill all fields.', 'warning'); return; }
+        if (userType === 'branch' && !/^BR\d{4}$/i.test(userId)) { showMessage('Branch code format: BR0101', 'warning'); return; }
+        
+        const exists = await isUserIdExists(userId);
+        if (exists) { showMessage('User ID already exists!', 'danger'); return; }
+        
+        setLoading(true);
+        
+        // Send as individual form fields - Apps Script will receive as e.parameter
+        const result = await callAppsScript('add', {
+            branchUser: userType === 'branch' ? userId : name,
+            userId: userId,
+            password: '',
+            menu: menu,
+            email: email,
+            otp: '',
+            loginTime: ''
+        });
+        
+        if (result.success) {
+            showMessage('User added successfully!', 'success');
+            $('#addUserForm')[0].reset();
+            await loadEditTable();
+        } else {
+            showMessage('Error: ' + (result.message || result.error), 'danger');
+        }
+        setLoading(false);
+    });
+
+    // Request OTP
+    $('#requestOtpBtn').on('click', async function() {
+        const originalEmail = $('#editOriginalEmail').val();
+        if (!originalEmail) { showMessage('No email associated.', 'danger'); return; }
+        
+        setLoading(true);
+        const result = await callAppsScript('sendEditOtp', { email: originalEmail, userId: $('#editOriginalId').val() });
+        
+        if (result.success) {
+            $('#editModal').modal('hide');
+            $('#otpEmailDisplay').text(originalEmail);
+            $('#otpModal').modal('show');
+            clearOtpInputs();
+            startResendTimer();
+            
+            pendingEditData = {
+                rowIndex: parseInt($('#editRowIndex').val()),
+                originalId: $('#editOriginalId').val(),
+                originalEmail: originalEmail,
+                newName: $('#editName').val().trim(),
+                newEmail: $('#editEmail').val().trim(),
+                newMenu: $('#editMenu').val()
+            };
+        } else {
+            showMessage(result.error || 'Failed to send OTP', 'danger');
+        }
+        setLoading(false);
+    });
+
+    // Resend OTP
+    $('#resendOtpBtn').on('click', async function() {
+        if (timerSeconds > 0) { showMessage(`Wait ${timerSeconds} seconds`, 'warning'); return; }
+        setLoading(true);
+        const result = await callAppsScript('sendEditOtp', { email: pendingEditData.originalEmail, userId: pendingEditData.originalId });
+        if (result.success) { showMessage('OTP resent!', 'success'); startResendTimer(); clearOtpInputs(); }
+        else { showMessage(result.error || 'Failed', 'danger'); }
+        setLoading(false);
+    });
+
+    // Verify OTP and Save
+    $('#verifyOtpAndSaveBtn').on('click', async function() {
+        const otp = getOtpValue();
+        if (otp.length !== 6) { showMessage('Enter 6-digit OTP', 'warning'); return; }
+        
+        setLoading(true);
+        const verifyResult = await callAppsScript('verifyEditOtp', { email: pendingEditData.originalEmail, otp: otp });
+        
+        if (verifyResult.success) {
+            const saveResult = await callAppsScript('edit', {
+                row: pendingEditData.rowIndex,
+                name: pendingEditData.newName,
+                email: pendingEditData.newEmail,
+                menu: pendingEditData.newMenu,
+                userId: pendingEditData.originalId
+            });
+            
+            if (saveResult.success) {
+                showMessage('User updated successfully!', 'success');
+                $('#otpModal').modal('hide');
+                await loadEditTable();
+                if (resendTimer) clearInterval(resendTimer);
+            } else {
+                showMessage('Update failed: ' + (saveResult.message || saveResult.error), 'danger');
+            }
+        } else {
+            showMessage(verifyResult.error || 'Invalid OTP', 'danger');
+        }
+        setLoading(false);
+    });
+
+    $('#refreshTableBtn').on('click', async function() { await loadEditTable(); });
+    $('#resetAddBtn').on('click', function() { $('#addUserForm')[0].reset(); });
+    $('#edit-tab').on('shown.bs.tab', async function() { await loadEditTable(); });
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    loadEditTable();
+</script>
+</body>
+</html>

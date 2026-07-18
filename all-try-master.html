@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Treasury Information</title>
+    
+    <!-- CSS Resources -->
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <link rel="stylesheet" href="./css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="./css/sweetalert2.min.css">
+    
+    <style>
+        * { box-sizing: border-box; }
+        body {
+              background: #fff0;
+
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding:20px 16px;
+        }
+        .app-card {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            padding: 1.8rem 2rem;
+            background: linear-gradient(135deg, #1a3c5e 0%, #2a5a7a 100%);
+            color: white;
+        }
+       
+.page-header {
+    padding: 15px 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+ 
+}
+.page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-header-left i {
+    font-size: 1.8rem !important;
+    background: rgb(56 143 251 / 15%) !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    color: #184f83 !important;
+}
+
+
+.page-header-left h1 {
+    margin: 0 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    color: #184f83!important;
+}
+ .page-header-left p {
+            margin: 2px 0 0;
+            opacity: 0.7;
+            font-size: 0.75rem;
+ }
+        .treasury-selector {
+            padding: 1.2rem 2rem;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+        .selector-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        .selector-group label {
+            font-weight: 600;
+            color: #1e4a76;
+            margin-bottom: 0;
+        }
+        .treasury-select {
+            min-width: 300px;
+            padding: 0.5rem 1rem;
+            border-radius: 40px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            font-size: 0.9rem;
+        }
+        .br-display {
+            background: #e6f0ff;
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            font-weight: 600;
+            color: #1e4a76;
+        }
+        .btn-primary-custom {
+            background: #0f3b5f;
+            border: none;
+            padding: 8px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            color: white;
+        }
+        .btn-primary-custom:hover {
+            background: #0a2c46;
+            transform: translateY(-1px);
+        }
+        .btn-warning-custom {
+            background: #f59e0b;
+            border: none;
+            padding: 8px 20px;
+            font-weight: 600;
+            border-radius: 40px;
+            color: white;
+        }
+        .btn-secondary-custom {
+            background: #6c757d;
+            border: none;
+            padding: 8px 20px;
+            font-weight: 600;
+            border-radius: 40px;
+            color: white;
+        }
+        .btn-success-custom {
+            background: #10b981;
+            border: none;
+            padding: 8px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            color: white;
+        }
+        .content {
+            padding: 2rem;
+        }
+        .treasury-card {
+            background: white;
+            border-radius: 24px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 1.2rem 1.5rem;
+            background: #fafcff;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .info-row {
+            display: flex;
+            border-bottom: 1px solid #f0f2f5;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            width: 240px;
+            padding: 1rem 1.5rem;
+            background: #fafcff;
+            font-weight: 600;
+            color: #2c5282;
+            border-right: 1px solid #e2e8f0;
+        }
+        .info-value {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .edit-input {
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            width: 100%;
+            max-width: 350px;
+        }
+        .edit-textarea {
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            width: 100%;
+            max-width: 500px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 80px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #64748b;
+        }
+        footer {
+            text-align: center;
+            font-size: 0.75rem;
+            padding: 1rem;
+            color: #5b6e8c;
+            border-top: 1px solid #e2e8f0;
+        }
+        @media (max-width: 768px) {
+            .info-label { width: 100%; border-right: none; border-bottom: 1px solid #e2e8f0; }
+            .info-row { flex-direction: column; }
+            .treasury-select { min-width: 200px; }
+            .edit-textarea { max-width: 100%; }
+        }
+        .btn-loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+   #global-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+              background: #fff0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            /*backdrop-filter: blur(3px);*/
+        }
+        .badge-locked {
+            background: #e2e8f0;
+            color: #64748b;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #e2e8f0;
+            border-top-color: #0f3b5f;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 6px;
+        }
+        .section-badge {
+            background: #e9ecef;
+            border-radius: 30px;
+            padding: 0.2rem 0.8rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #2c5282;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                  <i class="bi bi-bank2"></i>
+                    <div>
+                        <h1>Treasury Master Information</h1>
+                        <p>Manage Treasury related information</p>
+                    </div>
+                </div>
+            </div>
+
+<div class="app-card">
+ 
+    
+    <div class="treasury-selector">
+        <div class="selector-group">
+            <label><i class="bi bi-building"></i> Select Treasury:</label>
+            <select id="treasurySelect" class="treasury-select">
+                <option value="">-- Loading Treasuries... --</option>
+            </select>
+            <button id="viewTreasuryBtn" class="btn-success-custom"><i class="bi bi-eye"></i> View Details</button>
+            <button id="refreshTreasuryBtn" class="btn-secondary-custom"><i class="bi bi-arrow-repeat"></i> Refresh List</button>
+        </div>
+        <div class="br-display" id="brCodeDisplay" style="display: none;">
+            🔑 BR Code: <strong id="currentBrCode">—</strong>
+        </div>
+    </div>
+    
+    <div class="content">
+        <div id="treasuryContent"></div>
+    </div>
+    <footer>
+       
+    </footer>
+</div>
+
+<script src="./js/jquery.min.js"></script>
+<script src="./js/bootstrap.bundle.min.js"></script>
+<script src="./js/sweetalert2.all.min.js"></script>
+
+<script>
+    // ================= CONFIGURATION =================
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzl8MVzBw1EBT4eYsIxqodBiJ88PW2cv2YWDWJAugl1vrfS4LH7KS-0vx1_c5XdaP69jw/exec";
+    
+    const SHEET_ID = "1HvCqLHC8IyllKskBXX1MtMfjQMGUyhMP7KuTuJxDhmU";
+    const SHEET_NAME = "Admin Contact Details";
+    const API_KEY = "AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0";
+    
+    let treasuryList = [];           // Store only treasury names
+    let treasuryDataCache = {};      // Cache full data for viewed treasuries
+    let currentRecord = null;
+    let editMode = false;
+    let originalValues = {};
+    
+    // Helper: Global loader
+    function showGlobalLoading(msg = 'Processing...') {
+        if($('#global-loading-overlay').length) return;
+        $('body').append(`<div id="global-loading-overlay"><div style="background:white;padding:30px;border-radius:24px;text-align:center;"><i class="bi bi-arrow-repeat" style="font-size:48px;color:#0f3b5f;animation:spin 1s linear infinite;"></i><p style="margin-top:15px;">${msg}</p></div></div>`);
+    }
+    
+    function hideGlobalLoading() { 
+        $('#global-loading-overlay').remove(); 
+    }
+    
+    function setButtonLoading(btn, isLoading, originalHtml) {
+        const $btn = $(btn);
+        if(isLoading) {
+            $btn.data('original-html', $btn.html());
+            $btn.html('<i class="bi bi-arrow-repeat"></i> Processing...');
+            $btn.prop('disabled', true).addClass('btn-loading');
+        } else {
+            $btn.html($btn.data('original-html') || originalHtml);
+            $btn.prop('disabled', false).removeClass('btn-loading');
+        }
+    }
+    
+    // Helper to get PIN Code from record (handles column name variations)
+    function getPinCodeValue(record) {
+        if (!record) return '';
+        if (record['PIN Code'] !== undefined && record['PIN Code'] !== '') return record['PIN Code'];
+        if (record['Pincode'] !== undefined && record['Pincode'] !== '') return record['Pincode'];
+        if (record['PINCODE'] !== undefined && record['PINCODE'] !== '') return record['PINCODE'];
+        if (record['Pin Code'] !== undefined && record['Pin Code'] !== '') return record['Pin Code'];
+        if (record['pincode'] !== undefined && record['pincode'] !== '') return record['pincode'];
+        return '';
+    }
+    
+    // Fetch ONLY treasury names from column A (fast initial load)
+    async function fetchTreasuryNamesOnly() {
+        showGlobalLoading('Loading treasury list...');
+        
+        try {
+            const encodedSheetName = encodeURIComponent(SHEET_NAME);
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodedSheetName}!A:A?key=${API_KEY}`;
+            
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.error.message);
+            }
+            
+            const rows = data.values || [];
+            if (rows.length < 2) {
+                hideGlobalLoading();
+                Swal.fire({ icon: 'warning', title: 'No Data', text: 'No treasury data found in sheet' });
+                return false;
+            }
+            
+            const treasurySet = new Set();
+            for (let i = 1; i < rows.length; i++) {
+                const treasuryName = rows[i][0];
+                if (treasuryName && treasuryName.trim() !== "") {
+                    treasurySet.add(treasuryName.trim());
+                }
+            }
+            
+            treasuryList = Array.from(treasurySet).sort();
+            
+            const $select = $('#treasurySelect');
+            $select.empty();
+            $select.append('<option value="">-- Select Treasury --</option>');
+            treasuryList.forEach(treasury => {
+                $select.append(`<option value="${escapeHtml(treasury)}">${escapeHtml(treasury)}</option>`);
+            });
+            
+            if (treasuryList.length === 0) {
+                $select.append('<option value="" disabled>No treasuries found</option>');
+            }
+            
+            hideGlobalLoading();
+            Swal.fire({ icon: 'success', title: 'Loaded!', text: `${treasuryList.length} treasuries available`, timer: 1500, showConfirmButton: false });
+            return true;
+            
+        } catch(error) {
+            hideGlobalLoading();
+            console.error('Error fetching treasury names:', error);
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load treasury list: ' + error.message });
+            return false;
+        }
+    }
+    
+    // Fetch complete details for a specific treasury (on View click)
+    async function fetchTreasuryDetails(treasuryName) {
+        if (treasuryDataCache[treasuryName]) {
+            console.log('Returning cached data for:', treasuryName);
+            return treasuryDataCache[treasuryName];
+        }
+        
+        showGlobalLoading(`Loading details for ${treasuryName}...`);
+        
+        try {
+            const encodedSheetName = encodeURIComponent(SHEET_NAME);
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodedSheetName}?key=${API_KEY}`;
+            
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.error.message);
+            }
+            
+            const rows = data.values || [];
+            if (rows.length < 2) {
+                throw new Error('No data found');
+            }
+            
+            const headers = rows[0];
+            let foundRecord = null;
+            
+            for (let i = 1; i < rows.length; i++) {
+                if (rows[i][0] && rows[i][0].toString().trim() === treasuryName) {
+                    const record = {};
+                    for (let j = 0; j < headers.length; j++) {
+                        record[headers[j]] = rows[i][j] || '';
+                    }
+                    foundRecord = record;
+                    break;
+                }
+            }
+            
+            if (!foundRecord) {
+                throw new Error(`Treasury "${treasuryName}" not found`);
+            }
+            
+            // Ensure PIN Code is properly set
+            const pinValue = getPinCodeValue(foundRecord);
+            if (pinValue && !foundRecord['PIN Code']) {
+                foundRecord['PIN Code'] = pinValue;
+            }
+            
+            treasuryDataCache[treasuryName] = foundRecord;
+            hideGlobalLoading();
+            return foundRecord;
+            
+        } catch(error) {
+            hideGlobalLoading();
+            console.error('Error fetching treasury details:', error);
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load treasury details: ' + error.message });
+            return null;
+        }
+    }
+    
+    // Update record via Apps Script
+    async function updateRecord(updatedFields) {
+        const brValue = currentRecord.BRCode || currentRecord.brCode || currentRecord['BR Code'];
+        
+        const payload = {
+            action: "UPDATE",
+            brCode: brValue,
+            ...updatedFields
+        };
+        
+        const $btn = $("#submitUpdateBtn");
+        const origHtml = $btn.html();
+        setButtonLoading($btn, true, origHtml);
+        
+        try {
+            const response = await fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                Swal.fire({ icon: 'success', title: 'Updated!', text: result.message, timer: 1000, showConfirmButton: false });
+                if (currentRecord.Treasury) {
+                    treasuryDataCache[currentRecord.Treasury] = { ...currentRecord };
+                }
+                return true;
+            } else {
+                Swal.fire({ icon: 'error', title: 'Update Failed', text: result.error });
+                return false;
+            }
+        } catch(error) {
+            Swal.fire({ icon: 'error', title: 'Error', text: error.message });
+            return false;
+        } finally {
+            setButtonLoading($btn, false, origHtml);
+        }
+    }
+    
+    // Render treasury details with Address as textarea and PIN Code field
+    function renderTreasuryDetails() {
+        const container = $('#treasuryContent');
+        
+        if (!currentRecord) {
+            container.html(`
+                <div class="empty-state">
+                    <i class="bi bi-building" style="font-size: 3rem; opacity: 0.5;"></i>
+                    <p style="margin-top: 1rem;">Select a treasury from the dropdown and click "View Details"</p>
+                    <p class="text-muted">Treasury contact information, Address (Column K) and PIN Code (Column L) will appear here</p>
+                </div>
+            `);
+            return;
+        }
+        
+        // Ensure PIN Code is properly displayed
+        const pinValue = getPinCodeValue(currentRecord);
+        if (pinValue && (!currentRecord['PIN Code'] || currentRecord['PIN Code'] === '')) {
+            currentRecord['PIN Code'] = pinValue;
+        }
+        
+        const displayFields = [
+            { label: "Treasury", sheetColumn: "Treasury", editable: false },
+            { label: "District", sheetColumn: "District", editable: false },
+            { label: "Network Admin Name", sheetColumn: "Network Admin Name", editable: false },
+            { label: "Network Admin Contact", sheetColumn: "Network Admin Contact", editable: false },
+            { label: "Treasury Admin Name", sheetColumn: "Treasury Admin Name", editable: true, fieldKey: "treasuryAdminName" },
+            { label: "Treasury Admin Contact", sheetColumn: "Treasury Admin Contact", editable: true, fieldKey: "treasuryAdminContact" },
+            { label: "Office Mail ID", sheetColumn: "Office Mail ID", editable: true, fieldKey: "officeMailId" },
+            { label: "Office Contact", sheetColumn: "Office Contact", editable: true, fieldKey: "officeContact" },
+            { label: "Office Mobile", sheetColumn: "Office Mobile", editable: true, fieldKey: "officeMobile" },
+            { label: "Address", sheetColumn: "Address", editable: true, fieldKey: "address", note: "Column K", isTextarea: true },
+            { label: "PIN Code", sheetColumn: "PIN Code", editable: true, fieldKey: "pincode", note: "Column L" },
+            { label: "BR Code", sheetColumn: "BRCode", editable: false }
+        ];
+        
+        let html = `
+            <div class="treasury-card">
+                <div class="card-header">
+                    <h5><i class="bi bi-building"></i> ${escapeHtml(currentRecord.Treasury || 'Treasury')} - Contact Details</h5>
+                    <div>
+                        ${!editMode ? '<button id="enableEditBtn" class="btn-warning-custom"><i class="bi bi-pencil"></i> Enable Editing</button>' : ''}
+                        ${editMode ? '<button id="cancelEditBtn" class="btn-secondary-custom"><i class="bi bi-x-circle"></i> Cancel</button>' : ''}
+                        ${editMode ? '<button id="submitUpdateBtn" class="btn-primary-custom"><i class="bi bi-cloud-upload"></i> Save Changes</button>' : ''}
+                    </div>
+                </div>
+        `;
+        
+        for (const field of displayFields) {
+            let value = currentRecord[field.sheetColumn] || '—';
+            const isEditing = editMode && field.editable;
+            
+            if (value === '' || value === null) value = '—';
+            
+            html += `
+                <div class="info-row">
+                    <div class="info-label">
+                        ${field.label}
+                        ${field.note ? `` : ''}
+                    </div>
+                    <div class="info-value">
+                        ${!isEditing ? `<span style="white-space: pre-wrap;">${escapeHtml(value)}</span>` : 
+                            (field.isTextarea ? 
+                                `<textarea class="edit-textarea" data-sheetcolumn="${field.sheetColumn}" data-fieldkey="${field.fieldKey || ''}" rows="3" placeholder="Enter ${field.label}">${escapeHtml(value)}</textarea>` :
+                                `<input type="text" class="edit-input" data-sheetcolumn="${field.sheetColumn}" data-fieldkey="${field.fieldKey || ''}" value="${escapeHtml(value)}" placeholder="Enter ${field.label}">`
+                            )}
+                        ${!editMode && field.editable ? '<span class="badge-locked"><i class="bi bi-lock"></i> Locked</span>' : ''}
+                    </div>
+                </div>
+            `;
+        }
+        
+        html += `</div>`;
+        container.html(html);
+        
+        if (editMode) {
+            $('#cancelEditBtn').on('click', cancelEditMode);
+            $('#submitUpdateBtn').on('click', submitUpdate);
+            
+            // Handle both input and textarea changes
+            $('.edit-input, .edit-textarea').on('input change', function() {
+                const sheetColumn = $(this).data('sheetcolumn');
+                if (sheetColumn) {
+                    currentRecord[sheetColumn] = $(this).val();
+                }
+            });
+        } else {
+            $('#enableEditBtn').on('click', enableEditMode);
+        }
+    }
+    
+    function enableEditMode() {
+        if (!currentRecord) return;
+        
+        // Save original values for all editable fields including Address and PIN Code
+        const editableFields = ["Treasury Admin Name", "Treasury Admin Contact", "Office Mail ID", "Office Contact", "Office Mobile", "Address", "PIN Code"];
+        originalValues = {};
+        editableFields.forEach(field => {
+            originalValues[field] = currentRecord[field] || '';
+        });
+        
+        editMode = true;
+        renderTreasuryDetails();
+        Swal.fire({ icon: 'info', title: 'Edit Mode Enabled', text: 'Modify fields including Address and PIN Code, then click "Update".', timer: 2000, showConfirmButton: false });
+    }
+    
+    function cancelEditMode() {
+        const editableFields = ["Treasury Admin Name", "Treasury Admin Contact", "Office Mail ID", "Office Contact", "Office Mobile", "Address", "PIN Code"];
+        editableFields.forEach(field => {
+            if (originalValues[field] !== undefined) {
+                currentRecord[field] = originalValues[field];
+            }
+        });
+        
+        editMode = false;
+        renderTreasuryDetails();
+        Swal.fire({ icon: 'info', title: 'Cancelled', text: 'Changes discarded.', timer: 1000, showConfirmButton: false });
+    }
+    
+    async function submitUpdate() {
+        const updatedFields = {};
+        const changes = [];
+        
+        const editableFields = [
+            { sheetColumn: "Treasury Admin Name", fieldKey: "treasuryAdminName" },
+            { sheetColumn: "Treasury Admin Contact", fieldKey: "treasuryAdminContact" },
+            { sheetColumn: "Office Mail ID", fieldKey: "officeMailId" },
+            { sheetColumn: "Office Contact", fieldKey: "officeContact" },
+            { sheetColumn: "Office Mobile", fieldKey: "officeMobile" },
+            { sheetColumn: "Address", fieldKey: "address" },
+            { sheetColumn: "PIN Code", fieldKey: "pincode" }
+        ];
+        
+        editableFields.forEach(field => {
+            const currentValue = currentRecord[field.sheetColumn] || '';
+            const originalValue = originalValues[field.sheetColumn] || '';
+            
+            if (currentValue !== originalValue) {
+                updatedFields[field.fieldKey] = currentValue;
+                changes.push(`${field.sheetColumn}: "${originalValue || '—'}" → "${currentValue || '—'}"`);
+            }
+        });
+        
+        if (Object.keys(updatedFields).length === 0) {
+            Swal.fire({ icon: 'warning', title: 'No Changes', text: 'No modifications were made to any field.' });
+            return;
+        }
+        
+        const success = await updateRecord(updatedFields);
+        
+        if (success) {
+            // Update cache with new values
+            if (currentRecord.Treasury) {
+                treasuryDataCache[currentRecord.Treasury] = { ...currentRecord };
+            }
+            editMode = false;
+            renderTreasuryDetails();
+        }
+    }
+    
+    async function loadAndDisplay(treasuryName) {
+        if (!treasuryName) {
+            currentRecord = null;
+            renderTreasuryDetails();
+            $('#brCodeDisplay').hide();
+            return;
+        }
+        
+        const record = await fetchTreasuryDetails(treasuryName);
+        if (record) {
+            currentRecord = { ...record };
+            editMode = false;
+            const brValue = currentRecord.BRCode || currentRecord.brCode || currentRecord['BR Code'] || '—';
+            $('#currentBrCode').text(brValue);
+            $('#brCodeDisplay').show();
+            renderTreasuryDetails();
+        } else {
+            currentRecord = null;
+            renderTreasuryDetails();
+            $('#brCodeDisplay').hide();
+        }
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m]);
+    }
+    
+    // Event handlers
+    $('#viewTreasuryBtn').on('click', () => {
+        const selectedTreasury = $('#treasurySelect').val();
+        if (selectedTreasury) {
+            loadAndDisplay(selectedTreasury);
+        } else {
+            Swal.fire({ icon: 'warning', title: 'No Selection', text: 'Please select a treasury from the dropdown.' });
+        }
+    });
+    
+    $('#refreshTreasuryBtn').on('click', async () => {
+        treasuryDataCache = {};
+        currentRecord = null;
+        editMode = false;
+        $('#brCodeDisplay').hide();
+        renderTreasuryDetails();
+        await fetchTreasuryNamesOnly();
+        $('#treasurySelect').val('');
+    });
+    
+    // Initialize - Load only treasury names on page load
+    $(document).ready(async function() {
+        await fetchTreasuryNamesOnly();
+    });
+</script>
+
+
+</body>
+</html>

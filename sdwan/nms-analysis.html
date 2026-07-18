@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SD-WAN NOC · Advanced Monitoring Dashboard</title>
+    
+    <!-- LOCAL RESOURCES - Using existing from main project -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/font-awesome.min.css">
+    
+    <!-- Chart.js -->
+    <script src="../js/chart.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+             background: #fff0;
+            font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            padding: 20px;
+            color: #1e293b;
+        }
+        
+        .dashboard {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 0 10px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: #0f5b9c;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 0;
+        }
+        
+        .header h1 i {
+            background: linear-gradient(135deg, #0f5b9c, #1a4b7a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2.5rem;
+        }
+        
+        .status-badge {
+            background: white;
+            padding: 8px 24px;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #e2e8f0;
+            font-size: 0.95rem;
+            color: #1e293b;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .status-badge i {
+            color: #0f5b9c;
+        }
+        
+        .refresh-btn {
+            background: white;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
+            padding: 10px 28px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .refresh-btn:hover {
+            background: #f8fafc;
+            border-color: #0f5b9c;
+            color: #0f5b9c;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(15, 91, 156, 0.15);
+        }
+        
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .kpi-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.2s;
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(15, 91, 156, 0.12);
+        }
+        
+        .kpi-icon {
+            font-size: 2rem;
+            color: #0f5b9c;
+            margin-bottom: 12px;
+        }
+        
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        
+        .kpi-label {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 8px;
+        }
+        
+        .kpi-trend {
+            font-size: 0.75rem;
+            margin-top: 8px;
+            padding: 4px 8px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        
+        .trend-up { background: #dcfce7; color: #15803d; }
+        .trend-down { background: #fee2e2; color: #b91c1c; }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(15, 91, 156, 0.12);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px;
+            border-bottom: 1px solid #eef2f6;
+            padding-bottom: 14px;
+        }
+        
+        .card-header i {
+            font-size: 1.6rem;
+            color: #0f5b9c;
+            background: #e8f0fe;
+            padding: 10px;
+            border-radius: 14px;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .card-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a4b7a;
+            margin: 0;
+        }
+        
+        .card-header p {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin: 4px 0 0 0;
+        }
+        
+        .chart-wrapper {
+            height: 220px;
+            position: relative;
+            margin: 10px 0 15px 0;
+        }
+        
+        .stats-mini {
+            display: flex;
+            justify-content: space-around;
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 30px;
+            border: 1px solid #e9ecef;
+            color: #1e293b;
+            font-weight: 500;
+            margin-top: 12px;
+            font-size: 0.8rem;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .gantt-container {
+            overflow-x: auto;
+            padding: 10px 0;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .gantt-timeline-header {
+            display: flex;
+            margin-bottom: 15px;
+            padding-left: 180px;
+            font-size: 0.7rem;
+            color: #64748b;
+        }
+        
+        .gantt-timeline-scale {
+            display: flex;
+            flex: 1;
+            gap: 2px;
+        }
+        
+        .gantt-timeline-scale span {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .gantt-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 0.8rem;
+        }
+        
+        .gantt-label {
+            width: 180px;
+            font-weight: 600;
+            color: #1e293b;
+            flex-shrink: 0;
+            padding-right: 12px;
+            font-size: 0.8rem;
+        }
+        
+        .gantt-bar-container {
+            flex: 1;
+            height: 40px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .gantt-bar-container:hover {
+            transform: scaleY(1.05);
+        }
+        
+        .gantt-bar {
+            height: 100%;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding-left: 10px;
+            font-size: 0.7rem;
+            color: white;
+            font-weight: 600;
+            transition: width 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        
+        .gantt-bar::after {
+            content: attr(data-duration);
+            position: absolute;
+            right: 8px;
+            font-size: 0.65rem;
+            opacity: 0.9;
+        }
+        
+        .gantt-legend {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 12px;
+            justify-content: center;
+        }
+        
+        .gantt-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+        }
+        
+        .gantt-legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .branch-tag {
+            background: #e8f0fe;
+            color: #0f5b9c;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-weight: 500;
+            font-size: 0.8rem;
+            border: 1px solid #b8d4fe;
+            transition: all 0.2s;
+        }
+        
+        .branch-tag:hover {
+            background: #0f5b9c;
+            color: white;
+            transform: translateY(-1px);
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding: 20px;
+            text-align: right;
+            color: #64748b;
+            border-top: 1px solid #e9ecef;
+            font-size: 0.85rem;
+        }
+        
+        .loading, .error {
+            grid-column: 1/-1;
+            text-align: center;
+            padding: 60px;
+            background: white;
+            border-radius: 20px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .error {
+            background: #fef2f2;
+            color: #991b1b;
+            border-color: #fecaca;
+        }
+        
+        .error button {
+            background: #0f5b9c;
+            border: none;
+            color: white;
+            padding: 10px 28px;
+            border-radius: 40px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+            .gantt-label { width: 120px; font-size: 0.7rem; }
+            .kpi-value { font-size: 1.5rem; }
+        }
+        
+        /* Tooltip */
+        .gantt-bar:hover::before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            z-index: 10;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>
+                <i class="bi bi-hdd-stack-fill"></i> 
+                SD-WAN NOC · Advanced Analytics
+            </h1>
+            <div class="status-badge">
+                <i class="bi bi-cloud-check"></i>
+                <span id="lastUpdate">fetching live...</span>
+            </div>
+            <button class="refresh-btn" onclick="loadLiveData()">
+                <i class="bi bi-arrow-repeat"></i> refresh now
+            </button>
+        </div>
+
+        <div id="kpiContainer"></div>
+        <div id="dashboardGrid" class="grid"></div>
+        
+        <div class="footer">
+            <i class="bi bi-graph-up"></i> All visualizations based on live data from Issue Reported sheet · Outage Timeline, Root Cause Analysis, MTTR, Concurrent Outages
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+        const SPREADSHEET_ID = '1q70H2WSERyz_agwb0ZirYzs2MhAO1sIB7GKlAGxvtUo';
+        const SHEET_NAME = 'Issue reported';
+        const RANGE = 'A:M';
+
+        let chartInstances = [];
+
+        // Helper: parse date/time with multiple formats
+        function parseDateTime(dateStr, timeStr) {
+            if (!dateStr) return null;
+            try {
+                let datePart = dateStr;
+                // Handle DD/MM/YYYY format
+                if (dateStr.includes('/')) {
+                    const parts = dateStr.split('/');
+                    if (parts.length === 3) {
+                        datePart = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    }
+                }
+                let d = new Date(datePart);
+                if (timeStr && timeStr.includes(':')) {
+                    let [h, m, s] = timeStr.split(':');
+                    d.setHours(parseInt(h) || 0, parseInt(m) || 0, parseInt(s) || 0);
+                }
+                return isNaN(d.getTime()) ? null : d;
+            } catch(e) { 
+                return null; 
+            }
+        }
+        
+        function getDurationMinutes(startDate, startTime, endDate, endTime) {
+            let start = parseDateTime(startDate, startTime);
+            let end = parseDateTime(endDate, endTime);
+            if (!start || !end) return null;
+            let duration = (end - start) / 60000;
+            return duration > 0 ? Math.round(duration) : null;
+        }
+        
+        function formatDuration(minutes) {
+            if (!minutes) return 'N/A';
+            if (minutes < 60) return `${minutes} min`;
+            let hours = Math.floor(minutes / 60);
+            let mins = minutes % 60;
+            return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+        }
+
+        async function loadLiveData() {
+            const grid = document.getElementById('dashboardGrid');
+            const kpiContainer = document.getElementById('kpiContainer');
+            grid.innerHTML = `<div class="loading"><div class="spinner-border text-primary"></div><p class="mt-3">Loading outage data...</p></div>`;
+            
+            try {
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}!${RANGE}?key=${API_KEY}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`API error: ${response.status}`);
+                const data = await response.json();
+                if (!data.values || data.values.length < 2) throw new Error('No data found');
+                
+                document.getElementById('lastUpdate').innerHTML = `<i class="bi bi-check-circle-fill" style="color:#10b981;"></i> updated ${new Date().toLocaleTimeString()}`;
+                
+                const rows = data.values;
+                const headers = rows[0];
+                const rawData = rows.slice(1).filter(row => row.length > 1 && row[0] && row[0].trim() !== '');
+                
+                processOutageData(rawData, headers);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                grid.innerHTML = `<div class="error"><i class="bi bi-exclamation-triangle-fill" style="font-size:2rem;"></i><h4>Failed to load data</h4><p>${error.message}</p><button onclick="loadLiveData()">Retry</button></div>`;
+                kpiContainer.innerHTML = '';
+            }
+        }
+        
+        function processOutageData(rows, headers) {
+            // Parse all outages
+            const outages = [];
+            const branches = new Map();
+            const rootCauses = new Map();
+            const wanIssues = { 'WAN 1': 0, 'WAN 2': 0 };
+            const providerIssues = new Map();
+            const dailyOutages = new Map();
+            const hourlyOutages = new Array(24).fill(0);
+            
+            rows.forEach(row => {
+                const outage = {
+                    caseId: row[0] || '',
+                    downDate: row[1] || '',
+                    downTime: row[2] || '',
+                    branch: row[3] || '',
+                    treasury: row[4] || '',
+                    wan: row[5] || '',
+                    provider: row[6] || '',
+                    status: row[7] || '',
+                    dotRemarks: (row[8] || '').toLowerCase(),
+                    tryRemarks: (row[9] || '').toLowerCase(),
+                    resolveStatus: row[10] || '',
+                    resolvedDate: row[11] || '',
+                    resolvedTime: row[12] || ''
+                };
+                
+                // Calculate duration
+                let duration = null;
+                let startTime = null;
+                let endTime = null;
+                
+                if (outage.resolveStatus === 'Resolved' && outage.resolvedDate) {
+                    duration = getDurationMinutes(outage.downDate, outage.downTime, outage.resolvedDate, outage.resolvedTime);
+                    startTime = parseDateTime(outage.downDate, outage.downTime);
+                    endTime = parseDateTime(outage.resolvedDate, outage.resolvedTime);
+                }
+                
+                outage.durationMinutes = duration;
+                outage.startTime = startTime;
+                outage.endTime = endTime;
+                
+                outages.push(outage);
+                
+                // Branch stats
+                const branchName = outage.branch || outage.treasury?.split(' ')[0] || 'Unknown';
+                if (!branches.has(branchName)) {
+                    branches.set(branchName, { total: 0, resolved: 0, totalDuration: 0, outages: [] });
+                }
+                const branchStat = branches.get(branchName);
+                branchStat.total++;
+                if (outage.resolveStatus === 'Resolved') branchStat.resolved++;
+                if (duration) branchStat.totalDuration += duration;
+                branchStat.outages.push(outage);
+                
+                // Root cause analysis
+                let cause = 'Unknown';
+                const remarks = (outage.dotRemarks + ' ' + outage.tryRemarks).toLowerCase();
+                if (remarks.includes('power') || remarks.includes('power failure')) cause = 'Power Failure';
+                else if (remarks.includes('fiber') || remarks.includes('cut')) cause = 'Fiber Cut';
+                else if (remarks.includes('bsnl') || remarks.includes('mpls')) cause = 'BSNL Issue';
+                else if (remarks.includes('rail')) cause = 'Railtel Issue';
+                else if (remarks.includes('resolved')) cause = 'Quick Resolution';
+                rootCauses.set(cause, (rootCauses.get(cause) || 0) + 1);
+                
+                // WAN distribution
+                if (outage.wan === 'WAN 1') wanIssues['WAN 1']++;
+                else if (outage.wan === 'WAN 2') wanIssues['WAN 2']++;
+                
+                // Provider issues
+                if (outage.provider) {
+                    providerIssues.set(outage.provider, (providerIssues.get(outage.provider) || 0) + 1);
+                }
+                
+                // Daily outages (by down date)
+                if (outage.downDate) {
+                    const dateKey = outage.downDate;
+                    dailyOutages.set(dateKey, (dailyOutages.get(dateKey) || 0) + 1);
+                }
+                
+                // Hourly pattern
+                if (outage.downTime) {
+                    const hour = parseInt(outage.downTime.split(':')[0]);
+                    if (!isNaN(hour) && hour >= 0 && hour < 24) hourlyOutages[hour]++;
+                }
+            });
+            
+            // Calculate MTTR (mean time to resolve)
+            const resolvedDurations = outages.filter(o => o.durationMinutes !== null && o.durationMinutes > 0).map(o => o.durationMinutes);
+            const avgMTTR = resolvedDurations.length > 0 ? Math.round(resolvedDurations.reduce((a,b) => a+b, 0) / resolvedDurations.length) : 0;
+            const totalOutages = outages.length;
+            const resolvedCount = outages.filter(o => o.resolveStatus === 'Resolved' && o.durationMinutes !== null).length;
+            
+            // Build KPI cards
+            buildKPIs(totalOutages, resolvedCount, avgMTTR, branches.size, rootCauses);
+            
+            // Destroy old charts
+            chartInstances.forEach(ch => ch.destroy());
+            chartInstances = [];
+            
+            const grid = document.getElementById('dashboardGrid');
+            grid.innerHTML = '';
+            
+            // 1. Time Series Line Chart - Outage Events Timeline
+            addTimeSeriesChart(grid, dailyOutages);
+            
+            // 2. Stacked Bar Chart - Outage Duration by Branch
+            addDurationByBranchChart(grid, branches);
+            
+            // 3. Pie Chart - Root Cause Distribution
+            addRootCauseChart(grid, rootCauses);
+            
+            // 4. Heatmap - Outages by Branch and Hour
+            addHeatmapChart(grid, outages, hourlyOutages);
+            
+            // 5. Dual-Axis - Resolution Time Analysis (MTTR by Branch)
+            addMTTRByBranchChart(grid, branches);
+            
+            // 6. Gantt Chart - Concurrent Outages Timeline (FIXED)
+            addGanttChart(grid, outages);
+            
+            // 7. Funnel Chart - Resolution Flow
+            addFunnelChart(grid, outages, resolvedCount, totalOutages);
+            
+            // 8. Scatter Plot - Response Time vs Resolution Time
+            addScatterPlot(grid, outages);
+            
+            // 9. Tree Map - Outage Impact by Branch
+            addImpactTreeMap(grid, branches);
+            
+            // 10. Control Chart - Outage Frequency
+            addControlChart(grid, dailyOutages);
+        }
+        
+        function buildKPIs(total, resolved, avgMTTR, branchCount, rootCauses) {
+            const kpiContainer = document.getElementById('kpiContainer');
+            const resolutionRate = total > 0 ? Math.round((resolved / total) * 100) : 0;
+            const topCause = [...rootCauses.entries()].sort((a,b) => b[1] - a[1])[0]?.[0] || 'N/A';
+            
+            kpiContainer.innerHTML = `
+                <div class="kpi-grid">
+                    <div class="kpi-card"><div class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></div><div class="kpi-value">${total}</div><div class="kpi-label">Total Outages</div></div>
+                    <div class="kpi-card"><div class="kpi-icon"><i class="bi bi-check-circle"></i></div><div class="kpi-value">${resolutionRate}%</div><div class="kpi-label">Resolution Rate</div><div class="kpi-trend trend-up">${resolved} resolved</div></div>
+                    <div class="kpi-card"><div class="kpi-icon"><i class="bi bi-clock-history"></i></div><div class="kpi-value">${avgMTTR}</div><div class="kpi-label">Avg MTTR (mins)</div></div>
+                    <div class="kpi-card"><div class="kpi-icon"><i class="bi bi-building"></i></div><div class="kpi-value">${branchCount}</div><div class="kpi-label">Affected Branches</div></div>
+                    <div class="kpi-card"><div class="kpi-icon"><i class="bi bi-lightning-charge"></i></div><div class="kpi-value">${topCause}</div><div class="kpi-label">Top Root Cause</div></div>
+                </div>
+            `;
+        }
+        
+        function addCard(parent, icon, title, desc, chartId, chartBuilder, statsText = '') {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="card-header"><i class="bi ${icon}"></i><div><h3>${title}</h3><p>${desc}</p></div></div>
+                <div class="chart-wrapper"><canvas id="${chartId}"></canvas></div>
+                <div class="stats-mini">${statsText}</div>
+            `;
+            parent.appendChild(card);
+            chartBuilder(chartId);
+        }
+        
+        function addTimeSeriesChart(parent, dailyOutages) {
+            const sortedDates = [...dailyOutages.keys()].sort();
+            const values = sortedDates.map(d => dailyOutages.get(d));
+            addCard(parent, 'bi-graph-up', 'Outage Timeline', 'Daily outage events', 'chart-timeseries', (id) => {
+                const ctx = document.getElementById(id).getContext('2d');
+                const chart = new Chart(ctx, {
+                    type: 'line', data: { labels: sortedDates, datasets: [{ label: 'Outages', data: values, borderColor: '#0f5b9c', backgroundColor: 'rgba(15,91,156,0.1)', fill: true, tension: 0.3, pointRadius: 5, pointBackgroundColor: '#0f5b9c' }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
+                });
+                chartInstances.push(chart);
+            }, `Total: ${values.reduce((a,b)=>a+b,0)} outages · Peak: ${Math.max(...values,0)} on ${sortedDates[values.indexOf(Math.max(...values))] || 'N/A'}`);
+        }
+        
+        function addDurationByBranchChart(parent, branches) {
+            const sorted = [...branches.entries()].sort((a,b) => b[1].totalDuration - a[1].totalDuration).slice(0, 8);
+            const labels = sorted.map(b => b[0]);
+            const durations = sorted.map(b => Math.round(b[1].totalDuration));
+            addCard(parent, 'bi-bar-chart-steps', 'Downtime by Branch', 'Total outage minutes', 'chart-duration', (id) => {
+                const ctx = document.getElementById(id).getContext('2d');
+                const chart = new Chart(ctx, { type: 'bar', data: { labels, datasets: [{ label: 'Downtime (mins)', data: durations, backgroundColor: '#f59e0b', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false } });
+                chartInstances.push(chart);
+            }, `Highest downtime: ${sorted[0]?.[0]} (${Math.round(sorted[0]?.[1].totalDuration)} mins)`);
+        }
+        
+        function addRootCauseChart(parent, rootCauses) {
+            const causes = [...rootCauses.entries()];
+            addCard(parent, 'bi-pie-chart', 'Root Cause Analysis', 'Primary failure reasons', 'chart-cause', (id) => {
+                const ctx = document.getElementById(id).getContext('2d');
+                const chart = new Chart(ctx, { type: 'pie', data: { labels: causes.map(c => c[0]), datasets: [{ data: causes.map(c => c[1]), backgroundColor: ['#ef4444', '#f59e0b', '#10b981', '#8b5cf6', '#64748b'] }] }, options: { responsive: true, maintainAspectRatio: false } });
+                chartInstances.push(chart);
+            }, `Most frequent: ${causes[0]?.[0]} (${causes[0]?.[1]} incidents)`);
+        }
+        
+        function addHeatmapChart(parent, outages, hourlyOutages) {
+            const branchHourMap = new Map();
+            outages.forEach(o => {
+                const branch = o.branch || 'Unknown';
+                const hour = o.downTime ? parseInt(o.downTime.split(':')[0]) : -1;
+                if (hour >= 0) {
+                    if (!branchHourMap.has(branch)) branchHourMap.set(branch, new Array(24).fill(0));
+                    branchHourMap.get(branch)[hour]++;
+                }
+            });
+            const topBranches = [...branchHourMap.entries()].sort((a,b) => b[1].reduce((s,v)=>s+v,0) - a[1].reduce((s,v)=>s+v,0)).slice(0, 6);
+            addCard(parent, 'bi-grid-3x3-gap-fill', 'Outage Heatmap', 'Hour × Branch (color intensity)', 'chart-heat', (id) => {
+                const ctx = document.getElementById(id).getContext('2d');
+                const chart = new Chart(ctx, { type: 'bar', data: { labels: Array.from({length:24},(_,i)=>`${i}:00`), datasets: topBranches.map((b,idx) => ({ label: b[0], data: b[1], backgroundColor: `hsla(${idx * 45}, 70%, 60%, 0.7)` })) }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxRotation: 45, autoSkip: true } } } } });
+                chartInstances.push(chart);
+            }, `Peak hour: ${hourlyOutages.indexOf(Math.max(...hourlyOutages))}:00`);
+        }
+        
+        function addMTTRByBranchChart(parent, branches) {
+            const mttrData = [...branches.entries()].map(([name, stats]) => ({ name, mttr: stats.resolved > 0 ? Math.round(stats.totalDuration / stats.resolved) : 0 })).filter(d => d.mttr > 0).sort((a,b) => b.mttr - a.mttr).slice(0, 8);
+            if (mttrData.length === 0) return;
+            addCard(parent, 'bi-speedometer2', 'MTTR by Branch', 'Mean time to resolve (minutes)', 'chart-mttr', (id) => {
+                const ctx = document.getElementById(id).getContext('2d');
+                const chart = new Chart(ctx, { type: 'bar', data: { labels: mttrData.map(d => d.name), datasets: [{ label: 'Avg Resolution Time (mins)', data: mttrData.map(d => d.mttr), backgroundColor: '#10b981' }] }, options: { responsive: true, maintainAspectRatio: false } });
+                chartInstances.push(chart);
+            }, `Slowest resolution: ${mttrData[0]?.name} (${mttrData[0]?.mttr} mins)`);
+        }
+        
+        // FIXED: Gantt Chart with proper duration display
+        function addGanttChart(parent, outages) {
+            // Filter only resolved outages with valid duration
+            const resolvedOutages = outages
+                .filter(o => o.durationMinutes !== null && o.durationMinutes > 0 && o.startTime && o.endTime)
+                .sort((a, b) => a.startTime - b.startTime)
+                .slice(0, 15); // Show last 15 resolved outages
+            
+            if (resolvedOutages.length === 0) {
+                const ganttContainer = document.createElement('div');
+                ganttContainer.className = 'card full-width';
+                ganttContainer.innerHTML = `<div class="card-header"><i class="bi bi-calendar-range"></i><div><h3>Concurrent Outages Timeline (Gantt)</h3><p>No resolved outages with duration data available</p></div></div>`;
+                parent.appendChild(ganttContainer);
+                return;
+            }
+            
+            // Find min and max time for scaling
+            const minTime = Math.min(...resolvedOutages.map(o => o.startTime.getTime()));
+            const maxTime = Math.max(...resolvedOutages.map(o => o.endTime.getTime()));
+            const timeRange = maxTime - minTime;
+            
+            const ganttContainer = document.createElement('div');
+            ganttContainer.className = 'card full-width';
+            ganttContainer.innerHTML = `
+                <div class="card-header">
+                    <i class="bi bi-calendar-range"></i>
+                    <div>
+                        <h3>Concurrent Outages Timeline (Gantt)</h3>
+                        <p>Visualizing outage duration and overlap between branches</p>
+                    </div>
+                </div>
+                <div class="gantt-container" id="gantt-visual"></div>
+                <div class="gantt-legend">
+                    <div class="gantt-legend-item"><div class="gantt-legend-color" style="background: #0f5b9c;"></div><span>WAN 1 (BSNL MPLS)</span></div>
+                    <div class="gantt-legend-item"><div class="gantt-legend-color" style="background: #8b5cf6;"></div><span>WAN 2 (RAILTEL)</span></div>
+                    <div class="gantt-legend-item"><div class="gantt-legend-color" style="background: #10b981;"></div><span>Resolved</span></div>
+                </div>
+                <div class="stats-mini">Showing last ${resolvedOutages.length} resolved outages · Bars show outage duration</div>
+            `;
+            parent.appendChild(ganttContainer);
+            
+            const ganttDiv = ganttContainer.querySelector('#gantt-visual');
+            
+            resolvedOutages.forEach(outage => {
+                const startOffset = outage.startTime.getTime() - minTime;
+                const durationMs = outage.durationMinutes * 60 * 1000;
+                const leftPercent = (startOffset / timeRange) * 100;
+                const widthPercent = (durationMs / timeRange) * 100;
+                
+                const branchName = outage.branch || outage.treasury?.substring(0, 20) || 'Unknown';
+                const wanType = outage.wan || 'WAN';
+                const color = wanType === 'WAN 1' ? '#0f5b9c' : '#8b5cf6';
+                const durationText = formatDuration(outage.durationMinutes);
+                const tooltip = `${branchName} (${wanType}): ${durationText} | ${outage.downDate} ${outage.downTime} → ${outage.resolvedDate} ${outage.resolvedTime}`;
+                
+                const row = document.createElement('div');
+                row.className = 'gantt-row';
+                row.innerHTML = `
+                    <div class="gantt-label">
+                        <i class="bi bi-building me-1"></i>${branchName}<br>
+                        <small style="font-size: 0.65rem; color: #64748b;">${wanType} · ${outage.provider || 'N/A'}</small>
+                    </div>
+                    <div class="gantt-bar-container">
+                        <div class="gantt-bar" style="width: ${Math.max(2, widthPercent)}%; left: ${leftPercent}%; position: relative; background: ${color};" 
+                             data-duration="${durationText}" 
+                             data-tooltip="${tooltip}">
+                            ${durationText}
+                        </div>
+                    </div>
+                `;
+                ganttDiv.appendChild(row);
+            });
+            
+            // Add CSS for absolute positioning within container
+            const style = document.createElement('style');
+            style.textContent = `
+                .gantt-bar-container {
+                    position: relative;
+                    background: #e9ecef;
+                }
+                .gantt-bar {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    min-width: 30px;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        function addFunnelChart(parent, outages, resolved, total) {
+            const wip = total - resolved;
+            addCard(parent, 'bi-funnel', 'Resolution Funnel', 'Issues reported → Resolved', 'chart-funnel', (id) => {
+                const ctx = document.getElementById(id).getContext('2d');
+                const chart = new Chart(ctx, { type: 'bar', data: { labels: ['Reported', 'Resolved'], datasets: [{ label: 'Count', data: [total, resolved], backgroundColor: ['#0f5b9c', '#10b981'], borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y' } });
+                chartInstances.push(chart);
+            }, `Resolution rate: ${total > 0 ? Math.round(resolved/total*100) : 0}% · ${wip} pending`);
+        }
+        
+        function addScatterPlot(parent, outages) {
+            const resolvedOutages = outages.filter(o => o.durationMinutes !== null && o.durationMinutes > 0).slice(0, 30);
+            if (resolvedOutages.length === 0) return;
+            const scatterData = resolvedOutages.map((o, idx) => ({ x: idx + 1, y: o.durationMinutes }));
+            addCard(parent, 'bi-scatter', 'Response vs Resolution', 'Each point = outage duration', 'chart-scatter', (id) => {
+                const ctx = document.getElementById(id).getContext('2d');
+                const chart = new Chart(ctx, { type: 'scatter', data: { datasets: [{ label: 'Outage Duration (mins)', data: scatterData, backgroundColor: '#f59e0b', pointRadius: 6, pointHoverRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { title: { display: true, text: 'Duration (mins)' } }, x: { title: { display: true, text: 'Outage Sequence' } } } } });
+                chartInstances.push(chart);
+            }, `Avg duration: ${Math.round(resolvedOutages.reduce((a,b)=>a+(b.durationMinutes||0),0)/resolvedOutages.length||0)} mins · Range: ${Math.min(...resolvedOutages.map(o=>o.durationMinutes))}-${Math.max(...resolvedOutages.map(o=>o.durationMinutes))} mins`);
+        }
+        
+        function addImpactTreeMap(parent, branches) {
+            const impactData = [...branches.entries()].map(([name, stats]) => ({ name, outages: stats.total })).sort((a,b) => b.outages - a.outages).slice(0, 10);
+            addCard(parent, 'bi-diagram-3', 'Impact Analysis', 'Outage count by branch', 'chart-impact', (id) => {
+                const ctx = document.getElementById(id).getContext('2d');
+                const chart = new Chart(ctx, { type: 'bar', data: { labels: impactData.map(d => d.name), datasets: [{ label: 'Outage Count', data: impactData.map(d => d.outages), backgroundColor: '#ef4444', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y' } });
+                chartInstances.push(chart);
+            }, `Most impacted: ${impactData[0]?.name} (${impactData[0]?.outages} outages)`);
+        }
+        
+        function addControlChart(parent, dailyOutages) {
+            const sorted = [...dailyOutages.keys()].sort();
+            const values = sorted.map(d => dailyOutages.get(d));
+            if (values.length === 0) return;
+            const avg = values.reduce((a,b)=>a+b,0) / (values.length || 1);
+            const stdDev = Math.sqrt(values.reduce((a,b)=>a+Math.pow(b-avg,2),0) / values.length);
+            const ucl = avg + 2 * stdDev;
+            const lcl = Math.max(0, avg - 2 * stdDev);
+            addCard(parent, 'bi-graph-up', 'Control Chart', 'Outage frequency with control limits', 'chart-control', (id) => {
+                const ctx = document.getElementById(id).getContext('2d');
+                const chart = new Chart(ctx, { type: 'line', data: { labels: sorted, datasets: [
+                    { label: 'Daily Outages', data: values, borderColor: '#0f5b9c', tension: 0.2, pointRadius: 4, pointBackgroundColor: '#0f5b9c' },
+                    { label: 'UCL (Upper Control Limit)', data: Array(values.length).fill(ucl), borderColor: '#ef4444', borderDash: [5,5], fill: false, pointRadius: 0 },
+                    { label: 'Mean', data: Array(values.length).fill(avg), borderColor: '#10b981', borderDash: [3,3], fill: false, pointRadius: 0 },
+                    { label: 'LCL (Lower Control Limit)', data: Array(values.length).fill(lcl), borderColor: '#f59e0b', borderDash: [5,5], fill: false, pointRadius: 0 }
+                ] }, options: { responsive: true, maintainAspectRatio: false, plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.toFixed(1)}` } } } } });
+                chartInstances.push(chart);
+            }, `Mean: ${avg.toFixed(1)} · UCL: ${ucl.toFixed(1)} · ${values[values.length-1] > ucl ? '⚠️ Above threshold - Investigate!' : 'Process stable'}`);
+        }
+        
+        window.onload = loadLiveData;
+    </script>
+</body>
+</html>

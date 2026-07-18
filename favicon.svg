@@ -1,0 +1,22 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with gradient -->
+  <defs>
+    <linearGradient id="violetGradientSmall" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#184e81"/>
+      <stop offset="100%" stop-color="#0457a4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect x="2" y="2" width="28" height="28" rx="6" fill="url(#violetGradientSmall)"/>
+  
+  <!-- Bootstrap compass icon (simplified, no text) -->
+  <g transform="translate(16, 16) scale(0.4)">
+    <circle cx="0" cy="0" r="20" fill="white"/>
+    <path d="M0 -16 L4 -5 L0 -8 L-4 -5 L0 -16" fill="#184e81"/>
+    <path d="M16 0 L5 -4 L8 0 L5 4 L16 0" fill="#184e81"/>
+    <path d="M0 16 L4 5 L0 8 L-4 5 L0 16" fill="#184e81"/>
+    <path d="M-16 0 L-5 4 L-8 0 L-5 -4 L-16 0" fill="#184e81"/>
+    <circle cx="0" cy="0" r="4" fill="#184e81"/>
+  </g>
+</svg>

@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Fatpipe Device | Complaint Report - Enhanced Status & Filters</title>
+    
+    <!-- Local CSS Resources -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
+    <link rel="stylesheet" href="../css/flatpickr.min.css">
+    <link rel="stylesheet" href="../css/sweetalert2.min.css">
+    
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background: #eef2f7;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 20px 16px;
+            margin: 0;
+        }
+        .app-card {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .page-header {
+            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+            color: white;
+            padding: 15px 25px;
+        }
+        .page-header h4 {
+            margin: 0;
+            font-weight: 600;
+        }
+        .page-header i {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+        .btn-primary-custom {
+            background: #0f3b5f;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-primary-custom:hover {
+            background: #0a2c46;
+            transform: translateY(-1px);
+        }
+        .btn-success-custom {
+            background: #10b981;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-success-custom:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+        .btn-secondary-custom {
+            background: #64748b;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-secondary-custom:hover {
+            background: #475569;
+        }
+        .form-control, .form-select {
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            padding: 8px 12px;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #0f3b5f;
+            box-shadow: 0 0 0 3px rgba(15,59,95,0.1);
+        }
+        .filter-row {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+        }
+        .filter-group {
+            flex: 1;
+            min-width: 160px;
+        }
+        .filter-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .filter-group select {
+            width: 100%;
+        }
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex: 1;
+            min-width: 240px;
+            flex-wrap: wrap;
+        }
+        .checkbox-group .form-check {
+            margin-bottom: 0;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .stats-badge {
+            background: #e6f0fa;
+            padding: 8px 15px;
+            border-radius: 40px;
+            color: #0f5b9c;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        #global-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(3px);
+        }
+        .table-responsive {
+            margin-top: 20px;
+        }
+        .table thead th {
+            background: linear-gradient(135deg, #1a4b7a 0%, #1a4b7a 100%);
+            color: white;
+            font-weight: 500;
+            font-size: 0.8rem;
+            vertical-align: middle;
+            white-space: nowrap;
+            padding: 10px 8px;
+        }
+        .table td {
+            padding: 8px;
+            vertical-align: middle;
+            font-size: 0.8rem;
+        }
+        /* Enhanced status badges */
+        .badge-pending { background-color: #f59e0b; color: white; padding: 4px 10px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; }
+        .badge-processing { background-color: #3b82f6; color: white; padding: 4px 10px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; }
+        .badge-completed { background-color: #10b981; color: white; padding: 4px 10px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; }
+        .badge-in-transit { background-color: #8b5cf6; color: white; padding: 4px 10px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; }
+        .badge-spare { background-color: #ec489a; color: white; padding: 4px 10px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; }
+        
+        /* Bold & colored style for To Branch + Transfer Date when In Transit */
+        .in-transit-highlight {
+            font-weight: 800 !important;
+            color: #6d28d9 !important;
+            background-color: #ede9fe;
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+        }
+        .transit-cell {
+            font-weight: 700;
+            color: #5b21b6;
+        }
+        .placeholder-message {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+        .placeholder-message i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #cbd5e1;
+        }
+        @media (max-width: 768px) {
+            .filter-row { flex-direction: column; }
+            .action-buttons { width: 100%; }
+            .action-buttons button { flex: 1; }
+        }
+        .content-pane {
+            padding: 25px;
+        }
+        .spare-note {
+            font-size: 0.7rem;
+            color: #5b21b6;
+            background: #ede9fe;
+            border-radius: 30px;
+            padding: 5px 12px;
+            display: inline-block;
+            margin-left: 8px;
+        }
+        /* status filter dropdown style */
+        .status-filter-group {
+            min-width: 180px;
+        }
+    </style>
+</head>
+<body>
+<div class="app-card">
+    <div class="page-header d-flex align-items-center">
+        <i class="bi bi-file-text-fill"></i>
+        <div>
+            <h4>Fatpipe Device - Complaint Report</h4>
+            <small class="opacity-75">Enhanced with In-Transit status & dynamic filters</small>
+        </div>
+    </div>
+    
+    <div class="content-pane">
+        <!-- Filter Section with status dropdown -->
+        <div class="filter-row">
+            <div class="filter-group">
+                <label><i class="bi bi-building"></i> Select Branch</label>
+                <select id="branchSelect" class="form-select">
+                    <option value="">-- All Branches --</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label><i class="bi bi-calendar"></i> From Date (Complaint / Transfer)</label>
+                <input type="text" id="fromDate" class="form-control flatpickr-from" placeholder="DD/MM/YYYY">
+            </div>
+            <div class="filter-group">
+                <label><i class="bi bi-calendar"></i> To Date (Complaint / Transfer)</label>
+                <input type="text" id="toDate" class="form-control flatpickr-to" placeholder="DD/MM/YYYY">
+            </div>
+            <!-- NEW: Status wise filtering dropdown -->
+            <div class="filter-group status-filter-group">
+                <label><i class="bi bi-funnel"></i> Filter by Status</label>
+                <select id="statusFilterSelect" class="form-select">
+                    <option value="all">-- All Statuses --</option>
+                    <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
+                    <option value="in_transit">In Transit (To Branch assigned)</option>
+                    <option value="completed">Delivered / Completed</option>
+                    <option value="spare">Spare Device</option>
+                </select>
+            </div>
+            <div class="checkbox-group">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="showPending" checked>
+                    <label class="form-check-label" for="showPending"> Pending</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="showProcessed" checked>
+                    <label class="form-check-label" for="showProcessed"> Processed</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="includeSpareDevices" checked>
+                    <label class="form-check-label" for="includeSpareDevices"> Spare </label>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button id="generateReportBtn" class="btn btn-primary-custom"><i class="bi bi-search"></i> View</button>
+                <button id="resetBtn" class="btn btn-secondary-custom"><i class="bi bi-arrow-repeat"></i> Reset</button>
+                <button id="exportCsvBtn" class="btn btn-success-custom" disabled><i class="bi bi-filetype-csv"></i> CSV</button>
+            </div>
+        </div>
+        
+        <!-- Stats Row -->
+        <div id="statsContainer" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                <div>
+                    <span class="stats-badge" id="recordCount">0 Records</span>
+                    <span class="stats-badge ms-2" id="spareIncludedBadge" style="background:#ede9fe;color:#5b21b6;">Spare Incl: 0</span>
+                </div>
+                <div>
+                    <span class="stats-badge" id="pendingCount">Pending: 0</span>
+                    <span class="stats-badge ms-2" id="processedCount">Processed: 0</span>
+                    <span class="stats-badge ms-2" id="inTransitCount" style="background:#ede9fe;color:#5b21b6;">In Transit: 0</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Table -->
+        <div class="table-responsive">
+            <table id="reportTable" class="table table-striped table-hover" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Treasury</th>
+                        <th>Device Serial No.</th>
+                        <th>Device Type</th>
+                        <th>From Branch</th>
+                        <th>Complaint Remarks</th>
+                        <th>Complaint Date</th>
+                        <th>Sent Date</th>
+                        <th>Received Date</th>
+                        <th>Date of Movement to OEM</th>
+                        <th>Date of return from OEM</th>
+                        <th>To Branch</th>
+                        <th>Date of Transfer</th>
+                        <th>Remarks</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="placeholder-row">
+                        <td colspan="15" class="placeholder-message">
+                            <i class="bi bi-search-heart"></i>
+                            <h5>No Report Generated</h5>
+                            <p>Select filters & click "View"</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script src="../js/jquery.dataTables.min.js"></script>
+<script src="../js/dataTables.bootstrap5.min.js"></script>
+<script src="../js/select2.min.js"></script>
+<script src="../js/flatpickr.min.js"></script>
+<script src="../js/sweetalert2.all.min.js"></script>
+
+<script>
+    // ================= CONFIGURATION =================
+    const SPREADSHEET_ID = "1MpftwfNIe82kORjP6xeLo1qUh3v6Cr8HHo0oSW2grYA";
+    const MOVEMENT_SHEET = "Movement_Data";
+    const API_KEY = "AIzaSyDc8tegwi2rgHyDFYm7uWBqVqQ7Fwb3uWM";
+    
+    let allRecords = [];
+    let filteredRecords = [];
+    let branchesList = [];
+    let dataTable = null;
+    let flatpickrFrom, flatpickrTo;
+    let isReportGenerated = false;
+    let spareIncludedCount = 0;
+    
+    function showGlobalLoading(msg) {
+        if($('#global-loading-overlay').length) return;
+        $('body').append(`<div id="global-loading-overlay"><div style="background:white;padding:30px;border-radius:24px;text-align:center;"><i class="bi bi-arrow-repeat" style="font-size:48px;color:#0f3b5f;animation:spin 1s linear infinite;"></i><p>${msg}</p></div></div>`);
+    }
+    function hideGlobalLoading() { $('#global-loading-overlay').remove(); }
+    
+    function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
+    
+    function parseDMYToDate(dateStr) {
+        if(!dateStr || dateStr === null) return null;
+        const trimmed = String(dateStr).trim();
+        if(trimmed === "" || trimmed.toUpperCase() === "N/A" || trimmed === "NA") return null;
+        let parts = trimmed.split('/');
+        if(parts.length === 3) {
+            let day = parseInt(parts[0],10);
+            let month = parseInt(parts[1],10)-1;
+            let year = parseInt(parts[2],10);
+            if(!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                return new Date(year, month, day);
+            }
+        }
+        return null;
+    }
+    
+    function formatDateForCompare(dateStr) {
+        const date = parseDMYToDate(dateStr);
+        if(!date) return null;
+        return date.getTime();
+    }
+    
+    function isComplaintDateInvalidOrBlank(dateStr) {
+        if(!dateStr) return true;
+        const trimmed = String(dateStr).trim();
+        if(trimmed === "" || trimmed.toUpperCase() === "N/A" || trimmed === "NA") return true;
+        return false;
+    }
+    
+    // ============ NEW STATUS LOGIC: In Transit ============
+    // A record is considered "In Transit" if it has a non-empty To Branch value AND a non-empty Date of Transfer (transferDate)
+    // Also must not have a Received Date (if Received Date exists, it's completed/delivered)
+    // For clarity: 
+    // - Completed: Received Date present (final delivered)
+    // - In Transit: To Branch + Transfer Date present, but no Received Date
+    // - Processing: No Received, not In Transit, but has OEM movement or similar
+    // - Pending: None of above
+    
+    function getEnhancedRecordStatus(record) {
+        const hasToBranch = record.toBranch && record.toBranch.trim() !== "" && record.toBranch !== "N/A";
+        const hasTransferDate = record.transferDate && record.transferDate.trim() !== "" && record.transferDate !== "N/A";
+        const hasReceivedDate = record.receivedDate && record.receivedDate.trim() !== "" && record.receivedDate !== "N/A";
+        
+        // If received date exists => Completed/Delivered
+        if(hasReceivedDate) {
+            return "Completed";
+        }
+        
+        // New "In Transit" condition: To Branch filled AND Transfer Date filled (device has been assigned to another branch)
+        if(hasToBranch && hasTransferDate) {
+            return "In Transit";
+        }
+        
+        // If OEM movement exists but no ToBranch/Transfer + no received => Processing
+        if((record.moveToOem && record.moveToOem.trim() !== "") || (record.returnFromOem && record.returnFromOem.trim() !== "")) {
+            return "Processing";
+        }
+        
+        // else pending
+        return "Pending";
+    }
+    
+    // Helper to check if record qualifies as spare for badge/stats
+    function isSpareIncludedRecord(record, fromDateStr, toDateStr, includeSpareFlag) {
+        if(!includeSpareFlag) return false;
+        const complaintInvalid = isComplaintDateInvalidOrBlank(record.complaintDate);
+        if(!complaintInvalid) return false;
+        const transferDateTime = formatDateForCompare(record.transferDate);
+        if(transferDateTime === null) return false;
+        const fromTime = fromDateStr ? formatDateForCompare(fromDateStr) : null;
+        const toTime = toDateStr ? formatDateForCompare(toDateStr) : null;
+        if(fromTime && toTime) return (transferDateTime >= fromTime && transferDateTime <= toTime);
+        else if(fromTime) return (transferDateTime >= fromTime);
+        else if(toTime) return (transferDateTime <= toTime);
+        return true;
+    }
+    
+    // Date range filter using complaint date OR (spare logic)
+    function isRecordInDateRange(record, fromDateStr, toDateStr, includeSpare) {
+        const complaintDate = record.complaintDate;
+        const transferDate = record.transferDate;
+        
+        const complaintDateTime = formatDateForCompare(complaintDate);
+        const fromTime = fromDateStr ? formatDateForCompare(fromDateStr) : null;
+        const toTime = toDateStr ? formatDateForCompare(toDateStr) : null;
+        
+        let complaintInRange = false;
+        if(complaintDateTime !== null) {
+            if(fromTime && toTime) complaintInRange = (complaintDateTime >= fromTime && complaintDateTime <= toTime);
+            else if(fromTime) complaintInRange = (complaintDateTime >= fromTime);
+            else if(toTime) complaintInRange = (complaintDateTime <= toTime);
+            else complaintInRange = true;
+        }
+        
+        if(complaintInRange) return true;
+        
+        if(includeSpare) {
+            const isComplaintInvalid = isComplaintDateInvalidOrBlank(complaintDate);
+            if(isComplaintInvalid) {
+                const transferDateTime = formatDateForCompare(transferDate);
+                if(transferDateTime !== null) {
+                    if(fromTime && toTime) return (transferDateTime >= fromTime && transferDateTime <= toTime);
+                    else if(fromTime) return (transferDateTime >= fromTime);
+                    else if(toTime) return (transferDateTime <= toTime);
+                    else return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    async function fetchBranchesFromMovementData() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(MOVEMENT_SHEET)}!E:E?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            const branchesSet = new Set();
+            for(let i=1; i<rows.length; i++) {
+                const branch = rows[i] && rows[i][0] ? rows[i][0].trim() : "";
+                if(branch && branch !== "") branchesSet.add(branch);
+            }
+            return Array.from(branchesSet).sort((a,b) => a.localeCompare(b));
+        } catch(e) { console.error("Error fetching branches:", e); return []; }
+    }
+    
+    function populateBranchDropdown(branches) {
+        const $select = $('#branchSelect');
+        $select.empty();
+        $select.append('<option value="">-- All Branches --</option>');
+        branches.forEach(branch => {
+            $select.append(`<option value="${escapeHtml(branch)}">${escapeHtml(branch)}</option>`);
+        });
+        $select.select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Select branch to filter',
+            allowClear: true
+        });
+    }
+    
+    async function fetchMovementRecords() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(MOVEMENT_SHEET)}!A:O?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            const records = [];
+            for(let i=1; i<rows.length; i++) {
+                const row = rows[i];
+                if(row.length > 0 && row[0]) {
+                    records.push({
+                        id: i,
+                        refId: row[0] || "",
+                        treasury: row[1] || "",
+                        serialNo: row[2] || "",
+                        deviceType: row[3] || "",
+                        fromBranch: row[4] || "",
+                        complaintRemarks: row[5] || "",
+                        complaintDate: row[6] || "",
+                        sentDate: row[8] || "",
+                        receivedDate: row[9] || "",
+                        moveToOem: row[10] || "",
+                        returnFromOem: row[11] || "",
+                        toBranch: row[12] || "",
+                        transferDate: row[13] || "",
+                        remarks: row[14] || ""
+                    });
+                }
+            }
+            allRecords = records;
+            return records;
+        } catch(e) { console.error("Error fetching records:", e); return []; }
+    }
+    
+    function applyFilters() {
+        const selectedBranch = $('#branchSelect').val();
+        const fromDate = $('#fromDate').val();
+        const toDate = $('#toDate').val();
+        const showPending = $('#showPending').is(':checked');
+        const showProcessed = $('#showProcessed').is(':checked');
+        const includeSpare = $('#includeSpareDevices').is(':checked');
+        const statusFilterValue = $('#statusFilterSelect').val(); // new status dropdown
+        
+        filteredRecords = allRecords.filter(record => {
+            if(selectedBranch && selectedBranch !== "" && record.fromBranch !== selectedBranch) return false;
+            if(!isRecordInDateRange(record, fromDate, toDate, includeSpare)) return false;
+            
+            // Basic legacy status filter (Pending vs Processed) but we have enhanced status now
+            const enhancedStatus = getEnhancedRecordStatus(record);
+            const isSpareFlag = isSpareIncludedRecord(record, fromDate, toDate, includeSpare);
+            
+            // Determine if record should pass through legacy checkbox filter: Pending or Processed (non-pending)
+            let passesLegacy = false;
+            if(enhancedStatus === "Pending" && showPending) passesLegacy = true;
+            if(enhancedStatus !== "Pending" && showProcessed) passesLegacy = true;
+            if(!showPending && !showProcessed) passesLegacy = false;
+            if(!passesLegacy) return false;
+            
+            // Apply new status dropdown filter (priority over legacy but combines)
+            if(statusFilterValue !== "all") {
+                if(statusFilterValue === "pending" && enhancedStatus !== "Pending") return false;
+                if(statusFilterValue === "processing" && enhancedStatus !== "Processing") return false;
+                if(statusFilterValue === "in_transit" && enhancedStatus !== "In Transit") return false;
+                if(statusFilterValue === "completed" && enhancedStatus !== "Completed") return false;
+                if(statusFilterValue === "spare" && !isSpareFlag) return false;
+            }
+            
+            return true;
+        });
+        
+        // Sorting: complaint date asc / fallback transfer date
+        filteredRecords.sort((a, b) => {
+            const dateA = parseDMYToDate(a.complaintDate);
+            const dateB = parseDMYToDate(b.complaintDate);
+            if(dateA && dateB) return dateA - dateB;
+            if(dateA && !dateB) return -1;
+            if(!dateA && dateB) return 1;
+            const transferA = parseDMYToDate(a.transferDate);
+            const transferB = parseDMYToDate(b.transferDate);
+            if(transferA && transferB) return transferA - transferB;
+            if(transferA) return -1;
+            if(transferB) return 1;
+            return 0;
+        });
+        
+        // Count spare included
+        spareIncludedCount = 0;
+        filteredRecords.forEach(rec => {
+            if(isSpareIncludedRecord(rec, fromDate, toDate, includeSpare)) spareIncludedCount++;
+        });
+        
+        const pendingCount = filteredRecords.filter(r => getEnhancedRecordStatus(r) === "Pending").length;
+        const processedCount = filteredRecords.filter(r => getEnhancedRecordStatus(r) !== "Pending" && getEnhancedRecordStatus(r) !== "In Transit").length; // non-pending non-transit? but we show separately
+        const inTransitCount = filteredRecords.filter(r => getEnhancedRecordStatus(r) === "In Transit").length;
+        const completedCount = filteredRecords.filter(r => getEnhancedRecordStatus(r) === "Completed").length;
+        
+        $('#recordCount').text(`${filteredRecords.length} Records`);
+        $('#pendingCount').text(`Pending: ${pendingCount}`);
+        $('#processedCount').text(`Processed (OEM/Other): ${processedCount + completedCount}`);
+        $('#inTransitCount').html(`<i class="bi bi-truck"></i> In Transit: ${inTransitCount}`);
+        $('#spareIncludedBadge').html(`<i class="bi bi-box-seam"></i> Spare Incl: ${spareIncludedCount}`);
+        
+        return filteredRecords;
+    }
+    
+    function renderTable() {
+        const filtered = applyFilters();
+        
+        if(dataTable) {
+            dataTable.destroy();
+            $('#reportTable tbody').empty();
+        }
+        
+        if(filtered.length === 0) {
+            $('#reportTable tbody').html(`
+                <tr class="placeholder-row">
+                    <td colspan="15" class="placeholder-message">
+                        <i class="bi bi-inbox"></i>
+                        <h5>No Records Found</h5>
+                        <p>No records match the selected filters. Try adjusting status or enable 'Include Spare Device Issue'.</p>
+                    </td>
+                </tr>
+            `);
+            dataTable = null;
+            $('#exportCsvBtn').prop('disabled', true);
+            return;
+        }
+        
+        dataTable = $('#reportTable').DataTable({
+            data: filtered,
+            columns: [
+                { data: null, render: (row, type, rowData, meta) => meta.row + 1 },
+                { data: "treasury" },
+                { data: "serialNo" },
+                { data: "deviceType" },
+                { data: "fromBranch" },
+                { data: "complaintRemarks", render: d => d ? d : '—' },
+                { data: "complaintDate", render: d => (!d || d.trim() === "" || d.toUpperCase() === "N/A") ? '<span class="text-muted fst-italic">N/A (Spare)</span>' : d },
+                { data: "sentDate", render: d => d ? d : '—' },
+                { data: "receivedDate", render: d => d ? d : '—' },
+                { data: "moveToOem", render: d => d ? d : '—' },
+                { data: "returnFromOem", render: d => d ? d : '—' },
+                { 
+                    data: "toBranch", 
+                    render: (value, type, row) => {
+                        const status = getEnhancedRecordStatus(row);
+                        if(status === "In Transit" && value && value.trim() !== "") {
+                            return `<span class="in-transit-highlight"><i class="bi bi-arrow-right-short"></i> ${escapeHtml(value)}</span>`;
+                        }
+                        return value && value.trim() !== "" ? escapeHtml(value) : '—';
+                    }
+                },
+                { 
+                    data: "transferDate", 
+                    render: (value, type, row) => {
+                        const status = getEnhancedRecordStatus(row);
+                        if(status === "In Transit" && value && value.trim() !== "") {
+                            return `<span class="transit-cell"><strong>${escapeHtml(value)}</strong></span>`;
+                        }
+                        return value && value.trim() !== "" ? value : '—';
+                    }
+                },
+                { data: "remarks", render: d => d ? d : '—' },
+                { 
+                    data: null, 
+                    render: (row) => {
+                        const status = getEnhancedRecordStatus(row);
+                        const isSpare = isSpareIncludedRecord(row, $('#fromDate').val(), $('#toDate').val(), $('#includeSpareDevices').is(':checked'));
+                        if(isSpare && status !== "In Transit") {
+                            return '<span class="badge-spare">Spare Device</span>';
+                        }
+                        if(status === "In Transit") return '<span class="badge-in-transit"><i class="bi bi-truck"></i> In Transit</span>';
+                        if(status === "Completed") return '<span class="badge-completed"><i class="bi bi-check-circle"></i> Delivered</span>';
+                        if(status === "Processing") return '<span class="badge-processing">Processing</span>';
+                        return '<span class="badge-pending">Pending</span>';
+                    }
+                }
+            ],
+            order: [[0, 'asc']],
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'All']],
+            language: { search: "Filter:", searchPlaceholder: "Search records..." },
+            scrollX: true,
+            autoWidth: false,
+            drawCallback: function() {
+                $('#exportCsvBtn').prop('disabled', false);
+            }
+        });
+        
+        dataTable.order([0, 'asc']).draw();
+        $('#exportCsvBtn').prop('disabled', false);
+    }
+    
+    async function generateReport() {
+        showGlobalLoading("Loading data from Google Sheets...");
+        await fetchMovementRecords();
+        renderTable();
+        hideGlobalLoading();
+        $('#statsContainer').show();
+        if(filteredRecords.length === 0 && allRecords.length > 0) {
+            Swal.fire({ icon: 'info', title: 'No Records', text: 'Try adjusting status filter or enabling spare device inclusion.' });
+        } else if(allRecords.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'No Data', text: 'No records found in the sheet.' });
+        } else {
+            Swal.fire({ icon: 'success', title: 'Report Generated', text: `${filteredRecords.length} records found.`, timer: 1800, showConfirmButton: false });
+        }
+        isReportGenerated = true;
+    }
+    
+    function exportToCSV() {
+        if(!isReportGenerated || filteredRecords.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'No Data', text: 'No records to export. Please generate report first.' });
+            return;
+        }
+        let dataToExport = filteredRecords;
+        if(dataTable) {
+            const searchTerm = dataTable.search();
+            if(searchTerm && searchTerm !== "") {
+                dataToExport = dataTable.rows({ search: 'applied' }).data().toArray();
+            }
+        }
+        const headers = ['Sl No', 'Treasury', 'Device Serial No.', 'Device Type', 'From Branch',
+            'Complaint Remarks', 'Complaint Date', 'Sent Date', 'Received Date',
+            'Date of Movement to OEM', 'Date of return from OEM', 'To Branch', 'Date of Transfer',
+            'Remarks', 'Status'];
+        const rows = [];
+        let serialNo = 1;
+        dataToExport.forEach(record => {
+            const status = getEnhancedRecordStatus(record);
+            rows.push([
+                serialNo++, record.treasury, record.serialNo, record.deviceType, record.fromBranch,
+                record.complaintRemarks, (record.complaintDate && record.complaintDate.trim() !== "") ? record.complaintDate : 'N/A (Spare)',
+                record.sentDate, record.receivedDate, record.moveToOem, record.returnFromOem,
+                record.toBranch, record.transferDate, record.remarks, status
+            ]);
+        });
+        const csvContent = [headers, ...rows];
+        const csvString = csvContent.map(row => row.map(cell => {
+            const cellStr = String(cell);
+            if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) return `"${cellStr.replace(/"/g, '""')}"`;
+            return cellStr;
+        }).join(',')).join('\n');
+        const blob = new Blob(['\uFEFF' + csvString], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `fatpipe_report_${Date.now()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        Swal.fire({ icon: 'success', title: 'Exported!', text: `${dataToExport.length} records exported.`, timer: 1500, showConfirmButton: false });
+    }
+    
+    function resetFilters() {
+        $('#branchSelect').val('').trigger('change');
+        $('#fromDate').val('');
+        $('#toDate').val('');
+        $('#statusFilterSelect').val('all');
+        $('#showPending').prop('checked', true);
+        $('#showProcessed').prop('checked', true);
+        $('#includeSpareDevices').prop('checked', false);
+        if(flatpickrFrom) flatpickrFrom.clear();
+        if(flatpickrTo) flatpickrTo.clear();
+        if(dataTable) { dataTable.destroy(); dataTable = null; }
+        $('#reportTable tbody').html(`<tr class="placeholder-row"><td colspan="15" class="placeholder-message"><i class="bi bi-search-heart"></i><h5>No Report Generated</h5><p>Select filters & click "View"</p></td></tr>`);
+        $('#statsContainer').hide();
+        $('#exportCsvBtn').prop('disabled', true);
+        isReportGenerated = false;
+        filteredRecords = [];
+        Swal.fire({ icon: 'info', title: 'Reset Complete', text: 'All filters cleared.', timer: 1500, showConfirmButton: false });
+    }
+    
+    function initFlatpickr() {
+        flatpickrFrom = flatpickr("#fromDate", { dateFormat: "d/m/Y" });
+        flatpickrTo = flatpickr("#toDate", { dateFormat: "d/m/Y" });
+    }
+    
+    $(async function() {
+        showGlobalLoading("Loading branches...");
+        const branches = await fetchBranchesFromMovementData();
+        branchesList = branches;
+        populateBranchDropdown(branchesList);
+        initFlatpickr();
+        hideGlobalLoading();
+        $('#generateReportBtn').on('click', generateReport);
+        $('#exportCsvBtn').on('click', exportToCSV);
+        $('#resetBtn').on('click', resetFilters);
+        $('#statusFilterSelect').on('change', function() { if(isReportGenerated) renderTable(); });
+        $('#showPending, #showProcessed, #includeSpareDevices, #branchSelect').on('change', function() { if(isReportGenerated) renderTable(); });
+        $('#exportCsvBtn').prop('disabled', true);
+    });
+</script>
+</body>
+</html>

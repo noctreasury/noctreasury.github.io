@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Author Approval - Admin Panel</title>
+	 <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="../images/favicon.svg">
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/bootstrap-icons.min.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="css/dataTables.bootstrap5.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --gray-bg: #f8fafc;
+            --card-border: #e2e8f0;
+        }
+        body {
+            background: #f8fafc;
+            min-height: 100vh;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        .admin-card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            border: 1px solid var(--card-border);
+        }
+        .admin-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .admin-header i {
+            font-size: 3rem;
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .admin-header h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-top: 0.5rem;
+            color: #1e293b;
+        }
+        .login-section, .dashboard-section {
+            transition: all 0.3s ease;
+        }
+        .login-section.hidden, .dashboard-section.hidden {
+            display: none;
+        }
+        .form-control {
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--card-border);
+        }
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            outline: none;
+        }
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            border: none;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            color: white;
+            transition: transform 0.2s;
+        }
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+        }
+        .btn-success-custom {
+            background: var(--success);
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            color: white;
+        }
+        .btn-danger-custom {
+            background: var(--danger);
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            color: white;
+        }
+        .btn-info-custom {
+            background: var(--info);
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            color: white;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .status-approved {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status-pending {
+            background: #fed7aa;
+            color: #9a3412;
+        }
+        .status-denied {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .toast-custom {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1f1f1f;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 48px;
+            z-index: 1090;
+            opacity: 0;
+            transition: opacity 0.25s;
+            pointer-events: none;
+        }
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+        }
+        .spinner-overlay.active {
+            visibility: visible;
+        }
+        .spinner-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+        }
+        .modal-profile-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 1rem;
+            border: 3px solid var(--primary);
+        }
+        .logout-btn {
+            cursor: pointer;
+            color: var(--danger);
+            margin-left: 1rem;
+        }
+        .logout-btn:hover {
+            text-decoration: underline;
+        }
+        .admin-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .admin-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .admin-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        /* Notification Badge on Login Card */
+        .login-notification {
+            background: #fef3c7;
+            border: 1px solid #fde68a;
+            border-radius: 1rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .login-notification .notification-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .login-notification .notification-info i {
+            font-size: 1.5rem;
+            color: var(--warning);
+        }
+        .login-notification .pending-badge {
+            background: var(--danger);
+            color: white;
+            border-radius: 2rem;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .login-notification .no-pending {
+            background: var(--success);
+            color: white;
+            border-radius: 2rem;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .pulse-animation {
+            animation: pulse 1s infinite;
+        }
+        @media (max-width: 768px) {
+            .admin-container { padding: 1rem; }
+            .admin-card { padding: 1.5rem; }
+            .admin-info { flex-direction: column; align-items: flex-start; }
+            .login-notification { flex-direction: column; text-align: center; }
+        }
+		.login-link {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--card-border);
+}
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Login Section with Notification Badge -->
+        <div id="loginSection" class="login-section">
+            <div class="admin-card" style="max-width: 450px; margin: 0 auto;">
+                <!-- Pending Approval Notification Badge on Login Card -->
+                <div id="loginNotification" class="login-notification" style="display: none;">
+                    <div class="notification-info">
+                        <i class="bi bi-bell-fill"></i>
+                        <span><strong>Pending Author Approvals</strong></span>
+                    </div>
+                    <span id="loginPendingCount" class="pending-badge">0</span>
+                </div>
+                
+                <div class="admin-header">
+                    <i class="bi bi-shield-lock-fill"></i>
+                    <h2>Admin Login</h2>
+                    <p class="text-muted">Enter admin credentials to manage authors</p>
+                </div>
+                <form id="adminLoginForm">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Admin Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                            <input type="text" class="form-control" id="adminUsername" placeholder="Enter admin username" required>
+                        </div>
+                        <div class="form-text">Only "Admin" username is allowed</div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Admin Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                            <input type="password" class="form-control" id="adminPassword" placeholder="Enter admin password" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary-custom w-100">
+                        <i class="bi bi-box-arrow-in-right"></i> Login as Admin
+                    </button>
+                </form>
+				 <div class="login-link">
+                    Back to  <a href="login.html">Log In</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboardSection" class="dashboard-section hidden">
+            <div class="admin-card">
+                <div class="admin-info">
+                    <div class="admin-left">
+                        <span><i class="bi bi-person-circle"></i> Admin: <strong id="adminNameDisplay"></strong></span>
+                    </div>
+                    <div class="admin-right">
+                        <span class="logout-btn" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</span>
+                    </div>
+                </div>
+                <div class="admin-header">
+                    <i class="bi bi-people-fill"></i>
+                    <h2>Author Approval Management</h2>
+                    <p class="text-muted">Review and manage author registrations</p>
+                </div>
+                
+                <div class="table-responsive">
+                    <table id="authorsTable" class="table table-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Author Name</th>
+                                <th>Designation</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="6" class="text-center">Loading authors...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Author Details Modal -->
+    <div class="modal fade" id="authorModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-person-badge"></i> Author Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="authorModalBody">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status"></div>
+                    </div>
+                </div>
+                <div class="modal-footer" id="authorModalFooter">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="spinnerOverlay" class="spinner-overlay">
+        <div class="spinner-box">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 mb-0">Processing...</p>
+        </div>
+    </div>
+
+    <!-- Toast Message -->
+    <div id="liveToast" class="toast-custom"><i class="bi bi-check-lg me-2"></i><span id="toastMsg"></span></div>
+
+    <script src="js/jquery-3.7.0.min.js"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/jquery.dataTables.min.js"></script>
+    <script src="js/dataTables.bootstrap5.min.js"></script>
+    <script src="config.js"></script>
+    <script>
+        let authorsData = [];
+        let dataTable = null;
+        let currentAdmin = '';
+
+        function showToastMessage(msg, isError = false) {
+            const toastEl = document.getElementById('liveToast');
+            const span = document.getElementById('toastMsg');
+            span.innerText = msg;
+            toastEl.style.background = isError ? '#dc2626' : '#1f1f1f';
+            toastEl.style.opacity = '1';
+            setTimeout(() => { toastEl.style.opacity = '0'; }, 3000);
+        }
+
+        function setLoading(loading) {
+            const spinner = document.getElementById('spinnerOverlay');
+            loading ? spinner.classList.add('active') : spinner.classList.remove('active');
+        }
+
+        function logout() {
+            sessionStorage.removeItem('adminLoggedIn');
+            sessionStorage.removeItem('adminName');
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('dashboardSection').classList.add('hidden');
+            document.getElementById('adminUsername').value = '';
+            document.getElementById('adminPassword').value = '';
+            // Reload pending count on login screen
+            loadPendingCountOnly();
+            showToastMessage('Logged out successfully');
+        }
+
+        // Load only pending count for login page notification
+        async function loadPendingCountOnly() {
+            try {
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/Profiles!A:G?key=${CONFIG.API_KEY}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                const rows = data.values || [];
+                
+                let pendingCount = 0;
+                
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    const authorName = row[0]?.trim();
+                    const confirmStatus = row[5]?.trim() || 'No';
+                    
+                    // Skip admin user
+                    if (authorName && authorName.toLowerCase() === 'admin') {
+                        continue;
+                    }
+                    
+                    // Count pending (Confirm = "No")
+                    if (confirmStatus === 'No') {
+                        pendingCount++;
+                    }
+                }
+                
+                const notificationDiv = document.getElementById('loginNotification');
+                const pendingSpan = document.getElementById('loginPendingCount');
+                
+                if (pendingCount > 0) {
+                    notificationDiv.style.display = 'flex';
+                    pendingSpan.innerText = pendingCount;
+                    pendingSpan.className = 'pending-badge pulse-animation';
+                    pendingSpan.style.background = '#ef4444';
+                } else {
+                    notificationDiv.style.display = 'flex';
+                    pendingSpan.innerText = '0';
+                    pendingSpan.className = 'no-pending';
+                    pendingSpan.style.background = '#10b981';
+                }
+            } catch(error) {
+                console.error('Error loading pending count:', error);
+            }
+        }
+
+        // Update pending count in login notification
+        function updateLoginPendingCount(pendingCount) {
+            const notificationDiv = document.getElementById('loginNotification');
+            const pendingSpan = document.getElementById('loginPendingCount');
+            
+            if (pendingCount > 0) {
+                notificationDiv.style.display = 'flex';
+                pendingSpan.innerText = pendingCount;
+                pendingSpan.className = 'pending-badge pulse-animation';
+                pendingSpan.style.background = '#ef4444';
+            } else {
+                notificationDiv.style.display = 'flex';
+                pendingSpan.innerText = '0';
+                pendingSpan.className = 'no-pending';
+                pendingSpan.style.background = '#10b981';
+            }
+        }
+
+        // Admin Login Verification - ONLY "Admin" username allowed
+        async function verifyAdminLogin(username, password) {
+            try {
+                // Only allow username "Admin" (case-insensitive)
+                if (username.toLowerCase() !== 'admin') {
+                    return { success: false, error: 'Only Admin user can access this panel' };
+                }
+                
+                // Fetch admin password from Profiles sheet
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/Profiles!A:G?key=${CONFIG.API_KEY}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                const rows = data.values || [];
+
+                // Look for user with name "Admin" (case-insensitive)
+                for (let i = 1; i < rows.length; i++) {
+                    const authorName = rows[i][0]?.trim();
+                    const storedPassword = rows[i][4]?.trim();
+                    const confirmStatus = rows[i][5]?.trim();
+                    
+                    if (authorName && authorName.toLowerCase() === 'admin') {
+                        // Check if admin is confirmed
+                        if (confirmStatus !== 'Yes' && confirmStatus !== 'yes' && confirmStatus !== 'YES') {
+                            return { success: false, error: 'Admin account not confirmed. Please contact super admin.' };
+                        }
+                        
+                        if (storedPassword === password) {
+                            return { success: true, name: authorName };
+                        } else {
+                            return { success: false, error: 'Invalid password' };
+                        }
+                    }
+                }
+                return { success: false, error: 'Admin account not found in system' };
+            } catch (error) {
+                console.error('Login error:', error);
+                return { success: false, error: 'Failed to verify credentials' };
+            }
+        }
+
+        // Load authors from sheet
+        async function loadAuthors() {
+            setLoading(true);
+            try {
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/Profiles!A:I?key=${CONFIG.API_KEY}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                const rows = data.values || [];
+                
+                authorsData = [];
+                let idCounter = 1;
+                let pendingCount = 0;
+                
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    const authorName = row[0]?.trim();
+                    
+                    // Skip the admin user from the list (don't show admin in approval list)
+                    if (authorName && authorName.toLowerCase() === 'admin') {
+                        continue;
+                    }
+                    
+                    const confirmStatus = row[5]?.trim() || 'No';
+                    let statusText = 'Pending';
+                    let statusClass = 'status-pending';
+                    
+                    if (confirmStatus === 'Yes') {
+                        statusText = 'Approved';
+                        statusClass = 'status-approved';
+                    } else if (confirmStatus === 'No') {
+                        statusText = 'Pending';
+                        statusClass = 'status-pending';
+                        pendingCount++;
+                    } else if (confirmStatus === 'Denied') {
+                        statusText = 'Denied';
+                        statusClass = 'status-denied';
+                    }
+                    
+                    authorsData.push({
+                        id: idCounter++,
+                        rowIndex: i + 1,
+                        name: authorName || '',
+                        designation: row[1] || '',
+                        about: row[2] || '',
+                        imageUrl: row[3] || '',
+                        password: row[4] || '',
+                        confirm: confirmStatus,
+                        email: row[6] || '',
+                        otp: row[7] || '',
+                        otpExpiry: row[8] || '',
+                        statusText: statusText,
+                        statusClass: statusClass
+                    });
+                }
+                
+                // Update the pending count on login screen (even though we're in dashboard, update for next logout)
+                updateLoginPendingCount(pendingCount);
+                
+                if (dataTable) dataTable.destroy();
+                
+                if (authorsData.length === 0) {
+                    $('#authorsTable tbody').html('<tr><td colspan="6" class="text-center">No authors found</td></tr>');
+                    dataTable = $('#authorsTable').DataTable({
+                        pageLength: 10,
+                        language: { search: "Search authors:" }
+                    });
+                } else {
+                    $('#authorsTable tbody').html(authorsData.map(author => `
+                        <tr>
+                            <td>${author.id}</td>
+                            <td><strong>${escapeHtml(author.name)}</strong></td>
+                            <td>${escapeHtml(author.designation) || '-'}</td>
+                            <td>${escapeHtml(author.email) || '-'}</td>
+                            <td><span class="status-badge ${author.statusClass}">${author.statusText}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-info-custom" onclick="viewAuthorDetails(${author.id})">
+                                    <i class="bi bi-eye"></i> View
+                                </button>
+                            </td>
+                        </tr>
+                    `).join(''));
+                    
+                    dataTable = $('#authorsTable').DataTable({
+                        pageLength: 10,
+                        order: [[0, 'asc']],
+                        language: { search: "Search authors:" }
+                    });
+                }
+                
+            } catch(error) {
+                console.error('Error loading authors:', error);
+                showToastMessage('Failed to load authors', true);
+            }
+            setLoading(false);
+        }
+
+        // View Author Details in Modal
+        window.viewAuthorDetails = async function(authorId) {
+            const author = authorsData.find(a => a.id === authorId);
+            if (!author) return;
+            
+            const imageHtml = author.imageUrl 
+                ? `<img src="${author.imageUrl}" class="modal-profile-image" onerror="this.src='https://placehold.co/100x100/4f46e5/white?text=${author.name.charAt(0)}'">`
+                : `<div class="modal-profile-image d-flex align-items-center justify-content-center bg-primary text-white" style="font-size: 3rem; font-weight: 600;">${author.name.charAt(0).toUpperCase()}</div>`;
+            
+            const modalBody = document.getElementById('authorModalBody');
+            modalBody.innerHTML = `
+                <div class="text-center">
+                    ${imageHtml}
+                    <h4 class="mt-2">${escapeHtml(author.name)}</h4>
+                    ${author.designation ? `<p class="text-muted"><i class="bi bi-briefcase"></i> ${escapeHtml(author.designation)}</p>` : ''}
+                    <p><i class="bi bi-envelope"></i> ${escapeHtml(author.email)}</p>
+                    <div class="alert alert-secondary mt-2">
+                        <i class="bi bi-info-circle"></i> <strong>About:</strong><br>
+                        ${escapeHtml(author.about) || 'No information provided.'}
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-shield-lock"></i> <strong>Password:</strong> •••••••• (protected)
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="bi bi-calendar"></i> <strong>Status:</strong> 
+                        <span class="badge ${author.confirm === 'Yes' ? 'bg-success' : (author.confirm === 'Denied' ? 'bg-danger' : 'bg-warning')}">
+                            ${author.confirm === 'Yes' ? 'Approved' : (author.confirm === 'Denied' ? 'Denied' : 'Pending')}
+                        </span>
+                    </div>
+                </div>
+            `;
+            
+            const modalFooter = document.getElementById('authorModalFooter');
+            if (author.confirm === 'Yes') {
+                modalFooter.innerHTML = `
+                    <button type="button" class="btn btn-danger" onclick="updateAuthorStatus(${author.id}, 'Deny')">
+                        <i class="bi bi-x-circle"></i> Deny User
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                `;
+            } else if (author.confirm === 'Denied') {
+                modalFooter.innerHTML = `
+                    <button type="button" class="btn btn-success" onclick="updateAuthorStatus(${author.id}, 'Approve')">
+                        <i class="bi bi-check-circle"></i> Approve User
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                `;
+            } else {
+                modalFooter.innerHTML = `
+                    <button type="button" class="btn btn-success" onclick="updateAuthorStatus(${author.id}, 'Approve')">
+                        <i class="bi bi-check-circle"></i> Approve
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="updateAuthorStatus(${author.id}, 'Deny')">
+                        <i class="bi bi-x-circle"></i> Deny
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                `;
+            }
+            
+            const modal = new bootstrap.Modal(document.getElementById('authorModal'));
+            modal.show();
+        };
+
+        // Update Author Status (Approve/Deny)
+        window.updateAuthorStatus = async function(authorId, action) {
+            const author = authorsData.find(a => a.id === authorId);
+            if (!author) return;
+            
+            const newStatus = action === 'Approve' ? 'Yes' : 'No';
+            const statusText = action === 'Approve' ? 'approved' : 'denied';
+            
+            setLoading(true);
+            
+            try {
+                const formData = new FormData();
+                formData.append('action', 'updateAuthorStatus');
+                formData.append('email', author.email);
+                formData.append('status', newStatus);
+                
+                const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToastMessage(`Author ${statusText} successfully!`);
+                    // Close modal
+                    bootstrap.Modal.getInstance(document.getElementById('authorModal')).hide();
+                    // Reload authors list
+                    await loadAuthors();
+                    // Also reload pending count on login screen
+                    await loadPendingCountOnly();
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch(error) {
+                console.error('Update error:', error);
+                showToastMessage('Failed to update author status', true);
+            }
+            
+            setLoading(false);
+        };
+
+        // Admin Login Form Submit
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('adminUsername').value.trim();
+            const password = document.getElementById('adminPassword').value.trim();
+            
+            if (!username || !password) {
+                showToastMessage('Please enter both username and password', true);
+                return;
+            }
+            
+            setLoading(true);
+            
+            try {
+                const result = await verifyAdminLogin(username, password);
+                
+                if (result.success) {
+                    sessionStorage.setItem('adminLoggedIn', 'true');
+                    sessionStorage.setItem('adminName', result.name);
+                    currentAdmin = result.name;
+                    document.getElementById('adminNameDisplay').innerText = result.name;
+                    
+                    document.getElementById('loginSection').classList.add('hidden');
+                    document.getElementById('dashboardSection').classList.remove('hidden');
+                    
+                    await loadAuthors();
+                    showToastMessage(`Welcome, ${result.name}!`);
+                } else {
+                    showToastMessage(result.error || 'Login failed', true);
+                }
+            } catch(error) {
+                showToastMessage('Login error: ' + error.message, true);
+            }
+            
+            setLoading(false);
+        });
+
+        // Check if already logged in
+        function checkSession() {
+            const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
+            const adminName = sessionStorage.getItem('adminName');
+            
+            if (isLoggedIn === 'true' && adminName) {
+                currentAdmin = adminName;
+                document.getElementById('adminNameDisplay').innerText = adminName;
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('dashboardSection').classList.remove('hidden');
+                loadAuthors();
+            } else {
+                // Load pending count on login screen
+                loadPendingCountOnly();
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+        }
+
+        checkSession();
+    </script>
+</body>
+</html>

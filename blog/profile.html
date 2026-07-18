@@ -1,0 +1,466 @@
+<!-- profile.html - Author Profile Page with URL Parameter Support (No sessionStorage) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Author Profile - NOC /blog</title>
+         <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="../images/favicon.svg">
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/bootstrap-icons.min.css">
+    <!-- Custom Blog CSS -->
+    <link rel="stylesheet" href="css/blog.css">
+    <style>
+        .profile-card {
+            max-width: 500px;
+            margin: -80px auto 0;
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 10;
+        }
+        .profile-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 5px solid white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-top: -100px;
+            background: var(--primary);
+        }
+        .profile-name {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-top: 1rem;
+            color: #1e293b;
+        }
+        .profile-designation {
+            color: var(--primary);
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+        .profile-about {
+            background: #f8fafc;
+            border-left: 4px solid var(--primary);
+            padding: 1rem 1.5rem;
+            border-radius: 1rem;
+            margin-top: 1rem;
+            font-style: italic;
+            color: #475569;
+        }
+        .profile-header {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            padding: 3rem 0 5rem;
+            margin-bottom: 2rem;
+        }
+        .error-box {
+            max-width: 600px;
+            margin: 3rem auto;
+            text-align: center;
+            padding: 2rem;
+        }
+        .category-badge {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<header id="main-header"></header>
+
+<div class="profile-header"></div>
+
+<main class="container py-4">
+    <!-- Profile Card -->
+    <div class="profile-card" id="profileCard">
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Loading profile...</p>
+        </div>
+    </div>
+
+    <!-- Author's Posts Section -->
+    <div class="mt-5">
+        <h3 class="fw-semibold mb-4"><i class="bi bi-file-text"></i> Articles by <span id="authorNameSpan"></span></h3>
+        <div class="row g-4" id="postsGrid"></div>
+        <div id="loadMoreTrigger" class="load-more-trigger">
+            <button class="btn btn-outline-primary rounded-pill px-4" id="loadMoreBtn">Load more</button>
+        </div>
+        <div id="noMoreMsg" class="text-center text-muted small d-none"><i class="bi bi-check2-circle"></i> You've reached the end</div>
+    </div>
+</main>
+
+<footer class="py-4 mt-5">
+    <div class="container text-center text-muted small">
+      <i class="bi bi-c-circle"></i> NOC / blog 
+
+    </div>
+</footer>
+
+<script src="js/bootstrap.bundle.min.js"></script>
+<script src="config.js"></script>
+<script>
+    let authorPosts = [];
+    let authorInfo = null;
+    let currentLimit = 6;
+    let currentAuthorName = '';
+    
+    function extractFirstImage(html) {
+        if (!html) return 'https://placehold.co/600x400/e2e8f0/64748b?text=No+Image';
+        const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+        return match ? match[1] : 'https://placehold.co/600x400/e2e8f0/64748b?text=Blog+Image';
+    }
+    
+    function stripHtml(html) {
+        let temp = document.createElement("div");
+        temp.innerHTML = html;
+        return temp.textContent || temp.innerText || "";
+    }
+    
+    // Get the current page URL with author parameter
+    function getCurrentPageUrl(authorName, designation) {
+        const baseUrl = window.location.href.split('?')[0];
+        let url = `${baseUrl}?author=${encodeURIComponent(authorName)}`;
+        if (designation && designation.trim()) {
+            url += `&designation=${encodeURIComponent(designation)}`;
+        }
+        return url;
+    }
+    
+    // Update browser URL without reloading the page
+    function updateBrowserUrl(authorName, designation) {
+        const newUrl = getCurrentPageUrl(authorName, designation);
+        window.history.pushState({ author: authorName }, '', newUrl);
+        console.log('Profile URL updated to:', newUrl);
+    }
+    
+    // Extract author info from URL parameters (ONLY source)
+    function getAuthorFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const authorName = urlParams.get('author');
+        const designation = urlParams.get('designation');
+        
+        if (authorName && authorName.trim()) {
+            return {
+                name: decodeURIComponent(authorName),
+                designation: designation ? decodeURIComponent(designation) : ''
+            };
+        }
+        return null;
+    }
+    
+    function navigateToPost(postId) {
+        window.location.href = `post.html?id=${postId}`;
+    }
+    
+    function navigateToCategory(category) {
+        window.location.href = `category.html?category=${encodeURIComponent(category)}`;
+    }
+    
+    function navigateToHome() {
+        window.location.href = 'index.html';
+    }
+    
+    async function loadHeaderConfig() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/configure!A:F?key=${CONFIG.API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            let blogTitle = "Blog Studio", logoUrl = "";
+            let menuItems = [];
+            for(let i=1; i<rows.length; i++) {
+                let row = rows[i];
+                let item = row[0]?.trim(), configVal = row[1]?.trim(), menu = row[2]?.trim(), sub = row[3]?.trim(), linkItem = row[4]?.trim(), link = row[5]?.trim();
+                if(item === "Blog Title" && configVal) blogTitle = configVal;
+                if(item === "Blog logo(url)" && configVal) logoUrl = configVal;
+                if(menu && menu !== "Menu") {
+                    let existing = menuItems.find(m => m.name === menu);
+                    if(!existing) {
+                        existing = { name: menu, subItems: [] };
+                        menuItems.push(existing);
+                    }
+                    if(sub && sub !== "Sub Menu" && linkItem && link) {
+                        existing.subItems.push({ label: sub, url: link });
+                    } else if (linkItem && link && (!sub || sub === "Sub Menu")) {
+                        existing.subItems.push({ label: linkItem, url: link });
+                    }
+                }
+            }
+            renderHeader(blogTitle, logoUrl, menuItems);
+        } catch(e) { renderHeader("Blog Studio", "", []); }
+    }
+    
+    function renderHeader(title, logoUrl, menus) {
+        let logoHtml = logoUrl ? `<img src="${logoUrl}" height="35" alt="logo">` : `<i class="bi bi-journal-bookmark-fill fs-3" style="color:#4f46e5"></i>`;
+        let navHtml = `<nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top px-3 px-md-5 py-2 shadow-sm">
+            <div class="container-fluid">
+                <a class="navbar-brand fw-bold" href="./index.html">${logoHtml} ${title}</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#blogNavbar">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="blogNavbar">
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0 gap-2">`;
+        menus.forEach(menu => {
+            if(menu.subItems.length) {
+                navHtml += `<li class="nav-item dropdown"><a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">${menu.name}</a><ul class="dropdown-menu">`;
+                menu.subItems.forEach(sub => { navHtml += `<li><a class="dropdown-item" href="${sub.url}">${sub.label}</a></li>`; });
+                navHtml += `</ul></li>`;
+            } else {
+                navHtml += `<li class="nav-item"><a class="nav-link" href="#">${menu.name}</a></li>`;
+            }
+        });
+        navHtml += `</ul></div></div></nav>`;
+        document.getElementById('main-header').innerHTML = navHtml;
+    }
+    
+    async function fetchAuthorProfile(authorName) {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/profiles!A:D?key=${CONFIG.API_KEY}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            const rows = data.values || [];
+            
+            for(let i=1; i<rows.length; i++) {
+                if(rows[i][0] && rows[i][0].trim().toLowerCase() === authorName.toLowerCase()) {
+                    return {
+                        name: rows[i][0],
+                        designation: rows[i][1] || '',
+                        about: rows[i][2] || '',
+                        imageUrl: rows[i][3] || null
+                    };
+                }
+            }
+            // Return default if not found
+            return {
+                name: authorName,
+                designation: '',
+                about: 'No additional information available.',
+                imageUrl: null
+            };
+        } catch(error) {
+            console.error('Error fetching profile:', error);
+            return {
+                name: authorName,
+                designation: '',
+                about: 'Unable to load profile information.',
+                imageUrl: null
+            };
+        }
+    }
+    
+    async function fetchPostsByAuthor(authorName) {
+        const blogUrl = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/blog%20data!A:I?key=${CONFIG.API_KEY}`;
+        const response = await fetch(blogUrl);
+        const data = await response.json();
+        const rows = data.values || [];
+        if(rows.length < 2) return [];
+        
+        const posts = [];
+        for(let i=1; i<rows.length; i++) {
+            let row = rows[i];
+            let postAuthor = row[3] || "Anonymous";
+            if(postAuthor.trim().toLowerCase() === authorName.toLowerCase()) {
+                posts.push({
+                    id: row[0],
+                    category: row[1] || "General",
+                    tags: row[2] || "",
+                    author: postAuthor,
+                    publishedTime: row[4] || "",
+                    title: row[5] || "Untitled",
+                    content: row[6] || "",
+                    likeCount: parseInt(row[7]) || 0,
+                    shareCount: parseInt(row[8]) || 0,
+                    image: extractFirstImage(row[6] || "")
+                });
+            }
+        }
+        posts.sort((a,b) => parseInt(b.id) - parseInt(a.id));
+        return posts;
+    }
+    
+    function renderProfileCard(profile) {
+        const initials = profile.name.charAt(0).toUpperCase();
+        const imageHtml = profile.imageUrl 
+            ? `<img src="${profile.imageUrl}" class="profile-image" alt="${escapeHtml(profile.name)}" onerror="this.src='https://placehold.co/150x150/4f46e5/white?text=${initials}'">`
+            : `<div class="profile-image d-flex align-items-center justify-content-center bg-primary text-white" style="font-size: 4rem; font-weight: 600;">${initials}</div>`;
+        
+        document.getElementById("profileCard").innerHTML = `
+            ${imageHtml}
+            <h1 class="profile-name">${escapeHtml(profile.name)}</h1>
+            ${profile.designation ? `<div class="profile-designation"><i class="bi bi-briefcase"></i> ${escapeHtml(profile.designation)}</div>` : ''}
+            <div class="profile-about">
+                <i class="bi bi-quote"></i> ${escapeHtml(profile.about)}
+            </div>
+        `;
+        document.getElementById("authorNameSpan").innerText = profile.name;
+    }
+    
+    function renderPosts(postsToShow) {
+        const container = document.getElementById("postsGrid");
+        if (!container) return;
+        
+        if (postsToShow.length === 0) {
+            container.innerHTML = `<div class="col-12 text-center p-5">
+                <div class="alert alert-info">No posts found from this author yet.</div>
+                <button class="btn btn-primary-custom mt-2" onclick="navigateToHome()">
+                    <i class="bi bi-house"></i> Back to Home
+                </button>
+            </div>`;
+            return;
+        }
+        
+        container.innerHTML = postsToShow.map(p => `
+            <div class="col-md-4 col-lg-3">
+                <div class="card-blog h-100 p-3">
+                    <img src="${p.image}" class="card-img-top rounded-3" style="height:180px; object-fit:cover;" onerror="this.src='https://placehold.co/600x400/e2e8f0/64748b?text=No+Image'">
+                    <div class="card-body px-0 mt-2">
+                        <span class="category-badge" data-category="${escapeHtml(p.category)}">${escapeHtml(p.category)}</span>
+                        <h5 class="fw-bold mt-2">${escapeHtml(p.title)}</h5>
+                        <div class="small text-muted"><i class="bi bi-calendar"></i> ${escapeHtml(p.publishedTime)}</div>
+                        <p class="mt-2 small text-secondary">${escapeHtml(stripHtml(p.content).substring(0,100))}...</p>
+                        <button class="btn btn-primary-custom mt-2 w-100 post-read-btn" data-id="${p.id}">Read more →</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        // Add post read button handlers
+        document.querySelectorAll(".post-read-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const postId = btn.getAttribute("data-id");
+                navigateToPost(postId);
+            });
+        });
+        
+        // Add category click handlers
+        document.querySelectorAll(".category-badge").forEach(badge => {
+            badge.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const category = badge.getAttribute("data-category");
+                navigateToCategory(category);
+            });
+        });
+    }
+    
+    function loadMorePosts() {
+        currentLimit += 6;
+        const postsToShow = authorPosts.slice(0, currentLimit);
+        renderPosts(postsToShow);
+        
+        if(currentLimit >= authorPosts.length) {
+            const loadMoreBtn = document.getElementById("loadMoreBtn");
+            const noMoreMsg = document.getElementById("noMoreMsg");
+            if (loadMoreBtn) loadMoreBtn.style.display = "none";
+            if (noMoreMsg) noMoreMsg.classList.remove("d-none");
+        }
+    }
+    
+    function escapeHtml(str) { 
+        if(!str) return ''; 
+        return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m] || m));
+    }
+    
+    async function initProfilePage() {
+        await loadHeaderConfig();
+        
+        // ONLY get author from URL parameters (no sessionStorage fallback)
+        let authorFromUrl = getAuthorFromUrl();
+        
+        if (!authorFromUrl || !authorFromUrl.name) {
+            // No author in URL - show error
+            document.getElementById("profileCard").innerHTML = `
+                <div class="error-box">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i><br>
+                        <strong>No author specified!</strong><br>
+                        Please use a valid author URL like:<br>
+                        <code>profile.html?author=John%20Doe</code>
+                    </div>
+                    <button class="btn btn-primary-custom mt-3" onclick="navigateToHome()">
+                        <i class="bi bi-house"></i> Back to Home
+                    </button>
+                </div>`;
+            document.getElementById("postsGrid").innerHTML = '';
+            document.getElementById("loadMoreTrigger").style.display = "none";
+            return;
+        }
+        
+        let authorName = authorFromUrl.name;
+        let authorDesignation = authorFromUrl.designation;
+        currentAuthorName = authorName;
+        
+        // Update URL with author parameter (ensures it's in the URL)
+        updateBrowserUrl(authorName, authorDesignation);
+        
+        // Update page title
+        document.title = `${authorName} | Author Profile | Blog Studio`;
+        
+        try {
+            // Fetch profile and posts
+            const profile = await fetchAuthorProfile(authorName);
+            if(profile.designation === '' && authorDesignation) {
+                profile.designation = authorDesignation;
+            }
+            authorInfo = profile;
+            renderProfileCard(profile);
+            
+            authorPosts = await fetchPostsByAuthor(authorName);
+            
+            if(authorPosts.length === 0) {
+                renderPosts([]);
+                document.getElementById("loadMoreTrigger").style.display = "none";
+                return;
+            }
+            
+            renderPosts(authorPosts.slice(0, currentLimit));
+            
+            const loadMoreBtn = document.getElementById("loadMoreBtn");
+            if (loadMoreBtn) {
+                loadMoreBtn.onclick = loadMorePosts;
+            }
+            
+            if(authorPosts.length <= currentLimit) {
+                if (loadMoreBtn) loadMoreBtn.style.display = "none";
+                const noMoreMsg = document.getElementById("noMoreMsg");
+                if (noMoreMsg) noMoreMsg.classList.remove("d-none");
+            }
+        } catch(error) {
+            console.error("Profile init error:", error);
+            document.getElementById("profileCard").innerHTML = `
+                <div class="error-box">
+                    <div class="alert alert-danger">Error loading profile: ${error.message}</div>
+                    <button class="btn btn-primary-custom mt-3" onclick="navigateToHome()">
+                        <i class="bi bi-house"></i> Back to Home
+                    </button>
+                </div>`;
+        }
+    }
+    
+    // Make functions global for onclick
+    window.navigateToPost = navigateToPost;
+    window.navigateToCategory = navigateToCategory;
+    window.navigateToHome = navigateToHome;
+    
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', function(event) {
+        const authorFromUrl = getAuthorFromUrl();
+        if (authorFromUrl && authorFromUrl.name !== currentAuthorName) {
+            // Reload the page with the new author
+            window.location.reload();
+        } else if (!authorFromUrl) {
+            // No author in URL, go back to home
+            navigateToHome();
+        }
+    });
+    
+    initProfilePage();
+</script>
+</body>
+</html>

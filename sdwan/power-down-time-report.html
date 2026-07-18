@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Power Down Hours Report | Treasury Downtime Analysis</title>
+    
+    <!-- LOCAL CSS (fallback to CDN if needed, but keeping local paths as per original) -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
+    <link rel="stylesheet" href="../css/flatpickr.min.css">
+    <link rel="stylesheet" href="../css/sweetalert2.min.css">
+    
+    <style>
+        :root {
+            --primary: #0f5b9c;
+            --primary-dark: #1a4b7a;
+            --primary-light: #e8f0fe;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --border: #e9ecef;
+        }
+        .modal-backdrop {background-color: #fff0;}
+   #global-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+              background: #fff0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            /*backdrop-filter: blur(3px);*/
+        }
+        * { box-sizing: border-box; }
+        body {
+             background: #fff0;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 20px 16px;
+        }
+        .report-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        .report-card {
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+      .page-header {
+    padding: 15px 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+ 
+}
+.page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-header-left i {
+    font-size: 1.8rem !important;
+    background: rgb(56 143 251 / 15%) !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    color: #184f83 !important;
+}
+
+
+.page-header-left h1 {
+    margin: 0 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    color: #184f83!important;
+}
+ .page-header-left p {
+            margin: 2px 0 0;
+            opacity: 0.7;
+            font-size: 0.75rem;
+ }
+        .export-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .btn-export {
+            background: rgb(18 86 145);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            border-radius: 40px;
+            padding: 8px 20px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+           /* backdrop-filter: blur(4px);*/
+        }
+        .btn-export:hover {
+            background: rgb(5 35 60);
+            transform: translateY(-2px);
+            color: white;
+        }
+        .btn-export i {
+            font-size: 1.1rem;
+        }
+        .filter-section {
+            padding: 25px 30px;
+            background: white;
+            border-bottom: 1px solid var(--border);
+        }
+        .filter-label {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .filter-label i {
+            color: var(--primary);
+        }
+        .form-control {
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            padding: 10px 15px;
+        }
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border: none;
+            padding: 10px 25px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(15, 91, 156, 0.3);
+        }
+        .summary-stats {
+            background: linear-gradient(135deg, #e8f0fe 0%, #dbeafe 100%);
+            border-radius: 16px;
+            padding: 20px 25px;
+            margin: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+            border: 1px solid #b8d4fe;
+        }
+        .stat-box {
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+        }
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            color: var(--primary);
+            font-size: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            line-height: 1.2;
+        }
+        .stat-label {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 5px;
+        }
+        .total-footer {
+            background: var(--light);
+            border-radius: 16px;
+            padding: 18px 25px;
+            margin: 20px 30px;
+            border-left: 4px solid var(--danger);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .total-label {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .total-label i {
+            color: var(--danger);
+            font-size: 1.5rem;
+        }
+        .total-time {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--danger);
+            font-family: monospace;
+        }
+        .table-container {
+            padding: 20px 30px;
+        }
+        .dataTables_wrapper .dataTables_filter input {
+            border-radius: 30px;
+            padding: 6px 12px;
+            border: 1px solid #cbd5e1;
+        }
+        .dataTables_wrapper .dataTables_length select {
+            border-radius: 30px;
+            padding: 6px 12px;
+        }
+        .badge-down {
+            background-color: var(--danger);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .badge-up {
+            background-color: var(--success);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .badge-ongoing {
+            background-color: var(--warning);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .datetime-display {
+            font-family: monospace;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .duration-badge {
+            background-color: var(--primary-light);
+            color: var(--primary);
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-family: monospace;
+            font-weight: 600;
+            font-size: 0.8rem;
+            display: inline-block;
+        }
+        .duration-ongoing {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+         /*   backdrop-filter: blur(3px);*/
+        }
+        .loading-content {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 24px;
+            text-align: center;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.2);
+        }
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #e2e8f0;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .no-data-message {
+            text-align: center;
+            padding: 60px;
+            color: #64748b;
+            background: var(--light);
+            border-radius: 16px;
+        }
+        @media (max-width: 768px) {
+            body { padding: 15px; }
+            .filter-section { padding: 20px; }
+            .table-container { padding: 15px; }
+            .summary-stats { margin: 15px; flex-direction: column; }
+            .total-footer { margin: 15px; flex-direction: column; text-align: center; }
+            .datetime-display { font-size: 0.75rem; }
+            .page-header { flex-direction: column; align-items: stretch; }
+            .export-buttons { justify-content: flex-start; margin-top: 10px; }
+        }
+    </style>
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                                   <i class="bi bi-graph-up"></i>
+                    <div>
+                        <h1>Power Down Hours Report</h1>
+                         <p>Treasury Power Failure Analytics & Downtime Tracking</p>
+                    </div>
+                </div>
+  <div class="export-buttons">
+                    <button id="exportExcelBtn" class="btn-export"><i class="bi bi-file-earmark-spreadsheet"></i> Excel (XLS)</button>
+                    <button id="exportCsvBtn" class="btn-export"><i class="bi bi-filetype-csv"></i> CSV</button>
+                    <button id="exportPdfBtn" class="btn-export"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+                </div>
+            </div>
+    <div class="report-container">
+        <div class="report-card">
+      
+             
+            
+            <div class="filter-section">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label class="filter-label"><i class="bi bi-calendar-week"></i> From Date</label>
+                        <input type="text" id="fromDate" class="form-control flatpickr-from" placeholder="DD/MM/YYYY">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="filter-label"><i class="bi bi-calendar-week"></i> To Date</label>
+                        <input type="text" id="toDate" class="form-control flatpickr-to" placeholder="DD/MM/YYYY">
+                    </div>
+                    <div class="col-md-2">
+                        <button id="generateReportBtn" class="btn-primary-custom w-100">
+                            <i class="bi bi-file-bar-graph"></i> View
+                        </button>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="d-flex gap-2">
+                            <button id="currentMonthBtn" class="btn btn-outline-secondary btn-sm"><i class="bi bi-calendar-month"></i> Current Month</button>
+                            <button id="previousMonthBtn" class="btn btn-outline-secondary btn-sm"><i class="bi bi-calendar-minus"></i> Previous Month</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Summary Statistics -->
+            <div id="summaryStats" style="display: none;">
+                <div class="summary-stats">
+                    <div class="stat-box">
+                        <div class="stat-icon"><i class="bi bi-building"></i></div>
+                        <div class="stat-value" id="totalTreasuries">0</div>
+                        <div class="stat-label">Treasuries Affected</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                        <div class="stat-value" id="totalIncidents">0</div>
+                        <div class="stat-label">Power Failure Incidents</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
+                        <div class="stat-value" id="totalDowntime">0h</div>
+                        <div class="stat-label">Total Downtime (Hours)</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-icon"><i class="bi bi-hourglass"></i></div>
+                        <div class="stat-value" id="ongoingIncidents">0</div>
+                        <div class="stat-label">Ongoing Failures</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Data Table -->
+            <div id="tableContainer" class="table-container">
+                <div class="table-responsive">
+                    <table id="downtimeTable" class="table table-striped table-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>SL.no</th>
+                                <th>Treasury / Branch</th>
+                                <th>Down Date & Time</th>
+                                <th>Up Date & Time</th>
+                                <th>Status</th>
+                                <th>Failure Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="6" class="text-center py-5">Select date range and click "Generate Report"</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Total Footer -->
+            <div id="totalFooter" style="display: none;">
+                <div class="total-footer">
+                    <div class="total-label">
+                        <i class="bi bi-hourglass-bottom"></i>
+                        <span>Total Power Failure Time (Period) - <strong style="font-weight:800">Only Resolved Incidents</strong></span>
+                    </div>
+                    <div class="total-time" id="totalDuration">0 Days 0 Hours 0 Minutes 0 Seconds</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- SCRIPTS (CDN for reliability) -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/jquery.dataTables.min.js"></script>
+    <script src="../js/dataTables.bootstrap5.min.js"></script>
+    <script src="../js/flatpickr.min.js"></script>
+    <script src="../js/sweetalert2.all.min.js"></script>
+    <script src="../js/xlsx.full.min.js"></script>
+    <script src="../js/fileSaver.min.js"></script>
+    <script src="../js/jspdf.umd.min.js"></script>
+    <script src="../js/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        // ======================== CONFIGURATION ========================
+        const DATA_SHEET_ID = "1dHllRe0lHgpX4LAKIP-3abKBcSvBqlIOR0TaheG4aRc";
+        const DATA_SHEET_NAME = "Data";
+        const API_KEY = "AIzaSyBAuS3Brpsw5JOJnjNJii1UlFa7ClXf8d4";
+        
+        let flatpickrFrom, flatpickrTo;
+        let dataTable = null;
+        let currentEventsData = []; // Store all processed events for export
+        
+        // ======================== UTILITY FUNCTIONS ========================
+        function parseDMY(dateStr) {
+            if (!dateStr) return null;
+            const parts = dateStr.split('/');
+            if (parts.length !== 3) return null;
+            // Create date in local timezone noon to avoid UTC shifts, consistent comparison
+            return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]), 12, 0, 0);
+        }
+        
+        function parseDateTime(dateStr, timeStr) {
+            if (!dateStr || !timeStr) return null;
+            const dateParts = dateStr.split('/');
+            const timeParts = timeStr.split(':');
+            if (dateParts.length !== 3 || timeParts.length < 2) return null;
+            const year = parseInt(dateParts[2]);
+            const month = parseInt(dateParts[1]) - 1;
+            const day = parseInt(dateParts[0]);
+            const hours = parseInt(timeParts[0]);
+            const minutes = parseInt(timeParts[1]);
+            const seconds = timeParts[2] ? parseInt(timeParts[2]) : 0;
+            return new Date(year, month, day, hours, minutes, seconds);
+        }
+        
+        function formatDuration(seconds) {
+            if (seconds < 0) seconds = 0;
+            if (seconds === 0) return "0 Seconds";
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            const parts = [];
+            if (days > 0) parts.push(`${days} Day${days !== 1 ? 's' : ''}`);
+            if (hours > 0) parts.push(`${hours} Hour${hours !== 1 ? 's' : ''}`);
+            if (minutes > 0) parts.push(`${minutes} Minute${minutes !== 1 ? 's' : ''}`);
+            if (secs > 0 || parts.length === 0) parts.push(`${secs} Second${secs !== 1 ? 's' : ''}`);
+            return parts.join(' ');
+        }
+        
+        function formatDurationShort(seconds) {
+            if (seconds < 0) seconds = 0;
+            if (seconds === 0) return "0s";
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+            if (hours > 0) return `${hours}h ${minutes}m`;
+            if (minutes > 0) return `${minutes}m ${secs}s`;
+            return `${secs}s`;
+        }
+
+        function showLoading(message = 'Generating report...') {
+            if ($('#global-loading-overlay').length) return;
+            const overlay = $(`
+                <div id="global-loading-overlay" class="loading-overlay">
+                    <div class="loading-content">
+                        <div class="loading-spinner"></div>
+                        <p style="margin:0;font-weight:500;">${message}</p>
+                    </div>
+                </div>
+            `);
+            $('body').append(overlay);
+        }
+        
+        function hideLoading() {
+            $('#global-loading-overlay').remove();
+        }
+
+        // ======================== PROCESS POWER DATA ========================
+        async function generateReport() {
+            const fromDateStr = $('#fromDate').val();
+            const toDateStr = $('#toDate').val();
+            
+            if (!fromDateStr || !toDateStr) {
+                Swal.fire({ icon: 'warning', title: 'Missing Dates', text: 'Please select both From Date and To Date', confirmButtonColor: '#0f5b9c' });
+                return;
+            }
+            
+            showLoading('Fetching power data...');
+            
+            const range = `${DATA_SHEET_NAME}!A:G`;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${DATA_SHEET_ID}/values/${range}?key=${API_KEY}`;
+            
+            try {
+                const resp = await fetch(url);
+                const data = await resp.json();
+                
+                if (!data.values || data.values.length < 2) {
+                    hideLoading();
+                    Swal.fire({ icon: 'info', title: 'No Data', text: 'No power data found in the sheet', confirmButtonColor: '#0f5b9c' });
+                    return;
+                }
+                
+                const sheetRows = data.values;
+                const startIdx = (sheetRows[0][0] && sheetRows[0][0].toString().toLowerCase().includes("id")) ? 1 : 0;
+                
+                const fromDateObj = parseDMY(fromDateStr);
+                const toDateObj = parseDMY(toDateStr);
+                const endOfPeriod = new Date(toDateObj);
+                endOfPeriod.setHours(23, 59, 59, 999);
+                
+                let allRecords = [];
+                for (let i = startIdx; i < sheetRows.length; i++) {
+                    const row = sheetRows[i];
+                    if (row.length >= 6 && row[0]) {
+                        const recordDate = row[2] || "";
+                        const recordDateObj = parseDMY(recordDate);
+                        const confirmStatus = row[6] || "";
+                        
+                        if (recordDateObj && fromDateObj && toDateObj && 
+                            recordDateObj >= fromDateObj && recordDateObj <= toDateObj &&
+                            confirmStatus === "Yes") {
+                            allRecords.push({
+                                id: row[0],
+                                branch: row[1] || "",
+                                date: row[2] || "",
+                                time: row[3] || "",
+                                status: row[4] || "",
+                                timestampISO: row[5] || "",
+                                confirm: row[6] || ""
+                            });
+                        }
+                    }
+                }
+                
+                allRecords.sort((a, b) => {
+                    if (a.branch !== b.branch) return a.branch.localeCompare(b.branch);
+                    return (a.timestampISO || "").localeCompare(b.timestampISO || "");
+                });
+                
+                const downtimeEvents = [];
+                const branchMap = new Map();
+                
+                for (const record of allRecords) {
+                    if (!branchMap.has(record.branch)) branchMap.set(record.branch, []);
+                    branchMap.get(record.branch).push(record);
+                }
+                
+                let ongoingCount = 0;
+                
+                for (const [branch, records] of branchMap.entries()) {
+                    let i = 0;
+                    while (i < records.length) {
+                        const current = records[i];
+                        if (current.status === "Down") {
+                            let upEvent = null;
+                            let j = i + 1;
+                            while (j < records.length && records[j].status !== "Up") j++;
+                            if (j < records.length && records[j].status === "Up") {
+                                upEvent = records[j];
+                                const downDateTime = parseDateTime(current.date, current.time);
+                                const upDateTime = parseDateTime(upEvent.date, upEvent.time);
+                                let durationSeconds = (downDateTime && upDateTime) ? Math.max(0, Math.floor((upDateTime - downDateTime) / 1000)) : 0;
+                                downtimeEvents.push({
+                                    branch, downDateTime, downDate: current.date, downTime: current.time,
+                                    upDateTime, upDate: upEvent.date, upTime: upEvent.time,
+                                    duration: durationSeconds, status: "Resolved",
+                                    hasValidPair: true  // flag indicating resolved with up time
+                                });
+                                i = j + 1;
+                            } else {
+                                // ONLY DOWN, NO UP DATE/TIME AVAILABLE: duration is ZERO for total calculation (excluded from total failure time)
+                                const downDateTime = parseDateTime(current.date, current.time);
+                                // duration remains 0 because unresolved – does NOT contribute to total downtime sum.
+                                downtimeEvents.push({
+                                    branch, downDateTime, downDate: current.date, downTime: current.time,
+                                    upDateTime: null, upDate: "—", upTime: "Ongoing / No Restoration",
+                                    duration: 0,   // CRITICAL: unresolved incident adds 0 to total failure duration
+                                    status: "Ongoing",
+                                    hasValidPair: false
+                                });
+                                ongoingCount++;
+                                i++;
+                            }
+                        } else if (current.status === "Up") {
+                            // Orphan Up events: no down pair, treat as zero duration
+                            downtimeEvents.push({
+                                branch, downDateTime: null, downDate: "Unknown", downTime: "Unknown",
+                                upDateTime: parseDateTime(current.date, current.time), upDate: current.date, upTime: current.time,
+                                duration: 0, status: "Unknown Start",
+                                hasValidPair: false
+                            });
+                            i++;
+                        } else { i++; }
+                    }
+                }
+                
+                // Sort by downDateTime (if available)
+                downtimeEvents.sort((a, b) => {
+                    if (!a.downDateTime && !b.downDateTime) return 0;
+                    if (!a.downDateTime) return 1;
+                    if (!b.downDateTime) return -1;
+                    return a.downDateTime - b.downDateTime;
+                });
+                
+                currentEventsData = downtimeEvents;
+                
+                // Calculate total duration ONLY for resolved incidents (status "Resolved" OR where hasValidPair is true)
+                const totalDurationSeconds = downtimeEvents
+                    .filter(event => event.status === "Resolved" && event.hasValidPair === true)
+                    .reduce((sum, e) => sum + e.duration, 0);
+                
+                const totalIncidents = downtimeEvents.length;
+                const uniqueTreasuries = new Set(downtimeEvents.map(e => e.branch)).size;
+                
+                $('#totalTreasuries').text(uniqueTreasuries);
+                $('#totalIncidents').text(totalIncidents);
+                $('#totalDowntime').text(formatDurationShort(totalDurationSeconds));
+                $('#ongoingIncidents').text(ongoingCount);
+                $('#summaryStats').show();
+                $('#totalDuration').text(formatDuration(totalDurationSeconds));
+                $('#totalFooter').show();
+                
+                renderTable(downtimeEvents);
+                hideLoading();
+                
+                if (downtimeEvents.length === 0) {
+                    Swal.fire({ icon: 'info', title: 'No Downtime Events', text: 'No confirmed power failure events found in the selected date range', confirmButtonColor: '#0f5b9c' });
+                } else {
+                    // Show note if any unresolved incidents excluded from total
+                    const unresolved = downtimeEvents.filter(e => e.status === "Ongoing" || e.status === "Unknown Start").length;
+                    if (unresolved > 0) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Calculation Note',
+                            html: `<strong>Total Downtime excludes unresolved failures.</strong><br/>${unresolved} incident(s) without an "Up" timestamp are not counted in total duration.`,
+                            confirmButtonColor: '#0f5b9c',
+                            toast: false
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                hideLoading();
+                Swal.fire({ icon: 'error', title: 'Report Failed', text: 'Could not fetch data from sheet', confirmButtonColor: '#0f5b9c' });
+            }
+        }
+
+        function renderTable(events) {
+            const tbody = $("#downtimeTable tbody");
+            if (dataTable) { dataTable.destroy(); tbody.empty(); }
+            if (events.length === 0) {
+                tbody.html('<tr><td colspan="6" class="text-center py-5">No downtime events found in the selected date range</td></tr>');
+                return;
+            }
+            let html = '', serialNo = 1;
+            for (const event of events) {
+                let statusBadge = '', durationClass = 'duration-badge';
+                if (event.status === "Resolved") statusBadge = `<span class="badge-up"><i class="bi bi-check-circle"></i> Resolved</span>`;
+                else if (event.status === "Ongoing") { statusBadge = `<span class="badge-ongoing"><i class="bi bi-exclamation-triangle"></i> Ongoing (No Up record)</span>`; durationClass += ' duration-ongoing'; }
+                else statusBadge = `<span class="badge-down"><i class="bi bi-question-circle"></i> Unknown Start</span>`;
+                
+                let downDisplay = (event.downDate === "Unknown") ? `<span class="text-muted"><i class="bi bi-question-circle"></i> Unknown</span>` : `<div class="datetime-display"><span class="badge-down" style="background-color: #ef4444; color: white; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; margin-right: 6px;">DOWN</span> ${event.downDate} ${event.downTime}</div>`;
+                let upDisplay = (event.upTime === "Ongoing / No Restoration") ? `<div class="datetime-display"><span class="badge-ongoing" style="background-color: #f59e0b; color: white; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; margin-right: 6px;">MISSING UP</span> No restoration recorded</div>` : (event.upDate === "Unknown" || event.upDate === "—") ? `<span class="text-muted"><i class="bi bi-question-circle"></i> Unknown</span>` : `<div class="datetime-display"><span class="badge-up" style="background-color: #10b981; color: white; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; margin-right: 6px;">UP</span> ${event.upDate} ${event.upTime}</div>`;
+                
+                let durationDisplay = "";
+                if (event.status === "Unknown Start") durationDisplay = `<span class="text-muted">—</span>`;
+                else if (event.status === "Ongoing") durationDisplay = `<span class="${durationClass}"><i class="bi bi-clock"></i> Not included in total (unresolved)</span>`;
+                else durationDisplay = `<span class="${durationClass}"><i class="bi bi-clock"></i> ${formatDuration(event.duration)}</span>`;
+                
+                html += `<tr>
+                            <td>${serialNo++}</td>
+                            <td><i class="bi bi-building me-1"></i> <strong>${escapeHtml(event.branch)}</strong></td>
+                            <td>${downDisplay}</td>
+                            <td>${upDisplay}</td>
+                            <td>${statusBadge}</td>
+                            <td>${durationDisplay}</td>
+                         </tr>`;
+            }
+            tbody.html(html);
+            dataTable = $("#downtimeTable").DataTable({ paging: false, searching: true, ordering: true, info: true, language: { search: "Filter:", searchPlaceholder: "Search by treasury...", info: "Showing _START_ to _END_ of _TOTAL_ entries" }, columnDefs: [{ orderable: true, targets: [0,1,5] }, { orderable: false, targets: [2,3,4] }], order: [[0, 'asc']] });
+        }
+
+        function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'); }
+
+        // ======================== EXPORT FUNCTIONS ========================
+        function getTableDataForExport() {
+            if (!currentEventsData || currentEventsData.length === 0) return [];
+            return currentEventsData.map((event, idx) => ({
+                "SL.no": idx + 1,
+                "Treasury / Branch": event.branch,
+                "Down Date & Time": event.downDate === "Unknown" ? "Unknown" : `${event.downDate} ${event.downTime}`,
+                "Up Date & Time": (event.upTime === "Ongoing / No Restoration") ? "No Up record" : (event.upDate === "—" ? "Not restored" : `${event.upDate} ${event.upTime}`),
+                "Status": event.status,
+                "Failure Duration (Resolved Only)": event.status === "Resolved" ? formatDuration(event.duration) : (event.status === "Ongoing" ? "Excluded (No Up Time)" : "—")
+            }));
+        }
+
+        function exportToExcel() {
+            if (!currentEventsData.length) { Swal.fire('No Data', 'No report data to export', 'info'); return; }
+            const worksheetData = getTableDataForExport();
+            const ws = XLSX.utils.json_to_sheet(worksheetData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Power_Downtime_Report");
+            XLSX.writeFile(wb, `power_downtime_report_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`);
+        }
+
+        function exportToCSV() {
+            if (!currentEventsData.length) { Swal.fire('No Data', 'No report data to export', 'info'); return; }
+            const worksheetData = getTableDataForExport();
+            const ws = XLSX.utils.json_to_sheet(worksheetData);
+            const csv = XLSX.utils.sheet_to_csv(ws);
+            const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+            saveAs(blob, `power_downtime_report_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.csv`);
+        }
+
+        function exportToPDF() {
+            if (!currentEventsData.length) { Swal.fire('No Data', 'No report data to export', 'info'); return; }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm' });
+            const tableData = currentEventsData.map((event, idx) => [
+                idx + 1,
+                event.branch,
+                event.downDate === "Unknown" ? "Unknown" : `${event.downDate} ${event.downTime}`,
+                (event.upTime === "Ongoing / No Restoration") ? "Missing Up" : (event.upDate === "—" ? "Not restored" : `${event.upDate} ${event.upTime}`),
+                event.status,
+                event.status === "Resolved" ? formatDuration(event.duration) : (event.status === "Ongoing" ? "Unresolved (excluded)" : "—")
+            ]);
+            const fromDate = $('#fromDate').val() || 'N/A';
+            const toDate = $('#toDate').val() || 'N/A';
+            const totalResolvedSecs = currentEventsData.filter(e => e.status === "Resolved").reduce((s, e) => s + e.duration, 0);
+            doc.setFontSize(16);
+            doc.text("Power Down Hours Report", 14, 15);
+            doc.setFontSize(10);
+            doc.text(`Period: ${fromDate} to ${toDate}`, 14, 25);
+            doc.text(`Note: Only resolved incidents (with Up timestamp) contribute to total downtime.`, 14, 32);
+            doc.autoTable({
+                head: [["SL.no", "Treasury", "Down DateTime", "Up DateTime", "Status", "Duration (Resolved Only)"]],
+                body: tableData,
+                startY: 38,
+                theme: 'striped',
+                headStyles: { fillColor: [15, 91, 156], textColor: 255, fontStyle: 'bold' },
+                margin: { left: 10, right: 10 }
+            });
+            const finalY = doc.lastAutoTable.finalY + 8;
+            doc.setFontSize(10);
+            doc.text(`Total Downtime (Resolved incidents only): ${formatDuration(totalResolvedSecs)}`, 14, finalY);
+            doc.save(`power_downtime_report_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.pdf`);
+        }
+
+        // ======================== DATE FUNCTIONS ========================
+        function setDefaultDates() {
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            flatpickrFrom = flatpickr("#fromDate", { dateFormat: "d/m/Y", defaultDate: firstDay });
+            flatpickrTo = flatpickr("#toDate", { dateFormat: "d/m/Y", defaultDate: lastDay });
+        }
+        
+        function setCurrentMonth() {
+            const now = new Date();
+            flatpickrFrom.setDate(new Date(now.getFullYear(), now.getMonth(), 1));
+            flatpickrTo.setDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+            generateReport();
+        }
+        
+        function setPreviousMonth() {
+            const now = new Date();
+            flatpickrFrom.setDate(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+            flatpickrTo.setDate(new Date(now.getFullYear(), now.getMonth(), 0));
+            generateReport();
+        }
+
+        $(document).ready(function() {
+            setDefaultDates();
+            $('#generateReportBtn').on('click', generateReport);
+            $('#currentMonthBtn').on('click', setCurrentMonth);
+            $('#previousMonthBtn').on('click', setPreviousMonth);
+            $('#exportExcelBtn').on('click', exportToExcel);
+            $('#exportCsvBtn').on('click', exportToCSV);
+            $('#exportPdfBtn').on('click', exportToPDF);
+            setTimeout(() => { generateReport(); }, 500);
+        });
+    </script>
+</body>
+</html>

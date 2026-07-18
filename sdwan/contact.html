@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Treasuries – Admin Contacts (SD‑WAN)</title>
+    
+    <!-- LOCAL CSS - Using existing resources from parent folder -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
+    
+    <!-- LOCAL JS - Using existing resources from parent folder -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/jquery.dataTables.min.js"></script>
+    <script src="../js/dataTables.bootstrap5.min.js"></script>
+    <script src="../js/select2.min.js"></script>
+    
+    <style>
+        body {
+             background: #fff0;
+            padding: 20px 16px;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            color: #1e293b;
+        }
+        
+        .main-wrapper {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+     .page-header {
+    padding: 15px 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+ 
+}
+.page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-header-left i {
+    font-size: 1.8rem !important;
+    background: rgb(56 143 251 / 15%) !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    color: #184f83 !important;
+}
+
+
+.page-header-left h1 {
+    margin: 0 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    color: #184f83!important;
+}
+ .page-header-left p {
+            margin: 2px 0 0;
+            opacity: 0.7;
+            font-size: 0.75rem;
+ }        
+        .card-db {
+            background: white;
+            border-radius: 20px;
+            padding: 0;
+            box-shadow: 0 10px 30px rgba(0,20,40,0.12);
+            border: 1px solid #e9ecef;
+            overflow: hidden;
+        }
+        
+        .nav-tabs-custom {
+            background: #f8fafc;
+            border-bottom: 1px solid #e9ecef;
+            padding: 12px 20px 0 20px;
+        }
+        
+        .nav-tabs-custom .nav-link {
+            border: none;
+            font-weight: 600;
+            color: #64748b;
+            padding: 12px 28px;
+            border-radius: 10px 10px 0 0;
+            background: transparent;
+            transition: all 0.2s;
+            margin-right: 4px;
+        }
+        
+        .nav-tabs-custom .nav-link i {
+            margin-right: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .nav-tabs-custom .nav-link:hover {
+            color: #0f5b9c;
+            background: rgba(15, 91, 156, 0.05);
+        }
+        
+        .nav-tabs-custom .nav-link.active {
+            background: white;
+            color: #0f5b9c;
+            border-bottom: 3px solid #0f5b9c;
+            box-shadow: 0 -2px 8px rgba(15, 91, 156, 0.08);
+        }
+        
+        .tab-content {
+            background: white;
+            padding: 28px !important;
+        }
+        
+        .filter-panel {
+            background: #f8fbfe;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 28px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        
+        .filter-panel label {
+            color: #1e293b;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .filter-panel label i {
+            color: #0f5b9c;
+        }
+        
+        .filter-panel .select2-container {
+            width: 100% !important;
+        }
+        
+        .btn-view {
+            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+            border: none;
+            padding: 12px 32px;
+            font-weight: 500;
+            border-radius: 40px;
+            color: white;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(15,91,156,0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        
+        .btn-view:hover {
+            background: linear-gradient(135deg, #1a4b7a 0%, #0f5b9c 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(15,91,156,0.3);
+        }
+        
+        .btn-view i {
+            font-size: 1.1rem;
+        }
+        
+        .table {
+            margin-bottom: 0;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .table thead th {
+            background: linear-gradient(135deg, #1a4b7a 0%, #1a4b7a 100%);
+            color: white;
+            font-weight: 500;
+            font-size: 0.9rem;
+            vertical-align: middle;
+            white-space: nowrap;
+            padding: 14px 12px;
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .table thead th:last-child { 
+            border-right: none; 
+        }
+        
+        .table td {
+            padding: 12px;
+            vertical-align: middle;
+            font-size: 0.9rem;
+            color: #1e293b;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .table tbody tr:hover { 
+            background-color: #f0f7ff; 
+        }
+        
+        .contact-link {
+            color: #0f5b9c;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .contact-link:hover {
+            color: #1a4b7a;
+            text-decoration: underline;
+        }
+        
+        .empty-cell {
+            color: #94a3b8;
+            font-style: italic;
+        }
+        
+        /* DataTables Customization */
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter {
+            margin-bottom: 20px;
+        }
+        
+        .dataTables_wrapper .dataTables_length select,
+        .dataTables_wrapper .dataTables_filter input {
+            border: 1px solid #e2e8f0;
+            border-radius: 40px;
+            padding: 8px 16px;
+            background: white;
+            color: #1e293b;
+            font-size: 0.9rem;
+        }
+        
+        .dataTables_wrapper .dataTables_filter input {
+            width: 260px;
+            padding-left: 38px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: 12px center;
+        }
+        
+        .dataTables_wrapper .dataTables_length select:focus,
+        .dataTables_wrapper .dataTables_filter input:focus {
+            outline: none;
+            border-color: #0f5b9c;
+            box-shadow: 0 0 0 3px rgba(15, 91, 156, 0.1);
+        }
+        
+        .dataTables_wrapper .dataTables_paginate {
+            margin-top: 20px;
+        }
+        
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            border-radius: 40px;
+            margin: 0 3px;
+            border: 1px solid #e2e8f0;
+            color: #1e293b !important;
+        }
+        
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: #0f5b9c !important;
+            border-color: #0f5b9c !important;
+            color: white !important;
+        }
+        
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+            color: #0f5b9c !important;
+        }
+        
+        .dataTables_wrapper .dataTables_info {
+            color: #64748b;
+            font-size: 0.9rem;
+            padding-top: 15px;
+        }
+        
+        /* Select2 Customization */
+        .select2-container--bootstrap-5 .select2-selection {
+            border: 1px solid #e2e8f0;
+            border-radius: 40px;
+            padding: 8px 16px;
+            min-height: 46px;
+        }
+        
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+            color: #1e293b;
+            line-height: 28px;
+        }
+        
+        .select2-container--bootstrap-5 .select2-dropdown {
+            border-color: #e2e8f0;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        }
+        
+        .select2-container--bootstrap-5 .select2-results__option--selected {
+            background-color: #e8f0fe;
+            color: #0f5b9c;
+        }
+        
+        .select2-container--bootstrap-5 .select2-results__option--highlighted {
+            background-color: #0f5b9c;
+            color: white;
+        }
+        
+        .footer-note {
+            margin-top: 20px;
+            background: #e8f0f7;
+            padding: 16px 24px;
+            border-radius: 40px;
+            color: #1e405e;
+            font-size: 0.95rem;
+            border-left: 4px solid #0f5b9c;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .footer-note i {
+            color: #0f5b9c;
+            font-size: 1.2rem;
+        }
+        
+        .spinner-overlay {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .spinner-border.text-primary {
+            color: #0f5b9c !important;
+        }
+        
+        .badge-count {
+            background: white;
+            color: #0f5b9c;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            margin-left: 10px;
+            font-weight: 600;
+        }
+        
+        .district-stats {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 12px 20px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .district-stats span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .district-stats i {
+            color: #0f5b9c;
+        }
+        
+        @media (max-width: 768px) {
+            .filter-panel {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .btn-view {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .dataTables_wrapper .dataTables_filter input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                   <i class="bi bi-person-lines-fill"></i>
+                    <div>
+                        <h1>Treasury Contacts</h1>
+                        <p>All Treasury & Admin Contacts</p>
+                    </div>
+                </div>
+            </div>
+<div class="main-wrapper">
+    <!-- header -->
+
+
+    <!-- main card with tabs -->
+    <div class="card-db">
+        <!-- tab navigation -->
+        <ul class="nav nav-tabs-custom nav-tabs" id="treasuryTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
+                    <i class="bi bi-grid-3x3-gap-fill"></i>All Treasuries
+                    <span class="badge-count" id="allCount">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="district-tab" data-bs-toggle="tab" data-bs-target="#district" type="button" role="tab">
+                    <i class="bi bi-pin-map-fill"></i>District Wise View
+                    <span class="badge-count" id="districtCount">0</span>
+                </button>
+            </li>
+        </ul>
+
+        <!-- tab panes -->
+        <div class="tab-content">
+            <!-- pane 1: ALL treasuries -->
+            <div class="tab-pane fade show active" id="all" role="tabpanel">
+                <div class="table-responsive">
+                    <table id="adminFullTable" class="table table-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Treasury / Location</th>
+                                <th>Network Admin Name</th>
+                                <th>Network Admin Contact</th>
+                                <th>Treasury Admin Name</th>
+                                <th>Treasury Admin Contact</th>
+                                <th>Office Mail ID</th>
+                                <th>Office Contact</th>
+                                <th>Office Mobile</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Loading admin contacts ...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- pane 2: District wise view -->
+            <div class="tab-pane fade" id="district" role="tabpanel">
+                <div class="filter-panel">
+                    <div style="flex: 2; min-width: 300px;">
+                        <label>
+                            <i class="bi bi-building"></i> Select District
+                        </label>
+                        <select id="districtSelect" class="form-select" style="width: 100%;"></select>
+                    </div>
+                    <div>
+                        <button id="viewDistrictBtn" class="btn-view">
+                            <i class="bi bi-search"></i> View Treasuries
+                        </button>
+                    </div>
+                    <div class="ms-auto">
+                        <div class="district-stats">
+                            <span><i class="bi bi-database"></i> <span id="districtRowCount">0</span> records</span>
+                            <span><i class="bi bi-building"></i> <span id="totalDistricts">0</span> districts</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table id="districtTable" class="table table-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Treasury name</th>
+                                <th>Mail Id</th>
+                                <th>Phone (Office)</th>
+                                <th>Mobile</th>
+                                <th>Network Admin Name</th>
+                                <th>Network Admin Contact</th>
+                                <th>Treasury Admin Name</th>
+                                <th>Treasury Admin Contact</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <i class="bi bi-arrow-up-circle fs-1 text-muted"></i>
+                                    <p class="mt-2 text-muted">Select a district and click "View Treasuries"</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+  
+</div>
+
+<script>
+(function() {
+    // ----------------------------------------------
+    // GLOBALS & CONFIG
+    // ----------------------------------------------
+    const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+    
+    // Sheet 1 (All treasuries)
+    const SPREADSHEET_ID_ALL = '1HvCqLHC8IyllKskBXX1MtMfjQMGUyhMP7KuTuJxDhmU';
+    const SHEET_ADMIN = 'Admin Contact Details';
+    const RANGE_ALL = 'A2:H';
+
+    // Sheet 2 (District wise)
+    const SPREADSHEET_ID_DISTRICT = '1JxwLKphMWM9fqV43Tt0jQpQjlQC-6DaSlYQ66Fjq7rA';
+    const SHEET_DATA = 'Data';
+    const RANGE_DISTRICT = 'A:I';
+
+    // Data storage
+    let adminRows = [];
+    let districtRawRows = [];
+    let districtList = [];
+
+    // ----------------------------------------------
+    // 1. LOAD ALL TREASURIES (tab1)
+    // ----------------------------------------------
+    function loadAllAdminContacts() {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID_ALL}/values/${encodeURIComponent(SHEET_ADMIN)}!${RANGE_ALL}?key=${API_KEY}`;
+        
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                adminRows = data.values || [];
+                renderAllTable(adminRows);
+                document.getElementById('allCount').textContent = adminRows.length;
+            })
+            .catch(err => {
+                console.error('Error loading admin sheet:', err);
+                document.querySelector('#adminFullTable tbody').innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-danger">
+                            <i class="bi bi-exclamation-triangle-fill fs-1"></i>
+                            <p class="mt-2">Failed to load data. Please check connection.</p>
+                        </td>
+                    </tr>`;
+            });
+    }
+
+    function renderAllTable(rows) {
+        const tbody = document.querySelector('#adminFullTable tbody');
+        
+        if (!rows || rows.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5">No records found</td></tr>`;
+            if ($.fn.DataTable.isDataTable('#adminFullTable')) {
+                $('#adminFullTable').DataTable().destroy();
+            }
+            return;
+        }
+
+        let htmlRows = '';
+        rows.forEach(row => {
+            const cols = [];
+            for (let i = 0; i < 8; i++) {
+                cols[i] = (row[i] !== undefined && row[i] !== null) ? row[i].toString().trim() : '';
+            }
+
+            htmlRows += `<tr>
+                <td><strong>${escapeHtml(cols[0] || '—')}</strong></td>
+                <td>${escapeHtml(cols[1] || '—')}</td>
+                <td>${formatContact(cols[2], 'phone')}</td>
+                <td>${escapeHtml(cols[3] || '—')}</td>
+                <td>${formatContact(cols[4], 'phone')}</td>
+                <td>${formatContact(cols[5], 'email')}</td>
+                <td>${formatContact(cols[6], 'phone')}</td>
+                <td>${formatContact(cols[7], 'phone')}</td>
+            </tr>`;
+        });
+        
+        tbody.innerHTML = htmlRows;
+
+        // Initialize DataTable
+        if ($.fn.DataTable.isDataTable('#adminFullTable')) {
+            $('#adminFullTable').DataTable().destroy();
+        }
+        
+        $('#adminFullTable').DataTable({
+            paging: true,
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'All']],
+            ordering: true,
+            scrollX: true,
+            autoWidth: false,
+            language: {
+                search: '',
+                searchPlaceholder: 'Search treasury, name, email...',
+                lengthMenu: 'Show _MENU_ entries',
+                info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+                infoEmpty: 'Showing 0 to 0 of 0 entries',
+                infoFiltered: '(filtered from _MAX_ total entries)'
+            },
+            columnDefs: [
+                { targets: 0, width: '200px' },
+                { targets: 1, width: '160px' },
+                { targets: 2, width: '150px' },
+                { targets: 3, width: '160px' },
+                { targets: 4, width: '150px' },
+                { targets: 5, width: '200px' },
+                { targets: 6, width: '130px' },
+                { targets: 7, width: '130px' }
+            ]
+        });
+    }
+
+    // ----------------------------------------------
+    // 2. LOAD DISTRICT SHEET
+    // ----------------------------------------------
+    function loadDistrictData() {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID_DISTRICT}/values/${encodeURIComponent(SHEET_DATA)}!${RANGE_DISTRICT}?key=${API_KEY}`;
+        
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                districtRawRows = data.values || [];
+                buildDistrictDropdown();
+                document.getElementById('districtCount').textContent = districtRawRows.length;
+                document.getElementById('totalDistricts').textContent = districtList.length;
+            })
+            .catch(err => {
+                console.error('Error loading district sheet:', err);
+                $('#districtSelect').html('<option value="">⚠️ Failed to load districts</option>');
+            });
+    }
+
+    function buildDistrictDropdown() {
+        // Extract unique districts from column A
+        const districts = new Set();
+        districtRawRows.forEach(row => {
+            if (row.length > 0 && row[0] && row[0].toString().trim() !== '') {
+                districts.add(row[0].toString().trim());
+            }
+        });
+        
+        districtList = Array.from(districts).sort((a, b) => a.localeCompare(b));
+        
+        const $select = $('#districtSelect');
+        $select.empty().append('<option value="">-- Choose a district --</option>');
+        
+        districtList.forEach(d => {
+            $select.append(`<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`);
+        });
+
+        // Initialize Select2
+        $select.select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Type or select district',
+            allowClear: true
+        }).on('select2:open', function() {
+            setTimeout(() => document.querySelector('.select2-search__field')?.focus(), 100);
+        });
+    }
+
+    // ----------------------------------------------
+    // 3. VIEW BUTTON: Filter by district
+    // ----------------------------------------------
+    function renderDistrictTable(selectedDistrict) {
+        const $tbody = $('#districtTable tbody');
+        const $info = $('#districtRowCount');
+
+        // Destroy existing DataTable
+        if ($.fn.DataTable.isDataTable('#districtTable')) {
+            $('#districtTable').DataTable().destroy();
+        }
+        
+        $tbody.empty();
+
+        if (!selectedDistrict || !districtRawRows.length) {
+            $tbody.html('<tr><td colspan="8" class="text-center py-4"><span class="text-muted">No district selected or data missing</span></td></tr>');
+            $info.text('0');
+            return;
+        }
+
+        // Filter rows by district (case-insensitive)
+        const filtered = districtRawRows.filter(row => {
+            return row[0] && row[0].toString().trim().toLowerCase() === selectedDistrict.toLowerCase();
+        });
+
+        $info.text(filtered.length);
+
+        if (filtered.length === 0) {
+            $tbody.html(`
+                <tr>
+                    <td colspan="8" class="text-center py-5">
+                        <i class="bi bi-building-slash fs-1 text-muted"></i>
+                        <p class="mt-2">No treasuries found for district "${escapeHtml(selectedDistrict)}"</p>
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+
+        // Build rows
+        let html = '';
+        filtered.forEach(row => {
+            const cols = [];
+            for (let i = 0; i < 9; i++) {
+                cols[i] = (row[i] !== undefined && row[i] !== null) ? row[i].toString().trim() : '';
+            }
+
+            html += `<tr>
+                <td><strong>${escapeHtml(cols[1] || '—')}</strong></td>
+                <td>${formatContact(cols[2], 'email')}</td>
+                <td>${formatContact(cols[3], 'phone')}</td>
+                <td>${formatContact(cols[4], 'phone')}</td>
+                <td>${escapeHtml(cols[5] || '—')}</td>
+                <td>${formatContact(cols[6], 'phone')}</td>
+                <td>${escapeHtml(cols[7] || '—')}</td>
+                <td>${formatContact(cols[8], 'phone')}</td>
+            </tr>`;
+        });
+
+        $tbody.html(html);
+
+        // Initialize DataTable
+        $('#districtTable').DataTable({
+            paging: true,
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'All']],
+            ordering: true,
+            scrollX: true,
+            autoWidth: false,
+            language: {
+                search: '',
+                searchPlaceholder: 'Search in results...',
+                lengthMenu: 'Show _MENU_ entries',
+                emptyTable: 'No data available for selected district'
+            },
+            destroy: true
+        });
+    }
+
+    // ----------------------------------------------
+    // UTILITY FUNCTIONS
+    // ----------------------------------------------
+    function formatContact(val, type) {
+        if (!val) return '<span class="empty-cell">—</span>';
+        const escaped = escapeHtml(val);
+        
+        if (type === 'email' && val.includes('@')) {
+            return `<a href="mailto:${escapeHtml(val)}" class="contact-link">${escaped}</a>`;
+        } else if (type === 'phone') {
+            const digits = val.replace(/[^0-9+]/g, '');
+            if (digits) {
+                return `<a href="tel:${escapeHtml(digits)}" class="contact-link">${escaped}</a>`;
+            }
+        }
+        return escaped;
+    }
+
+    function escapeHtml(text) {
+        if (text === undefined || text === null) return '—';
+        if (typeof text !== 'string') text = String(text);
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // ----------------------------------------------
+    // INITIALIZATION
+    // ----------------------------------------------
+    $(document).ready(function() {
+        // Load data
+        loadAllAdminContacts();
+        loadDistrictData();
+
+        // View button click
+        $('#viewDistrictBtn').on('click', function() {
+            const selected = $('#districtSelect').val();
+            if (!selected) {
+                Swal.fire?.({
+                    icon: 'warning',
+                    title: 'No District Selected',
+                    text: 'Please select a district first',
+                    timer: 2000
+                }) || alert('Please select a district');
+                return;
+            }
+            renderDistrictTable(selected);
+        });
+
+        // Tab change animation
+        $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+            // Adjust DataTables columns if needed
+            if ($(e.target).attr('id') === 'district-tab' && $('#districtSelect').val()) {
+                setTimeout(() => {
+                    if ($.fn.DataTable.isDataTable('#districtTable')) {
+                        $('#districtTable').DataTable().columns.adjust();
+                    }
+                }, 100);
+            }
+        });
+    });
+})();
+</script>
+</body>
+</html>

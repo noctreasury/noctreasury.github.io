@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>NOC Command Center | Smart FAQ Hub</title>
+    <!-- Local CSS files (only essential ones) -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="../css/main-style.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            height: 100%;
+            overflow-x: hidden;
+        }
+        body {
+            background: #fff0;  /* softer, modern background for content area */
+            font-family: 'Inter', sans-serif;
+            overflow-y: auto !important;
+            min-height: 100vh;
+        }
+        /* improved card & text contrast */
+        .noc-header {
+            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+            padding: 0.5rem 0;
+            border-bottom: 3px solid #00d2ff;
+            margin-bottom: 2rem;
+        }
+        .noc-header h1 {
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .noc-header p {
+            color: #a0c4e8;
+        }
+
+        /* NEW: search icon button style in header */
+        .search-header-btn {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            border-radius: 50px;
+            padding: 8px 18px;
+            color: white;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(4px);
+        }
+        .search-header-btn:hover {
+            background: #00d2ff;
+            color: #0f2b3d;
+            transform: translateY(-1px);
+        }
+
+        /* Search modal overlay / popup */
+        .search-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+           /* background: rgba(0, 0, 0, 0.75);*/
+          /*  backdrop-filter: blur(8px);*/
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0.2s, opacity 0.2s ease;
+        }
+        .search-popup.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        .search-popup-content {
+            background: var(--card-bg);
+            max-width: 600px;
+            width: 90%;
+            border-radius: 48px;
+            padding: 1rem 1rem 1rem 1.8rem;
+            box-shadow: 0 25px 40px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #ffffff;
+            border: 1px solid rgba(0,210,255,0.3);
+        }
+        .search-popup-content .popup-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 1.1rem;
+            padding: 14px 0;
+            outline: none;
+            color: #1e2a3a;
+            font-weight: 500;
+        }
+        .search-popup-content .popup-input::placeholder {
+            color: #8a9bb0;
+        }
+        .popup-search-btn {
+            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+            border: none;
+            border-radius: 40px;
+            padding: 10px 22px;
+            color: white;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+        .popup-search-btn:hover {
+            background: #0d2b3e;
+            transform: scale(0.97);
+        }
+        .popup-reset-btn {
+            background: #eef2f6;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 20px;
+            font-weight: 500;
+            color: #2c3e50;
+            transition: 0.2s;
+        }
+        .popup-reset-btn:hover {
+            background: #dce3ec;
+        }
+        .popup-close {
+            background: transparent;
+            border: none;
+            font-size: 1.8rem;
+            line-height: 1;
+            color: #6c7a8e;
+            margin-left: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .popup-close:hover {
+            color: #0f5b9c;
+        }
+
+        /* improved content area readability */
+        .search-section {
+            display: none;  /* hide old search bar */
+        }
+        .stats-bar {
+            background: rgba(255,255,255,0.2);
+            border-radius: 40px;
+            padding: 0.5rem 1.2rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(2px);
+        }
+        .category-tabs {
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 1.8rem;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+        }
+        .category-tabs .nav-link {
+            border: none;
+            color: #4a5b6e;
+            font-weight: 600;
+            padding: 0.7rem 1.4rem;
+            border-radius: 40px;
+            transition: all 0.2s;
+            margin-right: 0.5rem;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+        .category-tabs .nav-link:hover {
+            background: #e6edf4;
+            color: #0f5b9c;
+        }
+        .category-tabs .nav-link.active {
+            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(15,91,156,0.25);
+        }
+        .accordion-item {
+            background: #ffffff;
+            border: 1px solid #e9edf2;
+            margin-bottom: 1rem;
+            border-radius: 24px !important;
+            overflow: hidden;
+            transition: all 0.25s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .accordion-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -10px rgba(0,0,0,0.12);
+            border-color: #cdd9ed;
+        }
+        .accordion-button {
+            background: #ffffff;
+            color: #1e2f3e;
+            font-weight: 600;
+            padding: 1.2rem 1.5rem;
+            font-size: 1rem;
+            border: none;
+        }
+        .accordion-button:not(.collapsed) {
+            background: linear-gradient(90deg, #0f5b9b, #00427eb3);
+            color: #f3f3f3;
+            box-shadow: none;
+        }
+        .accordion-button:focus {
+            box-shadow: none;
+            border-color: transparent;
+        }
+        .accordion-body {
+            background: #fafcff;
+            color: #2c3f4f;
+            padding: 1.5rem;
+            border-top: 1px solid #eef2f8;
+            line-height: 1.65;
+            font-size: 0.95rem;
+        }
+        .badge-category {
+            background: #eef2fc;
+            color: #0f5b9c;
+            font-size: 0.7rem;
+            padding: 0.25rem 0.8rem;
+            border-radius: 30px;
+            margin-left: 0.75rem;
+            vertical-align: middle;
+            font-weight: 600;
+        }
+        .faq-empty {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: #ffffff;
+            border-radius: 32px;
+            border: 1px solid #eef2f8;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        }
+        .stats-bar span, .stats-bar i {
+            color: white;
+        }
+        .stats-bar .text-muted {
+            color: #cfdfef !important;
+        }
+        footer {
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            padding: 1.5rem;
+            margin-top: 3rem;
+            text-align: center;
+            color: #64748b;
+        }
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin: 2rem 0 1rem;
+            flex-wrap: wrap;
+        }
+        .pagination-btn {
+            background: white;
+            border: 1px solid #dce5ef;
+            color: #2c3e50;
+            padding: 8px 18px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .pagination-btn:hover:not(:disabled) {
+            background: #eef2fa;
+            transform: translateY(-1px);
+            border-color: #bdd4ec;
+        }
+        .pagination-btn.active {
+            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+            color: white;
+            border-color: transparent;
+        }
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .page-info {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            color: #334155;
+        }
+        .items-per-page {
+            background: #ffffff;
+            border: 1px solid #dce5ef;
+            border-radius: 40px;
+            padding: 6px 15px;
+            color: #1e293b;
+            margin-left: 10px;
+        }
+        .search-highlight {
+            background-color: #ffecb3;
+            color: #b45f06;
+            font-weight: 600;
+            border-radius: 6px;
+            padding: 0 3px;
+        }
+        .answer-highlight {
+            background-color: rgba(0,210,255,0.1);
+            border-left: 3px solid #00d2ff;
+            padding-left: 8px;
+        }
+        @media (max-width: 768px) {
+            .category-tabs .nav-link { padding: 0.5rem 1rem; font-size: 0.85rem; }
+            .accordion-button { padding: 1rem; font-size: 0.9rem; }
+            .search-popup-content { padding: 0.8rem 0.8rem 0.8rem 1.2rem; }
+            .popup-search-btn, .popup-reset-btn { padding: 6px 14px; font-size: 0.85rem; }
+        }
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #fff0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          /*  backdrop-filter: blur(4px);*/
+        }
+        .loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #eef2fa;
+            border-top: 4px solid #00d2ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        pre { background: #f1f5f9; padding: 0.75rem; border-radius: 12px; overflow-x: auto; font-size: 0.85rem; }
+        code { color: #0f5b9c; background: #eef2ff; padding: 0.2rem 0.4rem; border-radius: 8px; }
+        .bi { vertical-align: middle; margin-right: 5px; }
+        .main-content { min-height: calc(100vh - 250px); }
+        .match-badge {
+            background: #00d2ff20;
+            border-radius: 20px;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            margin-left: 10px;
+                       font-weight: 500;
+        }
+        .text-muted-light {
+            color: #cfdfef;
+        }
+        .reset-all-link {
+            background: none;
+            border: none;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body class="light-theme">
+    <div class="noc-header">
+        <div class="container">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <h1 class="text-white mb-1"><i class="bi bi-hdd-network-fill me-3"></i>NOC F.A.Q</h1>
+                </div>
+                <!-- NEW: Search icon & popup trigger -->
+                <div>
+                    <button id="openSearchPopupBtn" class="search-header-btn"><i class="bi bi-search me-1"></i> Search FAQ</button>
+                </div>
+                <div class="stats-bar">
+                    <i class="bi bi-database-fill text-info"></i>
+                    <span id="totalCount" class="fw-semibold">0</span>
+                    <span class="text-muted-light">solutions</span>
+                    <div class="vr mx-1 text-white-50"></div>
+                    <i class="bi bi-tags-fill text-info"></i>
+                    <span id="categoryCount" class="fw-semibold">0</span>
+                    <span>categories</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEARCH POPUP MODAL (no old search bar) -->
+    <div id="searchPopup" class="search-popup">
+        <div class="search-popup-content">
+            <i class="bi bi-search text-muted fs-5"></i>
+            <input type="text" id="popupSearchInput" class="popup-input" placeholder="Search questions, answers, tags, categories...">
+            <button id="popupSearchBtn" class="popup-search-btn">Search</button>
+            <button id="popupResetBtn" class="popup-reset-btn"> Reset</button>
+            <button id="closeSearchPopup" class="popup-close"><i class="bi bi-x-lg"></i></button>
+        </div>
+    </div>
+
+    <div class="container mb-4">
+        <!-- Removed the old search-section & helper text "Now searches inside answers & categories too" completely -->
+        <div class="row justify-content-end">
+            <div class="col-lg-8 d-flex justify-content-end">
+                <!-- optional subtle space, but no search box -->
+            </div>
+        </div>
+    </div>
+
+    <div class="container main-content" style="min-width: 90%;">
+        <ul class="nav nav-tabs category-tabs" id="categoryTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" data-category="all" type="button" role="tab"><i class="bi bi-grid-3x3-gap-fill me-1"></i> All Categories</button>
+            </li>
+        </ul>
+
+        <div id="faqAccordion" class="accordion"></div>
+        
+        <div id="paginationControls" class="pagination-container" style="display: none;">
+            <button id="prevPageBtn" class="pagination-btn" disabled><i class="bi bi-chevron-left"></i> Previous</button>
+            <div id="pageNumbers" class="d-flex gap-2 flex-wrap"></div>
+            <button id="nextPageBtn" class="pagination-btn">Next <i class="bi bi-chevron-right"></i></button>
+            <div class="items-per-page ms-3">
+                <label class="text-muted me-2">Show:</label>
+                <select id="itemsPerPage" style="background: transparent; border: none; color: var(--text-primary);">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="faq-empty" id="emptyState" style="display: none;">
+            <i class="bi bi-inbox-fill"></i>
+            <h4 class="mt-2">No matching results</h4>
+            <p class="text-muted">Try different keywords — search includes question titles, answer content, categories & tags</p>
+        </div>
+    </div>
+
+    <footer></footer>
+
+    <div id="loader" class="loader-overlay" style="display: none;">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/sweetalert2.all.min.js"></script>
+    
+    <script>
+        // ================= CONFIGURATION =================
+        const SHEET_ID = '18f4XE_t7AmS30iztxqXWjO9oYdM6KjtyTVotPeGGLLE';
+        const API_KEY = 'AIzaSyDc8tegwi2rgHyDFYm7uWBqVqQ7Fwb3uWM';
+        const SHEET_NAME = 'NOC_FAQ';
+        const SHEET_RANGE = `${SHEET_NAME}!A:F`;
+        
+        let allFaqs = [];
+        let uniqueCategories = new Set();
+        let currentPage = 1;
+        let itemsPerPage = 10;
+        let currentFilteredFaqs = [];
+        
+        const searchPopup = document.getElementById('searchPopup');
+        const openSearchBtn = document.getElementById('openSearchPopupBtn');
+        const closePopupBtn = document.getElementById('closeSearchPopup');
+        const popupSearchInput = document.getElementById('popupSearchInput');
+        const popupSearchBtn = document.getElementById('popupSearchBtn');
+        const popupResetBtn = document.getElementById('popupResetBtn');
+        
+        const faqAccordion = document.getElementById('faqAccordion');
+        const emptyState = document.getElementById('emptyState');
+        const totalCountSpan = document.getElementById('totalCount');
+        const categoryCountSpan = document.getElementById('categoryCount');
+        const categoryTabs = document.getElementById('categoryTabs');
+        const paginationControls = document.getElementById('paginationControls');
+        const prevPageBtn = document.getElementById('prevPageBtn');
+        const nextPageBtn = document.getElementById('nextPageBtn');
+        const pageNumbersDiv = document.getElementById('pageNumbers');
+        const itemsPerPageSelect = document.getElementById('itemsPerPage');
+        
+        let currentCategory = 'all';
+        let currentSearchTerm = '';
+        
+        function showLoader(show) {
+            document.getElementById('loader').style.display = show ? 'flex' : 'none';
+        }
+        
+        // Fetch from Google Sheets
+        async function fetchGoogleSheetData() {
+            showLoader(true);
+            try {
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_RANGE}?key=${API_KEY}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                if (!data.values || data.values.length < 2) throw new Error('No data rows');
+                const rows = data.values.slice(1);
+                const faqs = [];
+                uniqueCategories.clear();
+                
+                rows.forEach((row, idx) => {
+                    const id = row[0] || idx+1;
+                    const category = row[1] ? row[1].trim() : 'Uncategorized';
+                    const tagsRaw = row[2] ? row[2].toString() : '';
+                    const question = row[3] ? row[3].trim() : 'Untitled Question';
+                    let answerHtml = row[4] ? row[4].trim() : '<p>No answer provided.</p>';
+                    const status = row[5] ? row[5].trim().toLowerCase() : 'active';
+                    
+                    if (status !== 'active') return;
+                    
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = answerHtml;
+                    const answerPlainText = tempDiv.textContent || tempDiv.innerText || '';
+                    
+                    const tagsArray = tagsRaw.split(',').map(t => t.trim().toLowerCase()).filter(t => t);
+                    uniqueCategories.add(category);
+                    
+                    faqs.push({
+                        id: id,
+                        category: category,
+                        tags: tagsArray,
+                        tagsRaw: tagsRaw,
+                        question: question,
+                        answer: answerHtml,
+                        answerPlainText: answerPlainText,
+                        status: status
+                    });
+                });
+                allFaqs = faqs;
+                updateStats();
+                renderCategoryTabs();
+                return faqs;
+            } catch (error) {
+                console.error('Sheet fetch error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Data Load Failed',
+                    text: 'Could not load FAQ from Google Sheet. Using demo data fallback? Check CORS or API key.',
+                    footer: `<a href="https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit" target="_blank">Open sheet</a>`
+                });
+                generateDemoData();
+                return [];
+            } finally {
+                showLoader(false);
+            }
+        }
+        
+        function generateDemoData() {
+            allFaqs = [
+                { id: 1, category: "Network Latency", tags: ["latency","ping","delay"], tagsRaw: "latency,ping,delay", question: "High latency in VPN tunnel?", answer: "<p>High latency in IPSec VPN tunnels can be caused by MTU mismatches or routing issues. Use <code>ping -f -l 1472</code> to test fragmentation.</p>", answerPlainText: "High latency in IPSec VPN tunnels can be caused by MTU mismatches or routing issues. Use ping -f -l 1472 to test fragmentation.", status: "active" },
+                { id: 2, category: "Switching & VLAN", tags: ["vlan","trunk","stp"], tagsRaw: "vlan,trunk,stp", question: "VLAN not communicating across switches?", answer: "<p>Ensure trunk ports allow required VLANs. Use <code>show interfaces trunk</code> to verify allowed VLAN list. Also check STP state.</p>", answerPlainText: "Ensure trunk ports allow required VLANs. Use show interfaces trunk to verify allowed VLAN list. Also check STP state.", status: "active" },
+                { id: 3, category: "Routing & BGP", tags: ["bgp","ospf","routes"], tagsRaw: "bgp,ospf,routes", question: "BGP session flapping every 5 minutes", answer: "<p>Check keepalive timers and interface stability. Common cause: MTU mismatch or firewall dropping keepalive packets. Verify with <code>show bgp neighbors</code>.</p>", answerPlainText: "Check keepalive timers and interface stability. Common cause: MTU mismatch or firewall dropping keepalive packets. Verify with show bgp neighbors.", status: "active" },
+                { id: 4, category: "Security & Firewall", tags: ["acl","firewall","ssh"], tagsRaw: "acl,firewall,ssh", question: "SSH access denied after ACL update", answer: "<p>Review inbound ACL rules: ensure permit tcp any any eq 22 is present before deny statements. Also check management ACL.</p>", answerPlainText: "Review inbound ACL rules: ensure permit tcp any any eq 22 is present before deny statements. Also check management ACL.", status: "active" },
+                { id: 5, category: "Network Latency", tags: ["jitter","qos","bandwidth"], tagsRaw: "jitter,qos,bandwidth", question: "Voice calls jitter high", answer: "<p>Enable QoS with LLQ for RTP traffic. Recommended: police traffic at 85% of link capacity and implement WRED.</p>", answerPlainText: "Enable QoS with LLQ for RTP traffic. Recommended: police traffic at 85% of link capacity and implement WRED.", status: "active" }
+            ];
+            uniqueCategories = new Set(allFaqs.map(f => f.category));
+            updateStats();
+            renderCategoryTabs();
+        }
+        
+        function updateStats() {
+            totalCountSpan.innerText = allFaqs.length;
+            categoryCountSpan.innerText = uniqueCategories.size;
+        }
+        
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+        
+        // search inside question, answer plain, category, tags
+        function matchesSearch(faq, term) {
+            if (!term) return true;
+            const lowerTerm = term.toLowerCase().trim();
+            const inQuestion = faq.question.toLowerCase().includes(lowerTerm);
+            const inAnswer = faq.answerPlainText.toLowerCase().includes(lowerTerm);
+            const inCategory = faq.category.toLowerCase().includes(lowerTerm);
+            const inTags = faq.tagsRaw.toLowerCase().includes(lowerTerm) || faq.tags.some(t => t.includes(lowerTerm));
+            return inQuestion || inAnswer || inCategory || inTags;
+        }
+        
+        function highlightTextInHtml(html, term) {
+            if (!term || term.trim() === "") return html;
+            const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            const div = document.createElement('div');
+            div.innerHTML = html;
+            function highlightNode(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    const text = node.textContent;
+                    if (regex.test(text)) {
+                        const span = document.createElement('span');
+                        span.innerHTML = text.replace(regex, `<span class="search-highlight">$1</span>`);
+                        node.parentNode.replaceChild(span, node);
+                    }
+                } else if (node.nodeType === Node.ELEMENT_NODE && !['SCRIPT', 'STYLE', 'CODE', 'PRE'].includes(node.tagName)) {
+                    node.childNodes.forEach(highlightNode);
+                }
+            }
+            div.childNodes.forEach(highlightNode);
+            return div.innerHTML;
+        }
+        
+        function getFilteredFaqs() {
+            let filtered = [...allFaqs];
+            if (currentCategory !== 'all') {
+                filtered = filtered.filter(faq => faq.category === currentCategory);
+            }
+            if (currentSearchTerm) {
+                filtered = filtered.filter(faq => matchesSearch(faq, currentSearchTerm));
+            }
+            return filtered;
+        }
+        
+        function applyFiltersAndRender() {
+            currentFilteredFaqs = getFilteredFaqs();
+            currentPage = 1;
+            renderAccordionWithPagination();
+        }
+        
+        function renderAccordionWithPagination() {
+            const totalItems = currentFilteredFaqs.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            
+            if (totalItems === 0) {
+                faqAccordion.innerHTML = '';
+                emptyState.style.display = 'block';
+                paginationControls.style.display = 'none';
+                return;
+            }
+            emptyState.style.display = 'none';
+            
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+            const pageItems = currentFilteredFaqs.slice(startIndex, endIndex);
+            
+            let accordionHtml = '';
+            pageItems.forEach((faq, idx) => {
+                const accordionId = `faq-${faq.id}-${startIndex + idx}`;
+                const headerId = `heading-${faq.id}-${startIndex + idx}`;
+                let highlightedQuestion = faq.question;
+                if (currentSearchTerm) {
+                    const regex = new RegExp(`(${currentSearchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                    highlightedQuestion = highlightedQuestion.replace(regex, `<span class="search-highlight">$1</span>`);
+                }
+                let processedAnswer = faq.answer;
+                processedAnswer = processedAnswer.replace(/<img /g, '<img class="img-fluid rounded" style="max-width:100%; height:auto;" ');
+                if (currentSearchTerm) {
+                    processedAnswer = highlightTextInHtml(processedAnswer, currentSearchTerm);
+                    if (faq.answerPlainText.toLowerCase().includes(currentSearchTerm.toLowerCase())) {
+                        highlightedQuestion += `<span class="match-badge"><i class="bi bi-file-text-fill"></i> match in answer</span>`;
+                    }
+                }
+                const tagPills = faq.tags.slice(0,5).map(tag => {
+                    let displayTag = escapeHtml(tag);
+                    if (currentSearchTerm && tag.toLowerCase().includes(currentSearchTerm.toLowerCase())) {
+                        const regex = new RegExp(`(${currentSearchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                        displayTag = displayTag.replace(regex, `<span class="search-highlight">$1</span>`);
+                    }
+                    return `<span class="badge bg-secondary me-1 opacity-75">#${displayTag}</span>`;
+                }).join('');
+                
+                accordionHtml += `
+                    <div class="accordion-item mb-3">
+                        <h2 class="accordion-header" id="${headerId}">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${accordionId}" aria-expanded="false" aria-controls="${accordionId}">
+                                <i class="bi bi-question-circle-fill text-info me-3"></i>
+                                ${highlightedQuestion}
+                                <span class="badge-category ms-2">${escapeHtml(faq.category)}</span>
+                                ${tagPills ? `<span class="ms-2">${tagPills}</span>` : ''}
+                            </button>
+                        </h2>
+                        <div id="${accordionId}" class="accordion-collapse collapse" aria-labelledby="${headerId}" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                ${processedAnswer}
+                                <hr class="my-2">
+                                <small class="text-muted"><i class="bi bi-tag-fill"></i> Tags: ${escapeHtml(faq.tagsRaw) || '—'}</small>
+                                ${currentSearchTerm && faq.category.toLowerCase().includes(currentSearchTerm.toLowerCase()) ? `<div class="mt-2 text-info small"><i class="bi bi-folder-check"></i> Category match: "${escapeHtml(faq.category)}"</div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            faqAccordion.innerHTML = accordionHtml;
+            renderPaginationControls(totalPages, totalItems, startIndex, endIndex);
+            paginationControls.style.display = 'flex';
+        }
+        
+        function renderPaginationControls(totalPages, totalItems, startIndex, endIndex) {
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+            let pageNumbersHtml = '';
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            if (endPage - startPage < maxVisiblePages - 1) startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            if (startPage > 1) {
+                pageNumbersHtml += `<button class="pagination-btn page-num" data-page="1">1</button>`;
+                if (startPage > 2) pageNumbersHtml += `<span class="page-info">...</span>`;
+            }
+            for (let i = startPage; i <= endPage; i++) {
+                pageNumbersHtml += `<button class="pagination-btn page-num ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            }
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) pageNumbersHtml += `<span class="page-info">...</span>`;
+                pageNumbersHtml += `<button class="pagination-btn page-num" data-page="${totalPages}">${totalPages}</button>`;
+            }
+            pageNumbersDiv.innerHTML = pageNumbersHtml;
+            document.querySelectorAll('.page-num').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const page = parseInt(btn.getAttribute('data-page'));
+                    if (!isNaN(page) && page !== currentPage) {
+                        currentPage = page;
+                        renderAccordionWithPagination();
+                        faqAccordion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
+            });
+        }
+        
+        function performSearchFromPopup() {
+            currentSearchTerm = popupSearchInput.value.trim();
+            currentPage = 1;
+            applyFiltersAndRender();
+            searchPopup.classList.remove('active');
+        }
+        
+        function resetFiltersFromPopup() {
+            popupSearchInput.value = '';
+            currentSearchTerm = '';
+            currentCategory = 'all';
+            currentPage = 1;
+            renderCategoryTabs();
+            applyFiltersAndRender();
+            searchPopup.classList.remove('active');
+        }
+        
+        function renderCategoryTabs() {
+            let tabsHtml = `<li class="nav-item" role="presentation">
+                <button class="nav-link ${currentCategory === 'all' ? 'active' : ''}" data-category="all" type="button" role="tab"><i class="bi bi-grid-3x3-gap-fill me-1"></i> All Categories</button>
+            </li>`;
+            const sortedCategories = Array.from(uniqueCategories).sort();
+            sortedCategories.forEach(cat => {
+                tabsHtml += `<li class="nav-item" role="presentation">
+                    <button class="nav-link ${currentCategory === cat ? 'active' : ''}" data-category="${escapeHtml(cat)}" type="button" role="tab"><i class="bi bi-folder-fill me-1"></i> ${escapeHtml(cat)}</button>
+                </li>`;
+            });
+            categoryTabs.innerHTML = tabsHtml;
+            document.querySelectorAll('#categoryTabs .nav-link').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const cat = btn.getAttribute('data-category');
+                    if (cat) {
+                        currentCategory = cat;
+                        currentPage = 1;
+                        applyFiltersAndRender();
+                        document.querySelectorAll('#categoryTabs .nav-link').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                    }
+                });
+            });
+        }
+        
+        function handleItemsPerPageChange() {
+            itemsPerPage = parseInt(itemsPerPageSelect.value);
+            currentPage = 1;
+            applyFiltersAndRender();
+        }
+        
+        async function init() {
+            await fetchGoogleSheetData();
+            applyFiltersAndRender();
+            
+            openSearchBtn.addEventListener('click', () => {
+                popupSearchInput.value = currentSearchTerm;
+                searchPopup.classList.add('active');
+                popupSearchInput.focus();
+            });
+            closePopupBtn.addEventListener('click', () => searchPopup.classList.remove('active'));
+            popupSearchBtn.addEventListener('click', performSearchFromPopup);
+            popupResetBtn.addEventListener('click', resetFiltersFromPopup);
+            searchPopup.addEventListener('click', (e) => { if (e.target === searchPopup) searchPopup.classList.remove('active'); });
+            popupSearchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearchFromPopup(); });
+            
+            prevPageBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderAccordionWithPagination(); faqAccordion.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+            nextPageBtn.addEventListener('click', () => { const totalPages = Math.ceil(currentFilteredFaqs.length / itemsPerPage); if (currentPage < totalPages) { currentPage++; renderAccordionWithPagination(); faqAccordion.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+            itemsPerPageSelect.addEventListener('change', handleItemsPerPageChange);
+        }
+        
+        init();
+        document.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A' && e.target.href && !e.target.getAttribute('target') && e.target.href.startsWith('http')) {
+                e.target.setAttribute('target', '_blank');
+                e.target.setAttribute('rel', 'noopener noreferrer');
+            }
+        });
+    </script>
+</body>
+</html>

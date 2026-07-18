@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BSNL MPLS, VPN FTTH and RailTel MPLS Circuit ID Master List</title>
+    
+    <!-- LOCAL CSS - Using same resources as main app -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    
+    <style>
+        :root {
+            --primary: #0f5b9c;
+            --primary-dark: #1a4b7a;
+            --primary-light: #e8f0fe;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --border: #e9ecef;
+            --railtel: #8b5cf6;
+            --railtel-light: #f3e8ff;
+            --vpn: #f59e0b;
+            --vpn-light: #fef3c7;
+        }
+        
+        body {
+            background: #fff0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding: 20px;
+            color: var(--dark);
+        }
+        
+        .dashboard-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        .branch-header {
+            background: white;
+            border-radius: 20px;
+            padding: 20px 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .branch-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .branch-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+        }
+        
+        .branch-details h1 {
+            margin: 0;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--primary-dark);
+            line-height: 1.3;
+        }
+        
+        .branch-details p {
+            margin: 5px 0 0;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+        }
+        
+        /* Auto-refresh indicator */
+        .refresh-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--light);
+            padding: 8px 16px;
+            border-radius: 40px;
+            border: 1px solid var(--border);
+        }
+        
+        .refresh-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--primary-light);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .last-updated {
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Stats Cards - 6 cards */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 18px 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: transform 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+        
+        .stat-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+        
+        .stat-icon.total {
+            background: #e8f0fe;
+            color: var(--primary);
+        }
+        
+        .stat-icon.bsnl {
+            background: #e8f7ed;
+            color: var(--success);
+        }
+        
+        .stat-icon.vpn {
+            background: #fef3c7;
+            color: var(--vpn);
+        }
+        
+        .stat-icon.railtel {
+            background: #f3e8ff;
+            color: var(--railtel);
+        }
+        
+        .stat-icon.branches {
+            background: #fff3cd;
+            color: var(--warning);
+        }
+        
+        .stat-icon.treasuries {
+            background: #e8f0fe;
+            color: var(--info);
+        }
+        
+        .stat-info h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            line-height: 1.2;
+        }
+        
+        .stat-info p {
+            margin: 3px 0 0;
+            color: #64748b;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        /* Section Titles */
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin: 0 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-title i {
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+        
+        .section-title .badge {
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 5px 15px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            margin-left: 10px;
+        }
+        
+        /* Table Card */
+        .table-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+        }
+        
+        .table thead th {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            font-weight: 500;
+            font-size: 0.8rem;
+            padding: 12px 8px;
+            white-space: nowrap;
+        }
+        
+        .table td {
+            padding: 10px 8px;
+            vertical-align: middle;
+            font-size: 0.85rem;
+        }
+        
+        .field-value {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        
+        .field-value .value-text {
+            word-break: break-word;
+            max-width: 200px;
+        }
+        
+        .circuit-id-code {
+            font-family: monospace;
+            font-weight: 600;
+            background: #f0fdf4;
+            color: #0b5e42;
+            padding: 3px 8px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 0.8rem;
+            border: 1px solid #d1fae5;
+        }
+        
+        .railtel-id-code {
+            font-family: monospace;
+            font-weight: 600;
+            background: #f3e8ff;
+            color: #6d28d9;
+            padding: 3px 8px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 0.8rem;
+            border: 1px solid #d8b4fe;
+        }
+        
+        .vpn-id-code {
+            font-family: monospace;
+            font-weight: 600;
+            background: #fef3c7;
+            color: #92400e;
+            padding: 3px 8px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 0.8rem;
+            border: 1px solid #fcd34d;
+        }
+        
+        .circuit-id-empty {
+            color: #94a3b8;
+            font-style: italic;
+            font-size: 0.8rem;
+        }
+        
+        .treasury-badge {
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-block;
+        }
+        
+        .branch-badge {
+            background: #f1f5f9;
+            color: var(--dark);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-block;
+        }
+        
+        .address-text {
+            font-size: 0.8rem;
+            color: #475569;
+            max-width: 250px;
+            word-break: break-word;
+        }
+        
+        /* Copy button styles */
+        .copy-field-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            padding: 2px 6px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            flex-shrink: 0;
+        }
+        
+        .copy-field-btn:hover {
+            background: #e8f0fe;
+            color: var(--primary);
+            transform: scale(1.1);
+        }
+        
+        .copy-field-btn.copied {
+            background: var(--success);
+            color: white;
+        }
+        
+        .copy-field-btn .bi {
+            font-size: 0.8rem;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--primary-light);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        .error-message {
+            background: #fee9e7;
+            color: var(--danger);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid var(--danger);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+            background: var(--light);
+            border-radius: 12px;
+        }
+        
+        .refresh-btn {
+            background: white;
+            border: 1px solid var(--border);
+            color: var(--primary);
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .refresh-btn:hover {
+            background: var(--primary-light);
+            border-color: var(--primary);
+        }
+        
+        .export-btn {
+            background: var(--success);
+            border: none;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .export-btn:hover {
+            background: #0d9668;
+            transform: translateY(-2px);
+        }
+        
+        @media (max-width: 992px) {
+            .stats-row {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .branch-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .field-value .value-text {
+                max-width: 120px;
+            }
+            
+            .address-text {
+                max-width: 150px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .copied-tooltip {
+            position: fixed;
+            background: var(--success);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            z-index: 9999;
+            pointer-events: none;
+            animation: fadeOut 1.5s ease-out forwards;
+        }
+        
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: translateY(0); }
+            70% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-10px); }
+        }
+.page-header {
+    padding: 15px 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+ 
+}
+.page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-header-left i {
+    font-size: 1.8rem !important;
+    background: rgb(56 143 251 / 15%) !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    color: #184f83 !important;
+}
+
+
+.page-header-left h1 {
+    margin: 0 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    color: #184f83!important;
+}
+ .page-header-left p {
+            margin: 2px 0 0;
+            opacity: 0.7;
+            font-size: 0.75rem;
+ }
+    </style>
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+             <i class="bi bi-hdd-network"></i>
+                    <div>
+                        <h1>BSNL MPLS, VPN FTTH and RailTel MPLS Circuit ID Master List</h1>
+                        <p>BSNL MPLS IDs, VPN FTTH IDs and Railtel MPLS Circuit IDs for all branches  </p>
+                    </div>
+                </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div class="refresh-indicator">
+                    <div class="refresh-spinner" id="refreshSpinner" style="display: none;"></div>
+                    <span class="last-updated" id="lastUpdated">
+                        <i class="bi bi-clock"></i> Loading...
+                    </span>
+                </div>
+                <button class="refresh-btn" onclick="manualRefresh()" id="refreshBtn">
+                    <i class="bi bi-arrow-repeat"></i> Refresh
+                </button>
+                <button class="export-btn" onclick="exportToCSV()" id="exportBtn">
+                    <i class="bi bi-download"></i> Export CSV
+                </button>
+            </div>
+            </div>
+    <div class="dashboard-container">
+        <!-- Header with Auto-refresh Indicator -->
+   
+
+        <!-- Stats Cards -->
+        <div class="stats-row" id="statsContainer">
+            <div class="stat-card">
+                <div class="stat-icon total">
+                    <i class="bi bi-database"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalRecords">0</h3>
+                    <p>Total Records</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bsnl">
+                    <i class="bi bi-tag"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="withBsnlCount">0</h3>
+                    <p>With BSNL MPLS ID</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon vpn">
+                    <i class="bi bi-wifi"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="withVpnCount">0</h3>
+                    <p>With VPN FTTH ID</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon railtel">
+                    <i class="bi bi-hdd-stack"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="withRailtelCount">0</h3>
+                    <p>With Railtel MPLS ID</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon branches">
+                    <i class="bi bi-building"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="uniqueBranches">0</h3>
+                    <p>Unique Branches</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon treasuries">
+                    <i class="bi bi-pin-map"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="uniqueTreasuries">0</h3>
+                    <p>Unique Treasuries</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Table -->
+        <div class="section-title">
+            <i class="bi bi-table"></i>
+            Circuit ID Master List
+            <span class="badge" id="masterCount">0</span>
+        </div>
+        
+        <div class="table-card" id="tableContainer">
+            <div class="loading" id="tableLoading">
+                <div class="spinner"></div>
+                <p>Loading circuit data...</p>
+            </div>
+            <div id="tableWrapper" style="display: none;">
+                <div class="table-responsive">
+                    <table id="circuitTable" class="table table-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 180px;">Treasury</th>
+                                <th style="min-width: 130px;">Branch Code</th>
+                                <th style="min-width: 200px;">Address</th>
+                                <th style="min-width: 200px;">Primary Connection (WAN 1)</th>
+                                <th style="min-width: 200px;">Secondary Connection (WAN 2)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="tableEmpty" class="empty-state" style="display: none;">
+                <i class="bi bi-database-slash fs-1"></i>
+                <h5 class="mt-3">No Data Found</h5>
+                <p class="text-muted">No circuit ID records found in the sheet.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOCAL JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/jquery.dataTables.min.js"></script>
+    <script src="../js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        // Configuration
+        const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+        const SPREADSHEET_ID = '1UdZRjshVCHIUXZ3WXwZuSFeUv77d45Z4tMsX0U9PHjU';
+        const SHEET_NAME = 'circuite id';
+        const RANGE = 'A:E'; // Treasury, Branch Code, Address, WAN 1 (BSNL MPLS), WAN 2 (Railtel MPLS or VPN FTTH)
+        
+        let allRecords = [];
+        let dataTable = null;
+        let isRefreshing = false;
+        
+        $(document).ready(function() {
+            console.log('Circuit ID Dashboard loaded - Fetching from sheet');
+            loadAllData();
+        });
+        
+        function manualRefresh() {
+            if (!isRefreshing) {
+                $('#refreshBtn').prop('disabled', true);
+                $('#refreshSpinner').show();
+                loadAllData();
+            }
+        }
+        
+        async function loadAllData() {
+            isRefreshing = true;
+            showLoading(true);
+            
+            try {
+                const sheetData = await loadSheetData();
+                processSheetData(sheetData);
+                
+                updateStats();
+                renderTable();
+                updateLastUpdated();
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showError('Failed to load circuit data: ' + error.message);
+            } finally {
+                isRefreshing = false;
+                $('#refreshSpinner').hide();
+                $('#refreshBtn').prop('disabled', false);
+                showLoading(false);
+            }
+        }
+        
+        async function loadSheetData() {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}!${RANGE}?key=${API_KEY}`;
+            console.log('Fetching data from:', url);
+            
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Sheet HTTP ${response.status}`);
+            
+            const data = await response.json();
+            console.log('Data received:', data.values ? data.values.length : 0, 'rows');
+            return data.values || [];
+        }
+        
+        function processSheetData(rows) {
+            allRecords = [];
+            
+            rows.forEach((row, index) => {
+                // Skip header row if present
+                if (index === 0) {
+                    const firstVal = row[0] ? row[0].toString().toLowerCase().trim() : '';
+                    if (firstVal === 'treasury' || firstVal === 'treasury' || firstVal.includes('treasury')) {
+                        return;
+                    }
+                }
+                
+                const treasury = row[0] ? row[0].toString().trim() : '';
+                const branchCode = row[1] ? row[1].toString().trim() : '';
+                const address = row[2] ? row[2].toString().trim() : '';
+                const bsnlId = row[3] ? row[3].toString().trim() : ''; // WAN 1 - BSNL MPLS
+                const wan2Value = row[4] ? row[4].toString().trim() : ''; // WAN 2 - Railtel MPLS or VPN FTTH
+                
+                // Skip empty rows
+                if (!treasury && !branchCode && !bsnlId && !wan2Value) {
+                    return;
+                }
+                
+                // Clean values
+                const cleanBsnlId = bsnlId !== '#N/A' ? bsnlId : '';
+                const cleanWan2 = wan2Value !== '#N/A' ? wan2Value : '';
+                
+                // Check if WAN2 contains VPN FTTH
+                const isVpn = cleanWan2.includes('VPN') || cleanWan2.includes('VPNoFTTH');
+                
+                // Store records
+                allRecords.push({
+                    treasury: treasury,
+                    branchCode: branchCode,
+                    address: address,
+                    bsnlId: cleanBsnlId,
+                    wan2Value: cleanWan2,
+                    isVpn: isVpn,
+                    rowIndex: index + 1
+                });
+            });
+            
+            console.log(`Total records loaded: ${allRecords.length}`);
+        }
+        
+        function updateStats() {
+            const totalRecords = allRecords.length;
+            const withBsnlCount = allRecords.filter(r => r.bsnlId && r.bsnlId !== '').length;
+            const withVpnCount = allRecords.filter(r => r.isVpn && r.wan2Value && r.wan2Value !== '').length;
+            const withRailtelCount = allRecords.filter(r => !r.isVpn && r.wan2Value && r.wan2Value !== '').length;
+            const uniqueBranches = new Set(allRecords.map(r => r.branchCode).filter(b => b)).size;
+            const uniqueTreasuries = new Set(allRecords.map(r => r.treasury).filter(t => t)).size;
+            
+            $('#totalRecords').text(totalRecords);
+            $('#withBsnlCount').text(withBsnlCount);
+            $('#withVpnCount').text(withVpnCount);
+            $('#withRailtelCount').text(withRailtelCount);
+            $('#uniqueBranches').text(uniqueBranches);
+            $('#uniqueTreasuries').text(uniqueTreasuries);
+            $('#masterCount').text(totalRecords);
+        }
+        
+        function renderTable() {
+            const $wrapper = $('#tableWrapper');
+            const $empty = $('#tableEmpty');
+            const $loading = $('#tableLoading');
+            
+            $loading.hide();
+            
+            if (allRecords.length === 0) {
+                $wrapper.hide();
+                $empty.show();
+                return;
+            }
+            
+            $empty.hide();
+            
+            const tbody = $('#tableBody');
+            tbody.empty();
+            
+            const sortedRecords = [...allRecords].sort((a, b) => {
+                return (a.branchCode || '').localeCompare(b.branchCode || '');
+            });
+            
+            sortedRecords.forEach((record, index) => {
+                // Treasury with copy
+                const treasuryDisplay = `
+                    <div class="field-value">
+                        <span class="treasury-badge value-text">${escapeHtml(record.treasury || '-')}</span>
+                        <button class="copy-field-btn" onclick="copyField('${escapeHtml(record.treasury || '').replace(/'/g, "\\'")}', this)" title="Copy Treasury">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                `;
+                
+                // Branch Code with copy
+                const branchDisplay = `
+                    <div class="field-value">
+                        <span class="branch-badge value-text">${escapeHtml(record.branchCode || '-')}</span>
+                        <button class="copy-field-btn" onclick="copyField('${escapeHtml(record.branchCode || '').replace(/'/g, "\\'")}', this)" title="Copy Branch Code">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                `;
+                
+                // Address with copy
+                const addressDisplay = `
+                    <div class="field-value">
+                        <span class="address-text value-text">${escapeHtml(record.address || '-')}</span>
+                        <button class="copy-field-btn" onclick="copyField('${escapeHtml(record.address || '').replace(/'/g, "\\'")}', this)" title="Copy Address">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                `;
+                
+                // BSNL MPLS ID (WAN 1) with copy
+                let bsnlDisplay = '';
+                if (record.bsnlId && record.bsnlId !== '') {
+                    bsnlDisplay = `
+                        <div class="field-value">
+                            <span class="circuit-id-code value-text">
+                                <i class="bi bi-upc-scan"></i> ${escapeHtml(record.bsnlId)}
+                            </span>
+                            <button class="copy-field-btn" onclick="copyField('${escapeHtml(record.bsnlId).replace(/'/g, "\\'")}', this)" title="Copy BSNL MPLS ID">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    bsnlDisplay = `<span class="circuit-id-empty"><i class="bi bi-dash-circle"></i> Not assigned</span>`;
+                }
+                
+                // WAN 2 - Railtel MPLS or VPN FTTH with copy
+                let wan2Display = '';
+                if (record.wan2Value && record.wan2Value !== '') {
+                    if (record.isVpn) {
+                        // VPN FTTH
+                        wan2Display = `
+                            <div class="field-value">
+                                <span class="vpn-id-code value-text">
+                                    <i class="bi bi-wifi"></i> ${escapeHtml(record.wan2Value)}
+                                </span>
+                                <button class="copy-field-btn" onclick="copyField('${escapeHtml(record.wan2Value).replace(/'/g, "\\'")}', this)" title="Copy VPN FTTH ID">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        // Railtel MPLS
+                        wan2Display = `
+                            <div class="field-value">
+                                <span class="railtel-id-code value-text">
+                                    <i class="bi bi-hdd-stack"></i> ${escapeHtml(record.wan2Value)}
+                                </span>
+                                <button class="copy-field-btn" onclick="copyField('${escapeHtml(record.wan2Value).replace(/'/g, "\\'")}', this)" title="Copy Railtel MPLS ID">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                        `;
+                    }
+                } else {
+                    wan2Display = `<span class="circuit-id-empty"><i class="bi bi-dash-circle"></i> Not assigned</span>`;
+                }
+                
+                const row = `
+                    <tr>
+                        <td>${treasuryDisplay}</td>
+                        <td>${branchDisplay}</td>
+                        <td>${addressDisplay}</td>
+                        <td>${bsnlDisplay}</td>
+                        <td>${wan2Display}</td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+            
+            if (dataTable) {
+                dataTable.destroy();
+            }
+            
+            dataTable = $('#circuitTable').DataTable({
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                order: [[1, 'asc']],
+                language: {
+                    search: "Search:",
+                    searchPlaceholder: "Filter table...",
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                    infoEmpty: "Showing 0 to 0 of 0 entries",
+                    infoFiltered: "(filtered from _MAX_ total entries)",
+                    paginate: {
+                        first: '<i class="bi bi-chevron-double-left"></i>',
+                        previous: '<i class="bi bi-chevron-left"></i>',
+                        next: '<i class="bi bi-chevron-right"></i>',
+                        last: '<i class="bi bi-chevron-double-right"></i>'
+                    }
+                },
+                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
+                autoWidth: false,
+                columnDefs: [
+                    { width: '18%', targets: 0 },
+                    { width: '13%', targets: 1 },
+                    { width: '22%', targets: 2 },
+                    { width: '22%', targets: 3 },
+                    { width: '22%', targets: 4 }
+                ]
+            });
+            
+            $wrapper.show();
+        }
+        
+        function copyField(text, button) {
+            if (!text) {
+                showTooltip('Nothing to copy', button);
+                return;
+            }
+            
+            navigator.clipboard.writeText(text).then(() => {
+                // Visual feedback
+                const $btn = $(button);
+                const originalHtml = $btn.html();
+                $btn.addClass('copied');
+                $btn.html('<i class="bi bi-check-lg"></i>');
+                
+                setTimeout(() => {
+                    $btn.removeClass('copied');
+                    $btn.html(originalHtml);
+                }, 1500);
+                
+                showTooltip('Copied!', button);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                // Fallback
+                const input = document.createElement('input');
+                input.value = text;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                showTooltip('Copied!', button);
+            });
+        }
+        
+        function showTooltip(message, element) {
+            const tooltip = $('<div class="copied-tooltip">' + message + ' <i class="bi bi-check-lg"></i></div>');
+            $('body').append(tooltip);
+            const rect = element.getBoundingClientRect();
+            tooltip.css({
+                left: rect.left + 'px',
+                top: rect.top - 35 + 'px'
+            });
+            
+            setTimeout(() => {
+                tooltip.remove();
+            }, 1500);
+        }
+        
+        function exportToCSV() {
+            if (allRecords.length === 0) {
+                alert('No data to export.');
+                return;
+            }
+            
+            const $exportBtn = $('#exportBtn');
+            const originalHtml = $exportBtn.html();
+            $exportBtn.html('<i class="bi bi-hourglass-split"></i> Exporting...');
+            $exportBtn.prop('disabled', true);
+            
+            setTimeout(() => {
+                try {
+                    const headers = ['Treasury', 'Branch Code', 'Address', 'BSNL MPLS ID (WAN 1)', 'Railtel MPLS / VPN FTTH ID (WAN 2)'];
+                    const csvRows = [headers];
+                    
+                    allRecords.forEach(record => {
+                        // Determine WAN 2 label
+                        let wan2Label = record.wan2Value;
+                        if (record.isVpn) {
+                            wan2Label = '' + record.wan2Value;
+                        } else if (record.wan2Value && !record.isVpn) {
+                            wan2Label = '' + record.wan2Value;
+                        }
+                        
+                        csvRows.push([
+                            `"${(record.treasury || '').replace(/"/g, '""')}"`,
+                            `"${(record.branchCode || '').replace(/"/g, '""')}"`,
+                            `"${(record.address || '').replace(/"/g, '""')}"`,
+                            `"${(record.bsnlId || '').replace(/"/g, '""')}"`,
+                            `"${(wan2Label || '').replace(/"/g, '""')}"`
+                        ]);
+                    });
+                    
+                    const csvContent = csvRows.map(row => row.join(',')).join('\n');
+                    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    const url = URL.createObjectURL(blob);
+                    
+                    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', `bsnl_railtel_circuit_ids_${timestamp}.csv`);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    
+                    $exportBtn.html('<i class="bi bi-check-lg"></i> Exported!');
+                    setTimeout(() => {
+                        $exportBtn.html(originalHtml);
+                        $exportBtn.prop('disabled', false);
+                    }, 2000);
+                } catch (error) {
+                    console.error('Export error:', error);
+                    alert('Error exporting CSV: ' + error.message);
+                    $exportBtn.html(originalHtml);
+                    $exportBtn.prop('disabled', false);
+                }
+            }, 100);
+        }
+        
+        function updateLastUpdated() {
+            const now = new Date();
+            const dateString = now.toLocaleDateString();
+            const timeString = now.toLocaleTimeString();
+            $('#lastUpdated').html(`<i class="bi bi-clock"></i> Last updated: ${dateString} ${timeString}`);
+        }
+        
+        function showLoading(show) {
+            if (show) {
+                $('#tableLoading').show();
+                $('#tableWrapper').hide();
+                $('#tableEmpty').hide();
+            }
+        }
+        
+        function showError(message) {
+            $('#tableContainer').html(`
+                <div class="error-message">
+                    <i class="bi bi-exclamation-triangle-fill fs-1"></i>
+                    <h5 class="mt-3">Error Loading Data</h5>
+                    <p>${escapeHtml(message)}</p>
+                    <button class="btn btn-primary mt-3" onclick="location.reload()">
+                        <i class="bi bi-arrow-repeat"></i> Reload
+                    </button>
+                </div>
+            `);
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+        
+        window.manualRefresh = manualRefresh;
+        window.exportToCSV = exportToCSV;
+        window.copyField = copyField;
+    </script>
+</body>
+</html>

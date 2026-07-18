@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subnet Calculator - IP Range & CIDR Calculator</title>
+    
+    <!-- LOCAL CSS -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    
+    <style>
+        :root {
+            --primary: #0f5b9c;
+            --primary-dark: #1a4b7a;
+            --primary-light: #e8f0fe;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --border: #e9ecef;
+        }
+        
+        body {
+             background: #fff0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding: 20px 16px;
+            color: var(--dark);
+        }
+        
+        .calculator-container {
+            max-width: 100%;
+            min-width: 100%;
+            margin: 0 auto;
+        }
+        
+.page-header {
+    padding: 15px 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+ 
+}
+.page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-header-left i {
+    font-size: 1.8rem !important;
+    background: rgb(56 143 251 / 15%) !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    color: #184f83 !important;
+}
+
+
+.page-header-left h1 {
+    margin: 0 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    color: #184f83!important;
+}
+ .page-header-left p {
+            margin: 2px 0 0;
+            opacity: 0.7;
+            font-size: 0.75rem;
+ }
+        .card-calculator {
+            background: white;
+            border-radius:  20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,20,40,0.12);
+            border: 1px solid var(--border);
+        }
+        
+        .input-group-custom {
+            margin-bottom: 20px;
+        }
+        
+        .input-group-custom label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--dark);
+        }
+        
+        .input-group-custom label i {
+            color: var(--primary);
+        }
+        
+        .form-control {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 15px;
+            font-family: monospace;
+            font-size: 1rem;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(15, 91, 156, 0.1);
+            outline: none;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .btn-calculate {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border: none;
+            color: white;
+            padding: 12px 32px;
+            border-radius: 40px;
+            font-weight: 600;
+            transition: all 0.2s;
+            flex: 1;
+        }
+        
+        .btn-calculate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(15, 91, 156, 0.3);
+        }
+        
+        .btn-reset {
+            background: white;
+            border: 1px solid var(--border);
+            color: var(--dark);
+            padding: 12px 32px;
+            border-radius: 40px;
+            font-weight: 600;
+            transition: all 0.2s;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-reset:hover {
+            background: var(--light);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        .results-section {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 2px dashed var(--border);
+        }
+        
+        .result-card {
+            background: var(--light);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .result-label {
+            font-size: 0.85rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        
+        .result-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--dark);
+            font-family: monospace;
+            word-break: break-all;
+        }
+        
+        .result-value-small {
+            font-size: 1rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+        
+        .example-box {
+            background: #e8f0fe;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #b8d4fe;
+        }
+        
+        .example-box i {
+            color: var(--primary);
+        }
+        
+        .cidr-badge {
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .cidr-badge:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .ip-range {
+            font-family: monospace;
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .empty-result {
+            color: #94a3b8;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        @media (max-width: 768px) {
+            body { padding: 16px; }
+            .card-calculator { padding: 20px; }
+            .result-value { font-size: 1rem; }
+            .stat-number { font-size: 1.4rem; }
+            .button-group { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                              <i class="bi bi-calculator-fill"></i>
+                    <div>
+                        <h1>Subnet Calculator</h1>
+                        <p>Calculate IP ranges, subnet masks, and usable addresses for any CIDR block</p>
+                    </div>
+                </div>
+            </div>
+    <div class="calculator-container">
+        <!-- Header -->
+    
+        
+        <!-- Main Card -->
+        <div class="card-calculator">
+            <!-- Input Section -->
+            <div class="input-group-custom">
+                <label><i class="bi bi-hdd-network"></i> IP Address / CIDR Block</label>
+                <input type="text" id="cidrInput" class="form-control" placeholder="e.g., 10.165.84.0/26 or 192.168.1.0/24">
+                <small class="text-muted mt-1">Format: IP_ADDRESS/CIDR (e.g., 192.168.1.0/24)</small>
+            </div>
+            
+            <!-- Button Group -->
+            <div class="button-group">
+                <button id="calculateBtn" class="btn-calculate">
+                    <i class="bi bi-calculator"></i> Calculate
+                </button>
+                <button id="resetBtn" class="btn-reset">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reset
+                </button>
+            </div>
+            
+            <!-- Example Quick Select -->
+            <div class="example-box">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="bi bi-lightbulb"></i>
+                    <strong>Quick Examples:</strong>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="cidr-badge example-link" data-cidr="10.165.84.0/26">10.165.84.0/26 (LAN Pool)</span>
+                    <span class="cidr-badge example-link" data-cidr="192.168.1.0/24">192.168.1.0/24</span>
+                    <span class="cidr-badge example-link" data-cidr="10.0.0.0/16">10.0.0.0/16</span>
+                    <span class="cidr-badge example-link" data-cidr="172.16.0.0/12">172.16.0.0/12</span>
+                    <span class="cidr-badge example-link" data-cidr="10.10.10.0/28">10.10.10.0/28 (Small)</span>
+                </div>
+            </div>
+            
+            <!-- Results Section -->
+            <div class="results-section" id="resultsSection">
+                <div id="resultsContent">
+                    <div class="empty-result">
+                        <i class="bi bi-info-circle fs-1"></i>
+                        <p class="mt-2">Enter a CIDR block and click "Calculate" to see results</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // IP to integer conversion
+        function ipToInt(ip) {
+            return ip.split('.').reduce((int, octet) => (int << 8) + parseInt(octet, 10), 0) >>> 0;
+        }
+        
+        // Integer to IP conversion
+        function intToIp(int) {
+            return [(int >>> 24) & 0xFF, (int >>> 16) & 0xFF, (int >>> 8) & 0xFF, int & 0xFF].join('.');
+        }
+        
+        // Calculate subnet details
+        function calculateSubnet(cidrInput) {
+            const [ip, prefix] = cidrInput.split('/');
+            const prefixLength = parseInt(prefix, 10);
+            
+            if (isNaN(prefixLength) || prefixLength < 0 || prefixLength > 32) {
+                throw new Error('Invalid CIDR prefix. Must be between 0 and 32.');
+            }
+            
+            const ipInt = ipToInt(ip);
+            const mask = (~0) << (32 - prefixLength) >>> 0;
+            const networkInt = (ipInt & mask) >>> 0;
+            const broadcastInt = (networkInt | (~mask >>> 0)) >>> 0;
+            
+            const totalIPs = Math.pow(2, 32 - prefixLength);
+            const usableIPs = totalIPs - 2;
+            
+            const firstUsableInt = networkInt + 1;
+            const lastUsableInt = broadcastInt - 1;
+            
+            // Calculate subnet mask in dotted decimal
+            const subnetMask = intToIp(mask);
+            
+            // Calculate wildcard mask
+            const wildcardMask = intToIp(~mask >>> 0);
+            
+            return {
+                networkAddress: intToIp(networkInt),
+                broadcastAddress: intToIp(broadcastInt),
+                firstUsable: intToIp(firstUsableInt),
+                lastUsable: intToIp(lastUsableInt),
+                totalIPs: totalIPs,
+                usableIPs: usableIPs,
+                subnetMask: subnetMask,
+                wildcardMask: wildcardMask,
+                cidrNotation: `${intToIp(networkInt)}/${prefixLength}`,
+                ipRange: `${intToIp(networkInt)} - ${intToIp(broadcastInt)}`
+            };
+        }
+        
+        // Render results
+        function renderResults(result) {
+            return `
+                <div class="result-card">
+                    <div class="result-label"><i class="bi bi-info-circle"></i> Network Address</div>
+                    <div class="result-value" id="networkAddress">${result.networkAddress}</div>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">${result.totalIPs.toLocaleString()}</div>
+                        <div class="stat-label">Total IP Addresses</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${result.usableIPs.toLocaleString()}</div>
+                        <div class="stat-label">Usable IP Addresses</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${result.subnetMask}</div>
+                        <div class="stat-label">Subnet Mask</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${result.wildcardMask}</div>
+                        <div class="stat-label">Wildcard Mask</div>
+                    </div>
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-label"><i class="bi bi-arrow-right-circle"></i> First Usable IP</div>
+                    <div class="result-value result-value-small" id="firstUsable">${result.firstUsable}</div>
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-label"><i class="bi bi-arrow-left-circle"></i> Last Usable IP</div>
+                    <div class="result-value result-value-small" id="lastUsable">${result.lastUsable}</div>
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-label"><i class="bi bi-broadcast"></i> Broadcast Address</div>
+                    <div class="result-value result-value-small" id="broadcastAddress">${result.broadcastAddress}</div>
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-label"><i class="bi bi-diagram-3"></i> CIDR Notation</div>
+                    <div class="result-value result-value-small" id="cidrNotation">${result.cidrNotation}</div>
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-label"><i class="bi bi-grid-3x3-gap-fill"></i> IP Range (All)</div>
+                    <div class="ip-range" id="ipRange">${result.ipRange}</div>
+                </div>
+            `;
+        }
+        
+        // Clear results
+        function clearResults() {
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.innerHTML = `
+                <div class="empty-result">
+                    <i class="bi bi-info-circle fs-1"></i>
+                    <p class="mt-2">Enter a CIDR block and click "Calculate" to see results</p>
+                </div>
+            `;
+        }
+        
+        // Show error message
+        function showError(message) {
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    ${message}
+                </div>
+            `;
+            setTimeout(() => {
+                const error = resultsContent.querySelector('.alert-danger');
+                if (error && resultsContent.innerHTML === error.outerHTML) {
+                    clearResults();
+                }
+            }, 4000);
+        }
+        
+        // Main calculate function
+        function calculate() {
+            const input = document.getElementById('cidrInput').value.trim();
+            
+            if (!input) {
+                showError('Please enter an IP address with CIDR notation (e.g., 10.165.84.0/26)');
+                return;
+            }
+            
+            try {
+                const result = calculateSubnet(input);
+                const resultsContent = document.getElementById('resultsContent');
+                resultsContent.innerHTML = renderResults(result);
+            } catch (error) {
+                showError(error.message);
+                console.error(error);
+            }
+        }
+        
+        // Reset function
+        function reset() {
+            document.getElementById('cidrInput').value = '';
+            clearResults();
+        }
+        
+        // Initialize and set up event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const calculateBtn = document.getElementById('calculateBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const cidrInput = document.getElementById('cidrInput');
+            
+            // Calculate on button click
+            calculateBtn.addEventListener('click', calculate);
+            
+            // Reset on button click
+            resetBtn.addEventListener('click', reset);
+            
+            // Calculate on Enter key
+            cidrInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    calculate();
+                }
+            });
+            
+            // Example links
+            document.querySelectorAll('.example-link').forEach(link => {
+                link.addEventListener('click', function() {
+                    const cidr = this.getAttribute('data-cidr');
+                    cidrInput.value = cidr;
+                    calculate();
+                });
+            });
+            
+            // No initial calculation - results are empty by default
+        });
+    </script>
+</body>
+</html>

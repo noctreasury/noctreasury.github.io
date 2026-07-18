@@ -1,0 +1,33 @@
+{
+    "name": "NOC Admin",
+    "short_name": "NOC",
+    "description": "Network Operations Center Dashboard",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "display_override": ["standalone", "fullscreen"],
+    "background_color": "#184e81",
+    "theme_color": "#0457a4",
+    "orientation": "any",
+    "categories": ["business", "productivity"],
+    "icons": [
+        {
+            "src": "images/favicon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "images/favicon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "images/favicon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SD-WAN Migration Guide for Treasuries</title>
+    
+    <!-- LOCAL RESOURCES - Using your existing project files -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    
+    <style>
+        :root {
+            --primary: #0f5b9c;
+            --primary-dark: #1a4b7a;
+            --primary-light: #e8f0fe;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --border: #e9ecef;
+        }
+        
+        body {
+            background: #f0f5fa;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            color: var(--dark);
+            padding: 0;
+            margin: 0;
+        }
+        
+        .document-wrapper {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            border-radius: 24px;
+            overflow: hidden;
+            margin: 30px 20px;
+        }
+        
+        /* Header */
+        .document-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 30px 40px;
+        }
+        
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .header-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+        
+        .header-title h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin: 0;
+            line-height: 1.2;
+        }
+        
+        .header-title p {
+            margin: 5px 0 0;
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+        
+        /* Treasury Selector - Normal Bootstrap Select */
+        .treasury-selector {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 15px 25px;
+            border-radius: 60px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            min-width: 380px;
+        }
+        
+        .selector-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .selector-label i {
+            margin-right: 5px;
+        }
+        
+        .treasury-selector select {
+            background: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 40px;
+            padding: 10px 15px;
+            width: 100%;
+            color: var(--dark);
+            font-size: 0.95rem;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230f5b9c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 16px;
+        }
+        
+        .treasury-selector select:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+        }
+        
+        .gateway-badge {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 30px;
+            padding: 5px 15px;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            width: 100%;
+        }
+        
+        .gateway-badge i {
+            font-size: 0.9rem;
+        }
+        
+        .gateway-badge span {
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Content */
+        .document-content {
+            padding: 40px;
+        }
+        
+        /* Table of Contents */
+        .toc {
+            background: var(--light);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 40px;
+            border: 1px solid var(--border);
+        }
+        
+        .toc h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .toc ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+        
+        .toc li {
+            margin-bottom: 5px;
+        }
+        
+        .toc a {
+            color: var(--dark);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            border-radius: 40px;
+            transition: all 0.2s;
+        }
+        
+        .toc a:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+            transform: translateX(5px);
+        }
+        
+        .toc a i {
+            color: var(--primary);
+            font-size: 0.9rem;
+        }
+        
+        /* Sections */
+        .section {
+            margin-bottom: 50px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 30px;
+        }
+        
+        .section:last-child {
+            border-bottom: none;
+        }
+        
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .section-title .section-number {
+            background: var(--primary);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .subsection-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin: 25px 0 15px;
+            padding-left: 15px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        /* Hardware Table */
+        .hardware-table {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            margin: 20px 0;
+        }
+        
+        .hardware-row {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .hardware-row:last-child {
+            border-bottom: none;
+        }
+        
+        .hardware-port {
+            width: 120px;
+            background: var(--primary-light);
+            padding: 15px;
+            font-weight: 600;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-right: 1px solid var(--border);
+        }
+        
+        .hardware-desc {
+            flex: 1;
+            padding: 15px;
+            background: white;
+        }
+        
+        .action-highlight {
+            background: #fff3cd;
+            color: #856404;
+            padding: 3px 10px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 5px;
+            border: 1px solid #ffe69c;
+        }
+        
+        /* Config Table */
+        .config-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        
+        .config-table th {
+            background: var(--primary);
+            color: white;
+            font-weight: 500;
+            padding: 12px 15px;
+            text-align: left;
+        }
+        
+        .config-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .config-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .config-table .gateway-ip {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: var(--primary);
+            background: var(--primary-light);
+            padding: 5px 12px;
+            border-radius: 30px;
+            display: inline-block;
+        }
+        
+        /* Command Blocks */
+        .command-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 16px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            position: relative;
+        }
+        
+        .command-block .command {
+            color: #10b981;
+            font-weight: 600;
+        }
+        
+        .command-block .comment {
+            color: #94a3b8;
+            font-style: italic;
+        }
+        
+        .command-block .gateway-placeholder {
+            background: #334155;
+            padding: 2px 8px;
+            border-radius: 30px;
+            color: #f59e0b;
+            font-weight: 600;
+        }
+        
+        .command-block .url-highlight {
+            background: #0f5b9c;
+            padding: 2px 8px;
+            border-radius: 30px;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .result-block {
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 16px;
+            margin: 15px 0;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .result-success {
+            color: #10b981;
+            font-weight: 600;
+        }
+        
+        .result-failure {
+            color: #ef4444;
+            font-weight: 600;
+        }
+        
+        /* Steps */
+        .step-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .step-item {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: var(--light);
+            border-radius: 12px;
+        }
+        
+        .step-number {
+            width: 30px;
+            height: 30px;
+            background: var(--primary);
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        /* Install Command */
+        .install-command {
+            background: #1e293b;
+            color: #10b981;
+            padding: 15px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            border-left: 4px solid #10b981;
+        }
+        
+        .install-command code {
+            color: #f59e0b;
+            background: #334155;
+            padding: 3px 8px;
+            border-radius: 20px;
+        }
+        
+        /* Gateway Table */
+        .gateway-table-container {
+            margin: 30px 0;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .gateway-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .gateway-table thead {
+            position: sticky;
+            top: 0;
+            background: var(--primary);
+            z-index: 10;
+        }
+        
+        .gateway-table th {
+            background: var(--primary);
+            color: white;
+            font-weight: 500;
+            padding: 15px;
+            text-align: left;
+        }
+        
+        .gateway-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .gateway-table tbody tr:hover {
+            background: var(--primary-light);
+        }
+        
+        .gateway-table .highlight-gateway {
+            background: #dbeafe;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .selected-gateway {
+            background: #e8f7ed !important;
+            border-left: 4px solid #10b981 !important;
+        }
+        
+        /* Info Boxes */
+        .info-box {
+            background: #e8f0fe;
+            border-left: 4px solid var(--primary);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #f59e0b;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        
+        .success-box {
+            background: #e8f7ed;
+            border-left: 4px solid #10b981;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        
+        /* Links */
+        .app-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 30px;
+            background: var(--primary-light);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 5px 0;
+            transition: all 0.2s;
+        }
+        
+        .app-link:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        /* Update Notification */
+        .update-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 12px;
+            padding: 15px 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border-left: 4px solid #10b981;
+            z-index: 9999;
+            animation: slideIn 0.3s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            max-width: 400px;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .update-toast i {
+            font-size: 1.5rem;
+            color: #10b981;
+        }
+        
+        @media (max-width: 768px) {
+            .document-wrapper { margin: 15px; }
+            .document-header { padding: 20px; }
+            .header-top { flex-direction: column; }
+            .treasury-selector { width: 100%; min-width: auto; }
+            .document-content { padding: 20px; }
+            .section-title { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="document-wrapper">
+        <!-- Header with Treasury Selector -->
+        <div class="document-header">
+            <div class="header-top">
+                <div class="header-title">
+                    <div class="header-icon">
+                        <i class="bi bi-hdd-network"></i>
+                    </div>
+                    <div>
+                        <h1>SDWAN MIGRATION</h1>
+                        <p>Guidance for Treasuries</p>
+                    </div>
+                </div>
+                
+                <!-- Treasury Selector - Normal Bootstrap Select -->
+                <div class="treasury-selector">
+                    <div class="selector-label">
+                        <i class="bi bi-building"></i> Select Treasury:
+                    </div>
+                    <select id="treasurySelect" class="form-select">
+                        <option value="">Loading treasuries...</option>
+                    </select>
+                    <div id="selectedGateway" class="gateway-badge" style="display: none;">
+                        <i class="bi bi-router"></i> Gateway: <span id="gatewayValue"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Document Content -->
+        <div class="document-content">
+            <!-- Table of Contents -->
+            <div class="toc">
+                <h2><i class="bi bi-list-ul"></i> Table of Contents</h2>
+                <ul>
+                    <li><a href="#basic-hardware"><i class="bi bi-1-circle"></i> Basic Hardware Configuration</a></li>
+                    <li><a href="#fatpipe"><i class="bi bi-1-circle"></i> 1.1 FAT PIPE Device</a></li>
+                    <li><a href="#software-config"><i class="bi bi-2-circle"></i> Basic Software Configuration</a></li>
+                    <li><a href="#pc-network"><i class="bi bi-2-circle"></i> 2.1 PC Network Configuration</a></li>
+                    <li><a href="#additional-info"><i class="bi bi-3-circle"></i> Additional Info</a></li>
+                    <li><a href="#ip-conflicts"><i class="bi bi-3-circle"></i> 3.1 Avoiding IP Conflicts</a></li>
+                    <li><a href="#disable-proxy"><i class="bi bi-3-circle"></i> 3.2 Disable Proxy Settings</a></li>
+                    <li><a href="#tracing-path"><i class="bi bi-3-circle"></i> 3.3 Tracing Path to Gateway</a></li>
+                    <li><a href="#gateway-list"><i class="bi bi-4-circle"></i> Treasury Default Gateway List</a></li>
+                </ul>
+            </div>
+            
+            <!-- Section 1: Basic Hardware Configuration -->
+            <section id="basic-hardware" class="section">
+                <div class="section-title">
+                    <span class="section-number">1</span>
+                    <span>Basic Hardware Configuration</span>
+                </div>
+                
+                <div class="subsection-title" id="fatpipe">1.1 FAT PIPE Device</div>
+                
+                <div class="hardware-table">
+                    <div class="hardware-row">
+                        <div class="hardware-port"><i class="bi bi-plug"></i> Port 1</div>
+                        <div class="hardware-desc">Connect to the <strong>existing Network Switch</strong>.</div>
+                    </div>
+                    <div class="hardware-row">
+                        <div class="hardware-port"><i class="bi bi-plug"></i> Port 2</div>
+                        <div class="hardware-desc"><strong>BSNL MPLS Connection</strong> <span class="text-muted">(Note: Already connected by the SDWAN Team).</span></div>
+                    </div>
+                    <div class="hardware-row">
+                        <div class="hardware-port"><i class="bi bi-plug"></i> Port 3</div>
+                        <div class="hardware-desc">
+                            <strong>Secondary Connection (RailTel)</strong>.
+                            <div class="action-highlight"><i class="bi bi-arrow-right"></i> Action: Unplug the RailTel cable from the existing <strong>JUNIPER Router</strong> and reconnect it to Port 3 of the new <strong>FAT PIPE device</strong>.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Section 2: Basic Software Configuration -->
+            <section id="software-config" class="section">
+                <div class="section-title">
+                    <span class="section-number">2</span>
+                    <span>Basic Software Configuration</span>
+                </div>
+                
+                <div class="subsection-title" id="pc-network">2.1 PC Network Configuration</div>
+                
+                <table class="config-table">
+                    <thead>
+                        <tr>
+                            <th>Setting</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><i class="bi bi-hash"></i> IP Address</td>
+                            <td><span class="badge bg-secondary">No Change (Keep existing)</span></td>
+                        </tr>
+                        <tr>
+                            <td><i class="bi bi-grid-3x3"></i> Subnet Mask</td>
+                            <td><span class="badge bg-secondary">No Change (Keep existing)</span></td>
+                        </tr>
+                        <tr>
+                            <td><i class="bi bi-router"></i> Default Gateway</td>
+                            <td>
+                                <span class="gateway-ip" id="configGateway">Select a treasury</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><i class="bi bi-server"></i> Preferred DNS</td>
+                            <td><code>10.5.141.72</code></td>
+                        </tr>
+                        <tr>
+                            <td><i class="bi bi-server"></i> Alternate DNS</td>
+                            <td><code>10.5.141.73</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+            
+            <!-- Section 3: Additional Info -->
+            <section id="additional-info" class="section">
+                <div class="section-title">
+                    <span class="section-number">3</span>
+                    <span>Additional Info</span>
+                </div>
+                
+                <div class="subsection-title" id="ip-conflicts">3.1 Avoiding IP Conflicts</div>
+                
+                <div class="warning-box">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    To prevent <strong>IP conflict issues</strong>, please verify if the allotted <strong>Default Gateway IP</strong> is currently <strong>not assigned</strong> to any existing PC in your office.
+                </div>
+                
+                <div class="subsection-title" style="font-size: 1.1rem;">3.1.1 How to Check for IP Conflicts</div>
+                <p>Before assigning your new Gateway IP, run these steps to ensure the address is vacant.</p>
+                
+                <div class="subsection-title" style="font-size: 1rem;">3.1.2 For Windows Systems</div>
+                <div class="step-list">
+                    <div class="step-item">
+                        <div class="step-number">1</div>
+                        <div>Press the <strong>Windows Key</strong>, type <code>cmd</code>, and press <strong>Enter</strong>.</div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">2</div>
+                        <div>In the black window, type: <code>ping <span class="gateway-placeholder" id="pingGateway1">[Your New Gateway IP]</span></code></div>
+                    </div>
+                </div>
+                
+                <div class="result-block">
+                    <div><span class="result-success">✓ Reply from... :</span> The IP is <strong>in use</strong>. Find the device and change its IP.</div>
+                    <div class="mt-2"><span class="result-failure">✗ Request timed out :</span> The IP is likely <strong>clear</strong>.</div>
+                </div>
+                
+                <div class="subsection-title" style="font-size: 1rem;">3.1.3 For Ubuntu (Linux) Systems</div>
+                <div class="step-list">
+                    <div class="step-item">
+                        <div class="step-number">1</div>
+                        <div>Press <strong>Ctrl + Alt + T</strong> to open the <strong>Terminal</strong>.</div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">2</div>
+                        <div>Type: <code>ping -c 4 <span class="gateway-placeholder" id="pingGateway2">[Your New Gateway IP]</span></code></div>
+                    </div>
+                </div>
+                
+                <div class="result-block">
+                    <div><span class="result-success">✓ 64 bytes from... :</span> The IP is <strong>active</strong> on the network.</div>
+                    <div class="mt-2"><span class="result-failure">✗ Destination Host Unreachable / 100% packet loss :</span> The IP is <strong>vacant</strong>.</div>
+                </div>
+                
+                <div class="subsection-title" id="disable-proxy">3.2 Disable Proxy Settings via Chrome</div>
+                
+                <div class="info-box">
+                    <p><i class="bi bi-info-circle me-2"></i> To ensure your new <strong>SDWAN</strong> connection works correctly, please follow these steps to disable any active proxy settings:</p>
+                </div>
+                
+                <div class="step-list">
+                    <div class="step-item">
+                        <div class="step-number">1</div>
+                        <div><strong>Open Chrome Settings:</strong> Click the <strong>three vertical dots (⋮)</strong> in the top-right corner of Google Chrome and select <strong>Settings</strong>.</div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">2</div>
+                        <div><strong>Navigate to System:</strong> On the left-hand sidebar, click on <strong>System</strong>.</div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">3</div>
+                        <div><strong>Open Computer Proxy Settings:</strong> Click on <strong>Open your computer's proxy settings</strong>.</div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">4</div>
+                        <div><strong>Disable Proxy:</strong> Set <strong>Automatically detect settings</strong> to <span class="badge bg-danger">OFF</span> and <strong>Use a proxy server</strong> to <span class="badge bg-danger">OFF</span>.</div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">5</div>
+                        <div><strong>Save:</strong> Ensure you click <strong>Save</strong> or <strong>Apply</strong> before closing the window.</div>
+                    </div>
+                </div>
+                
+                <div class="subsection-title" id="tracing-path">3.3 Tracing the path to gateway</div>
+                
+                <p>Tracing the path to your gateway (or any IP address) is a classic networking move. It's the best way to see exactly where your data is lagging or dropping off.</p>
+                
+                <!-- Install traceroute for Ubuntu -->
+                <div class="info-box">
+                    <i class="bi bi-ubuntu fs-4 me-2"></i>
+                    <strong>For Ubuntu Users:</strong> Before using traceroute, you need to install net-tools:
+                </div>
+                <div class="install-command">
+                    <i class="bi bi-terminal-fill me-2"></i>
+                    <code>sudo apt update && sudo apt install net-tools -y</code>
+                </div>
+                <p class="text-muted small mt-1">This will install traceroute and other network utilities on your Ubuntu system.</p>
+                
+                <div class="subsection-title" style="font-size: 1rem;">3.3.1 Windows Command Prompt (CMD)</div>
+                <div class="command-block">
+                    <div><span class="command">tracert</span> <span class="url-highlight">google.com</span></div>
+                    <div class="mt-2"><span class="command">tracert</span> <span class="url-highlight">etreasury.kerala.gov.in</span></div>
+                </div>
+                
+                <div class="result-block">
+                    <strong>Positive Results (Example for google.com):</strong>
+                    <pre class="mt-2 mb-0" style="background: none; padding: 0;">Tracing route to google.com [142.250.182.78]
+over a maximum of 30 hops:
+  1    <1 ms    <1 ms    <1 ms  192.168.1.1
+  2     2 ms     2 ms     2 ms  10.5.141.1
+  3     5 ms     5 ms     5 ms  172.16.2.1
+  4    12 ms    12 ms    13 ms  72.14.194.1
+  5    15 ms    15 ms    14 ms  142.250.182.78
+Trace complete.</pre>
+                </div>
+                
+                <div class="subsection-title" style="font-size: 1rem;">3.3.2 Ubuntu Terminal (After installing net-tools)</div>
+                <div class="command-block">
+                    <div><span class="command">traceroute</span> <span class="url-highlight">google.com</span></div>
+                    <div class="mt-2"><span class="command">traceroute</span> <span class="url-highlight">etreasury.kerala.gov.in</span></div>
+                </div>
+                
+                <div class="result-block">
+                    <strong>Positive Results (Example for google.com):</strong>
+                    <pre class="mt-2 mb-0" style="background: none; padding: 0;">traceroute to google.com (142.250.182.78), 30 hops max, 60 byte packets
+ 1  _gateway (192.168.1.1)  0.425 ms  0.398 ms  0.372 ms
+ 2  10.5.141.1 (10.5.141.1)  2.123 ms  2.098 ms  2.076 ms
+ 3  172.16.2.1 (172.16.2.1)  5.234 ms  5.198 ms  5.165 ms
+ 4  72.14.194.1 (72.14.194.1)  12.456 ms  12.423 ms  12.398 ms
+ 5  google.com (142.250.182.78)  15.678 ms  15.645 ms  15.612 ms</pre>
+                </div>
+                
+                <div class="warning-box mt-3">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    <strong>Note:</strong> The actual IP addresses and response times will vary based on your network configuration and location.
+                </div>
+            </section>
+            
+            <!-- Section 4: Treasury Default Gateway List -->
+            <section id="gateway-list" class="section">
+                <div class="section-title">
+                    <span class="section-number">4</span>
+                    <span>Treasury Default Gateway List</span>
+                </div>
+                
+                <div class="warning-box mb-4">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Important:</strong> The following IP details are already configured on the new SD-WAN device; therefore, ensure that these IPs are not assigned to any computers or network printers in the concerned treasury.
+                </div>
+                
+                <!-- Gateway Table Container -->
+                <div class="gateway-table-container">
+                    <table class="gateway-table" id="gatewayTable">
+                        <thead>
+                            <tr>
+                                <th>Treasury name</th>
+                                <th>Default Gateway (Fatpipe device IP)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gatewayTableBody">
+                            <tr>
+                                <td colspan="2" class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2">Loading gateway data...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Post Migration Checklist -->
+                <div class="success-box mt-4">
+                    <h5><i class="bi bi-check-circle-fill me-2"></i> After Successful Completion of SDWAN Migration</h5>
+                    <ul class="mt-3">
+                        <li>Check & ensure successful login on all the treasury applications:</li>
+                        <li class="mt-2">
+                            <a href="https://eofficetreasury.kerala.gov.in/SSOComponent/auth.php" target="_blank" class="app-link">
+                                <i class="bi bi-box-arrow-up-right"></i> eOffice
+                            </a>
+                            <a href="https://accounts.mgovcloud.in/" target="_blank" class="app-link">
+                                <i class="bi bi-box-arrow-up-right"></i> CRU email
+                            </a>
+                            <a href="https://medisep.kerala.gov.in/" target="_blank" class="app-link">
+                                <i class="bi bi-box-arrow-up-right"></i> Medisep
+                            </a>
+                        </li>
+                        <li class="mt-3">Also please update the following form:</li>
+                        <li class="mt-2">
+                            <a href="https://forms.gle/TZrYY1GsLZvoNKnH7" target="_blank" class="app-link" style="background: #10b981; color: white;">
+                                <i class="bi bi-pencil-square"></i> SD-WAN Migration Feedback Form
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+    </div>
+    
+    <!-- Update Notification Toast -->
+    <div id="updateToast" class="update-toast" style="display: none;">
+        <i class="bi bi-check-circle-fill"></i>
+        <div>
+            <strong id="toastTitle">Gateway Updated</strong>
+            <p id="toastMessage" class="mb-0 small"></p>
+        </div>
+    </div>
+    
+    <!-- LOCAL SCRIPTS - Using your existing project files -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // ==================== CONFIGURATION ====================
+        const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+        const SPREADSHEET_ID = '105FU8biUFJETqboPumblZ1BJYv7TzKiOy7Jwfbn3zTw';
+        const SHEET_NAME = 'Treasuries';
+        const RANGE = 'A2:G';  // A: Treasury Name, G: Gateway IP
+        
+        // Global variables
+        let treasuryData = [];
+        let treasuryMap = new Map(); // Treasury Name -> Gateway IP
+        
+        // ==================== INITIALIZATION ====================
+        $(document).ready(function() {
+            console.log('Document ready - jQuery is working');
+            
+            // Load treasury data
+            loadTreasuryData();
+            
+            // Treasury selection change
+            $('#treasurySelect').on('change', function() {
+                const selectedTreasury = $(this).val();
+                updateGatewayForSelection(selectedTreasury);
+            });
+        });
+        
+        async function loadTreasuryData() {
+            try {
+                $('#treasurySelect').html('<option value="">Loading...</option>');
+                
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}!${RANGE}?key=${API_KEY}`;
+                console.log('Fetching treasury data from:', url);
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+                
+                const data = await response.json();
+                console.log('Treasury data received:', data);
+                
+                if (!data.values || data.values.length === 0) {
+                    throw new Error('No treasury data found in sheet');
+                }
+                
+                processTreasuryData(data.values);
+                populateTreasuryDropdown();
+                populateGatewayTable();
+                
+            } catch (error) {
+                console.error('Error loading treasury data:', error);
+                $('#treasurySelect').html('<option value="">Failed to load treasuries</option>');
+                $('#gatewayTableBody').html(`
+                    <tr>
+                        <td colspan="2" class="text-center py-4 text-danger">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            Failed to load gateway data: ${error.message}
+                        </td>
+                    </tr>
+                `);
+            }
+        }
+        
+        function processTreasuryData(rows) {
+            treasuryData = [];
+            treasuryMap.clear();
+            
+            rows.forEach((row, index) => {
+                if (row.length >= 7) { // Ensure we have at least 7 columns (A through G)
+                    const treasuryName = row[0] ? row[0].toString().trim() : '';
+                    let gatewayIP = row[6] ? row[6].toString().trim() : ''; // Column G (index 6)
+                    
+                    if (treasuryName && gatewayIP) {
+                        // Remove any spaces from gateway IP
+                        gatewayIP = gatewayIP.replace(/\s+/g, '');
+                        
+                        treasuryData.push({
+                            name: treasuryName,
+                            gateway: gatewayIP
+                        });
+                        
+                        treasuryMap.set(treasuryName, gatewayIP);
+                        console.log(`Added: ${treasuryName} -> ${gatewayIP}`);
+                    }
+                }
+            });
+            
+            console.log(`Processed ${treasuryData.length} treasury records`);
+        }
+        
+        function populateTreasuryDropdown() {
+            const $select = $('#treasurySelect');
+            $select.empty().append('<option value="">Select a treasury</option>');
+            
+            // Sort alphabetically for better UX
+            treasuryData.sort((a, b) => a.name.localeCompare(b.name)).forEach(item => {
+                $select.append(`<option value="${escapeHtml(item.name)}">${escapeHtml(item.name)}</option>`);
+            });
+            
+            console.log(`Populated dropdown with ${treasuryData.length} options`);
+        }
+        
+        function populateGatewayTable() {
+            const $tbody = $('#gatewayTableBody');
+            $tbody.empty();
+            
+            if (treasuryData.length === 0) {
+                $tbody.html(`
+                    <tr>
+                        <td colspan="2" class="text-center py-4">
+                            No gateway data available
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+            
+            treasuryData.sort((a, b) => a.name.localeCompare(b.name)).forEach(item => {
+                $tbody.append(`
+                    <tr data-treasury="${escapeHtml(item.name)}" data-gateway="${escapeHtml(item.gateway)}">
+                        <td>${escapeHtml(item.name)}</td>
+                        <td><code>${escapeHtml(item.gateway)}</code></td>
+                    </tr>
+                `);
+            });
+            
+            console.log(`Populated gateway table with ${treasuryData.length} rows`);
+        }
+        
+        function updateGatewayForSelection(treasuryName) {
+            if (!treasuryName) {
+                // No treasury selected
+                $('.gateway-placeholder').text('[Your New Gateway IP]');
+                $('.gateway-ip').text('Select a treasury');
+                $('#configGateway').text('Select a treasury');
+                $('#selectedGateway').hide();
+                
+                // Remove highlight from table
+                $('#gatewayTable tbody tr').removeClass('selected-gateway');
+                return;
+            }
+            
+            const gatewayIP = treasuryMap.get(treasuryName) || 'Not found';
+            console.log(`Selected: ${treasuryName} -> Gateway: ${gatewayIP}`);
+            
+            // Update all gateway placeholders in the document
+            $('.gateway-placeholder').text(gatewayIP);
+            $('#configGateway').text(gatewayIP);
+            $('#gatewayValue').text(gatewayIP);
+            
+            // Show gateway badge
+            $('#selectedGateway').show();
+            
+            // Highlight the selected row in the gateway table
+            $('#gatewayTable tbody tr').removeClass('selected-gateway');
+            $(`#gatewayTable tbody tr[data-treasury="${escapeHtml(treasuryName)}"]`).addClass('selected-gateway');
+            
+            // Show update notification
+            showToast('Gateway Updated', `Gateway for "${treasuryName}" is now ${gatewayIP}`);
+        }
+        
+        function showToast(title, message) {
+            $('#toastTitle').text(title);
+            $('#toastMessage').text(message);
+            $('#updateToast').fadeIn(300);
+            
+            setTimeout(() => {
+                $('#updateToast').fadeOut(300);
+            }, 3000);
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            if (typeof text !== 'string') text = String(text);
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+    </script>
+</body>
+</html>

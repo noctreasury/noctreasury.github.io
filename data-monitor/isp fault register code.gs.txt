@@ -1,0 +1,613 @@
+// =====================================================
+// code.gs - ISP Fault Management System
+// Deploy as Web App (Execute as: Me, Access: Anyone)
+// =====================================================
+// url = https://script.google.com/macros/s/AKfycbzm3_Ft-hZdwZp69zf6nPJ4qOV_JFSZObwroXUEx6xZ2GnNGy9JrXIveqcEsDSvCE8P/exec
+// Configuration - Spreadsheet ID where data is stored
+const SPREADSHEET_ID = "1T7GsX08h9B6tT7doDjfg4MgULk7JZaOa1YT7cF_otQI";
+
+// Sheet names (must match your Excel/Sheet tabs)
+const SHEET_FAULTS = "Details";
+const SHEET_TREASURIES = "Treasuries and  Code";
+const SHEET_CONNECTIONS = "Connections and source URL Deta";
+const SHEET_FOLLOWUP = "Followed up Details";
+const SHEET_LINKSTATUS = "Link Status";
+const SHEET_RESOLVE = "Resolve Status";
+
+// ==================== CORS HEADERS ====================
+function getCorsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Max-Age": "86400"
+  };
+}
+
+// ==================== DO GET (for GET requests with query parameters) ====================
+function doGet(e) {
+  // Handle OPTIONS preflight (CORS)
+  if (e && e.parameter && e.parameter.method === "OPTIONS") {
+    return ContentService
+      .createTextOutput("")
+      .setMimeType(ContentService.MimeType.TEXT)
+      .setHeaders(getCorsHeaders());
+  }
+  
+  try {
+    // Check if this is a GET request for fault records with filters
+    const action = e && e.parameter ? e.parameter.action : null;
+    
+    if (action === "GET_FAULTS") {
+      const sheetName = e.parameter.sheetName || SHEET_FAULTS;
+      const filter = e.parameter.filter || null;
+      const status = e.parameter.status || null;
+      
+      const result = handleGetFaults(sheetName, filter, status);
+      return sendResponse(result);
+    }
+    
+    // Default response for GET
+    return sendResponse({
+      status: "active",
+      message: "ISP Fault Management API is running. Use POST for write operations or GET with action=GET_FAULTS",
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch(error) {
+    return sendResponse({ 
+      status: "error", 
+      message: error.toString(),
+      stack: error.stack 
+    });
+  }
+}
+
+// ==================== DO POST (Main Handler) ====================
+function doPost(e) {
+  // Handle OPTIONS preflight (CORS)
+  if (e && e.method === "OPTIONS") {
+    return ContentService
+      .createTextOutput("")
+      .setMimeType(ContentService.MimeType.TEXT)
+      .setHeaders(getCorsHeaders());
+  }
+  
+  try {
+    let params;
+    if (e && e.postData && e.postData.contents) {
+      params = JSON.parse(e.postData.contents);
+    } else {
+      return sendResponse({ status: "error", message: "No data received" });
+    }
+    
+    const action = params.action;
+    let result;
+    
+    switch(action) {
+      case "GET_DATA":
+        result = handleGetData(params);
+        break;
+      case "GET_FAULTS":
+        result = handleGetFaults(params.sheetName, params.filter, params.status);
+        break;
+      case "ADD_FAULT":
+        result = handleAddFault(params);
+        break;
+      case "UPDATE_FAULT":
+        result = handleUpdateFault(params);
+        break;
+      case "DELETE_FAULT":
+        result = handleDeleteFault(params);
+        break;
+      case "GET_EXTERNAL_CIRCUIT":
+        result = handleGetExternalCircuit(params);
+        break;
+      default:
+        result = { status: "error", message: "Unknown action: " + action };
+    }
+    
+    return sendResponse(result);
+    
+  } catch(error) {
+    return sendResponse({ 
+      status: "error", 
+      message: error.toString(),
+      stack: error.stack 
+    });
+  }
+}
+
+// ==================== GET FAULTS WITH SERVER-SIDE FILTERING ====================
+function handleGetFaults(sheetName, filter, status) {
+  try {
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(sheetName || SHEET_FAULTS);
+    if(!sheet) {
+      return { status: "error", message: "Sheet not found: " + sheetName };
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    if(!data || data.length < 2) {
+      return { status: "success", records: [] };
+    }
+    
+    const records = [];
+    
+    // Process rows starting from index 1 (skip header)
+    for(let i = 1; i < data.length; i++) {
+      const row = data[i];
+      
+      // Skip empty rows
+      if(!row[0] || row[0].toString().trim() === "") continue;
+      
+      // Extract record data
+      const record = {
+        rowIndex: i + 1,  // 1-indexed row number in sheet
+        refNo: row[0] ? row[0].toString().trim() : "",
+        treasuryName: row[1] ? row[1].toString().trim() : "",
+        connection: row[2] ? row[2].toString().trim() : "",
+        circuitId: row[3] ? row[3].toString().trim() : "",
+        callDate: row[4] ? row[4].toString().trim() : "",
+        lastFollowup: row[5] ? row[5].toString().trim() : "",
+        remarks: row[6] ? row[6].toString().trim() : "",
+        linkStatus: row[7] ? row[7].toString().trim() : "",
+        resolveStatus: row[8] ? row[8].toString().trim() : ""
+      };
+      
+      // Apply filter if specified
+      let shouldInclude = true;
+      
+      if (filter === "PENDING") {
+        // Include only pending records (empty, null, or "Pending")
+        const resolveStatus = record.resolveStatus;
+        if (resolveStatus && resolveStatus !== "" && resolveStatus.toLowerCase() !== "pending") {
+          shouldInclude = false;
+        }
+      } else if (filter === "EXACT" && status !== null) {
+        // Include only records with exact status match
+        if (record.resolveStatus !== status) {
+          shouldInclude = false;
+        }
+      }
+      // For "ALL" or no filter, include all records
+      
+      if (shouldInclude) {
+        records.push(record);
+      }
+    }
+    
+    // Sort by reference number (ascending)
+    records.sort((a, b) => {
+      const numA = parseFloat(a.refNo) || 0;
+      const numB = parseFloat(b.refNo) || 0;
+      return numA - numB;
+    });
+    
+    return { 
+      status: "success", 
+      records: records,
+      totalRecords: records.length,
+      filterApplied: filter || "ALL"
+    };
+    
+  } catch(error) {
+    console.error("Error in handleGetFaults:", error);
+    return { status: "error", message: error.toString() };
+  }
+}
+
+// ==================== GET DATA FROM SHEET (Legacy - kept for compatibility) ====================
+function handleGetData(params) {
+  const sheetName = params.sheetName;
+  const range = params.range || "A:Z";
+  
+  try {
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(sheetName);
+    if(!sheet) {
+      return { status: "error", message: "Sheet not found: " + sheetName };
+    }
+    
+    const data = sheet.getRange(range).getValues();
+    return { status: "success", data: data };
+  } catch(error) {
+    return { status: "error", message: error.toString() };
+  }
+}
+
+// ==================== ADD NEW FAULT RECORD ====================
+function handleAddFault(params) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_FAULTS);
+  if(!sheet) return { status: "error", message: "Faults sheet not found" };
+  
+  const record = params.data;
+  
+  // Generate next Reference Number (auto-increment serial order no.)
+  const lastRow = sheet.getLastRow();
+  let nextRefNum = 1;
+  if(lastRow >= 2) {
+    const lastRef = sheet.getRange(lastRow, 1).getValue();
+    const lastNum = parseFloat(lastRef.toString().replace(/\.0$/, ''));
+    if(!isNaN(lastNum)) nextRefNum = lastNum + 1;
+  }
+  const refNo = nextRefNum + ".0";
+  
+  // Prepare row data (9 columns matching Details sheet structure)
+  const rowData = [
+    refNo,                                    // Column A: Reference No.
+    record.treasuryName || "",                // Column B: Treasury Name
+    record.connection || "",                  // Column C: Connection
+    record.circuitId || "",                   // Column D: Circuit ID/Telephone
+    record.callDate || "",                    // Column E: Call Registered Date
+    record.lastFollowup || "",                // Column F: Last Followed up Details
+    record.remarks || "",                     // Column G: Remarks
+    record.linkStatus || "Link Down",         // Column H: Link Status
+    record.resolveStatus || "Pending"         // Column I: Resolve Status
+  ];
+  
+  sheet.appendRow(rowData);
+  
+  return { 
+    status: "success", 
+    message: "Record added successfully",
+    refNo: refNo
+  };
+}
+
+// ==================== UPDATE EXISTING FAULT RECORD ====================
+function handleUpdateFault(params) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_FAULTS);
+  if(!sheet) return { status: "error", message: "Faults sheet not found" };
+  
+  const rowId = params.rowId;      // 1-indexed row number in sheet
+  const record = params.data;
+  
+  if(!rowId || rowId < 2) {
+    return { status: "error", message: "Invalid row ID. Row must be >= 2" };
+  }
+  
+  // Check if row exists
+  const lastRow = sheet.getLastRow();
+  if(rowId > lastRow) {
+    return { status: "error", message: "Row ID " + rowId + " does not exist. Last row: " + lastRow };
+  }
+  
+  // Update columns B through I (skip column A which is ref#)
+  sheet.getRange(rowId, 2).setValue(record.treasuryName || "");
+  sheet.getRange(rowId, 3).setValue(record.connection || "");
+  sheet.getRange(rowId, 4).setValue(record.circuitId || "");
+  sheet.getRange(rowId, 5).setValue(record.callDate || "");
+  sheet.getRange(rowId, 6).setValue(record.lastFollowup || "");
+  sheet.getRange(rowId, 7).setValue(record.remarks || "");
+  sheet.getRange(rowId, 8).setValue(record.linkStatus || "Link Down");
+  sheet.getRange(rowId, 9).setValue(record.resolveStatus || "Pending");
+  
+  return { status: "success", message: "Record updated successfully" };
+}
+
+// ==================== DELETE FAULT RECORD ====================
+function handleDeleteFault(params) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_FAULTS);
+  if(!sheet) return { status: "error", message: "Faults sheet not found" };
+  
+  const rowId = params.rowId;
+  
+  if(!rowId || rowId < 2) {
+    return { status: "error", message: "Invalid row ID. Row must be >= 2" };
+  }
+  
+  // Check if row exists
+  const lastRow = sheet.getLastRow();
+  if(rowId > lastRow) {
+    return { status: "error", message: "Row ID " + rowId + " does not exist" };
+  }
+  
+  sheet.deleteRow(rowId);
+  
+  return { status: "success", message: "Record deleted successfully" };
+}
+
+// ==================== EXTERNAL CIRCUIT ID LOOKUP ====================
+function handleGetExternalCircuit(params) {
+  const connection = params.connection;
+  const treasuryCode = params.treasuryCode;
+  const treasuryName = params.treasuryName;
+  
+  // Get connection mapping from Connections sheet
+  const connSheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_CONNECTIONS);
+  if(!connSheet) {
+    return { status: "error", message: "Connections sheet not found", circuitId: "" };
+  }
+  
+  const connData = connSheet.getDataRange().getValues();
+  let mapping = null;
+  
+  // Find matching connection
+  for(let i = 1; i < connData.length; i++) {
+    if(connData[i][0] && connData[i][0].toString().trim() === connection) {
+      mapping = {
+        sheetId: connData[i][1] ? connData[i][1].toString().trim() : "",
+        sheetByName: connData[i][2] ? connData[i][2].toString().trim() : "",
+        rangeCodeCol: connData[i][3] ? connData[i][3].toString().trim() : "",
+        rangeCircuitCol: connData[i][4] ? connData[i][4].toString().trim() : ""
+      };
+      break;
+    }
+  }
+  
+  if(!mapping || !mapping.sheetId || !mapping.sheetByName) {
+    return { status: "success", circuitId: "" };
+  }
+  
+  try {
+    // Open external spreadsheet using its ID
+    const externalSheet = SpreadsheetApp.openById(mapping.sheetId);
+    const targetSheet = externalSheet.getSheetByName(mapping.sheetByName);
+    
+    if(!targetSheet) {
+      return { status: "success", circuitId: "" };
+    }
+    
+    // Get the code column and circuit ID column ranges
+    const codeColLetter = mapping.rangeCodeCol;
+    const circuitColLetter = mapping.rangeCircuitCol;
+    
+    if(!codeColLetter || !circuitColLetter) {
+      return { status: "success", circuitId: "" };
+    }
+    
+    // Get all data from both columns
+    const codeRange = targetSheet.getRange(codeColLetter + ":" + codeColLetter);
+    const circuitRange = targetSheet.getRange(circuitColLetter + ":" + circuitColLetter);
+    
+    const codeValues = codeRange.getValues();
+    const circuitValues = circuitRange.getValues();
+    
+    let circuitId = "";
+    
+    // Try exact match by treasury code first
+    for(let i = 0; i < codeValues.length; i++) {
+      const codeValue = codeValues[i][0] ? codeValues[i][0].toString().trim() : "";
+      if(codeValue === treasuryCode) {
+        circuitId = circuitValues[i][0] ? circuitValues[i][0].toString().trim() : "";
+        break;
+      }
+    }
+    
+    // If not found, try by treasury name
+    if(!circuitId && treasuryName) {
+      for(let i = 0; i < codeValues.length; i++) {
+        const codeValue = codeValues[i][0] ? codeValues[i][0].toString().trim() : "";
+        if(codeValue === treasuryName) {
+          circuitId = circuitValues[i][0] ? circuitValues[i][0].toString().trim() : "";
+          break;
+        }
+      }
+    }
+    
+    // Fuzzy match as last resort
+    if(!circuitId && treasuryName) {
+      for(let i = 0; i < codeValues.length; i++) {
+        const codeValue = codeValues[i][0] ? codeValues[i][0].toString().toLowerCase() : "";
+        const searchTerm = treasuryName.toLowerCase();
+        if(codeValue.includes(searchTerm) || searchTerm.includes(codeValue)) {
+          circuitId = circuitValues[i][0] ? circuitValues[i][0].toString().trim() : "";
+          break;
+        }
+      }
+    }
+    
+    return { status: "success", circuitId: circuitId };
+    
+  } catch(error) {
+    console.error("External sheet error:", error);
+    return { status: "success", circuitId: "" };
+  }
+}
+
+// ==================== HELPER: Send JSON Response with CORS ====================
+function sendResponse(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeaders(getCorsHeaders());
+}
+
+// ==================== UTILITY: Get all fault records with headers ====================
+function getAllFaultRecords() {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_FAULTS);
+  if(!sheet) return [];
+  
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const records = [];
+  
+  for(let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const record = {};
+    for(let j = 0; j < headers.length; j++) {
+      record[headers[j]] = row[j];
+    }
+    records.push(record);
+  }
+  
+  return records;
+}
+
+// ==================== UTILITY: Get treasury list ====================
+function getTreasuryList() {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_TREASURIES);
+  if(!sheet) return [];
+  
+  const data = sheet.getDataRange().getValues();
+  const treasuries = [];
+  
+  for(let i = 1; i < data.length; i++) {
+    if(data[i][0] && data[i][1]) {
+      treasuries.push({
+        name: data[i][0].toString().trim(),
+        code: data[i][1].toString().trim()
+      });
+    }
+  }
+  
+  return treasuries;
+}
+
+// ==================== UTILITY: Initialize sheet structure if not exists ====================
+function initializeSheets() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet;
+  
+  // Create Details sheet if not exists
+  sheet = ss.getSheetByName(SHEET_FAULTS);
+  if(!sheet) {
+    sheet = ss.insertSheet(SHEET_FAULTS);
+    const headers = [
+      "Ref", "Treasury Name", "Connection", "Circuit ID/Telephone",
+      "Call Registered Date", "Last Followed up Details", "Remarks",
+      "Link Status", "Resolve Status"
+    ];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+    sheet.setFrozenRows(1);
+  }
+  
+  // Create Link Status sheet if not exists
+  sheet = ss.getSheetByName(SHEET_LINKSTATUS);
+  if(!sheet) {
+    sheet = ss.insertSheet(SHEET_LINKSTATUS);
+    const statuses = ["Link Status", "Link Down", "Link Up", "Partial", "Under Maintenance"];
+    for(let i = 0; i < statuses.length; i++) {
+      sheet.getRange(i + 1, 1).setValue(statuses[i]);
+    }
+    sheet.getRange(1, 1).setFontWeight("bold");
+  }
+  
+  // Create Resolve Status sheet if not exists
+  sheet = ss.getSheetByName(SHEET_RESOLVE);
+  if(!sheet) {
+    sheet = ss.insertSheet(SHEET_RESOLVE);
+    const statuses = ["Resolve Status", "Pending", "Resolved", "In Progress", "Escalated"];
+    for(let i = 0; i < statuses.length; i++) {
+      sheet.getRange(i + 1, 1).setValue(statuses[i]);
+    }
+    sheet.getRange(1, 1).setFontWeight("bold");
+  }
+  
+  // Create Followup Details sheet if not exists
+  sheet = ss.getSheetByName(SHEET_FOLLOWUP);
+  if(!sheet) {
+    sheet = ss.insertSheet(SHEET_FOLLOWUP);
+    const templates = [
+      "Followed up Details",
+      "Docket ID - ",
+      "Reported via BSNL group",
+      "Reported via portal",
+      "Reminder sent",
+      "Mail sent",
+      "Escalated to higher authority",
+      "Ticket created - "
+    ];
+    for(let i = 0; i < templates.length; i++) {
+      sheet.getRange(i + 1, 1).setValue(templates[i]);
+    }
+    sheet.getRange(1, 1).setFontWeight("bold");
+  }
+  
+  // Create Connections sheet if not exists
+  sheet = ss.getSheetByName(SHEET_CONNECTIONS);
+  if(!sheet) {
+    sheet = ss.insertSheet(SHEET_CONNECTIONS);
+    const headers = ["Connections", "Sheet ID", "Sheet by name", "Source Range -Code", "Source Range -Circuite ID"];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+  }
+  
+  // Create Treasuries sheet if not exists
+  sheet = ss.getSheetByName(SHEET_TREASURIES);
+  if(!sheet) {
+    sheet = ss.insertSheet(SHEET_TREASURIES);
+    const headers = ["Treasuries", "Code"];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+  }
+  
+  return "All sheets initialized successfully!";
+}
+
+// ==================== TEST FUNCTIONS ====================
+function testConnection() {
+  Logger.log("Testing connection to spreadsheet: " + SPREADSHEET_ID);
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    Logger.log("Successfully connected to spreadsheet: " + ss.getName());
+    
+    const faultSheet = ss.getSheetByName(SHEET_FAULTS);
+    if(faultSheet) {
+      Logger.log("Faults sheet exists with " + faultSheet.getLastRow() + " rows");
+    } else {
+      Logger.log("Faults sheet does not exist. Run initializeSheets() to create it.");
+    }
+    
+    return { status: "success", spreadsheetName: ss.getName() };
+  } catch(error) {
+    Logger.log("Error: " + error.toString());
+    return { status: "error", message: error.toString() };
+  }
+}
+
+function testGetFaults() {
+  // Test getting all records
+  Logger.log("Testing GET_FAULTS with no filter:");
+  const result1 = handleGetFaults(SHEET_FAULTS, null, null);
+  Logger.log("Total records: " + (result1.records ? result1.records.length : 0));
+  
+  // Test getting pending records
+  Logger.log("\nTesting GET_FAULTS with PENDING filter:");
+  const result2 = handleGetFaults(SHEET_FAULTS, "PENDING", null);
+  Logger.log("Pending records: " + (result2.records ? result2.records.length : 0));
+  
+  // Test getting resolved records
+  Logger.log("\nTesting GET_FAULTS with EXACT filter (Resolved):");
+  const result3 = handleGetFaults(SHEET_FAULTS, "EXACT", "Resolved");
+  Logger.log("Resolved records: " + (result3.records ? result3.records.length : 0));
+}
+
+function testAddRecord() {
+  const testRecord = {
+    treasuryName: "Sub Treasury Feroke",
+    connection: "Railtel",
+    circuitId: "719936",
+    callDate: "05/06/2026",
+    lastFollowup: "Docket ID - IM7265527 Reminder 05.06.2026",
+    remarks: "Test from script",
+    linkStatus: "Link Down",
+    resolveStatus: "Pending"
+  };
+  
+  const result = handleAddFault({ data: testRecord });
+  Logger.log(result);
+}
+
+function testUpdateRecord() {
+  // Update row 2 (first data row after header)
+  const testRecord = {
+    treasuryName: "Sub Treasury Feroke (UPDATED)",
+    connection: "Railtel",
+    circuitId: "719936",
+    callDate: "05/06/2026",
+    lastFollowup: "Docket ID - IM7265527 Reminder 05.06.2026 - UPDATED",
+    remarks: "Test update",
+    linkStatus: "Link Down",
+    resolveStatus: "In Progress"
+  };
+  
+  const result = handleUpdateFault({ data: testRecord, rowId: 2 });
+  Logger.log(result);
+}
+
+function testDeleteRecord() {
+  // Delete row 2
+  const result = handleDeleteFault({ rowId: 2 });
+  Logger.log(result);
+}

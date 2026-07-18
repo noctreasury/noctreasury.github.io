@@ -1,0 +1,7 @@
+******************************************
+               NOC ADMIN
+******************************************
+How to Install/Run - NOC ADMIN?
+
+1. In this folder, Open "NOC_Admin_Installer" and Run.
+2. After installation , Go to Desktop and click the shortcut "NOC ADMIN"

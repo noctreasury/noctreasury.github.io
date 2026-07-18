@@ -1,0 +1,41 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with gradient (matching the violet box in navbar) -->
+  <defs>
+    <linearGradient id="violetGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#184e81;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0457a4;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Shadow filter to match the box shadow -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#3b82f6" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Rounded square background (exactly like your logo box) -->
+  <rect x="56" y="56" width="400" height="400" rx="80" fill="url(#violetGradient)" filter="url(#shadow)"/>
+  
+  <!-- Bootstrap compass icon (bi-compass) - exact match -->
+  <g transform="translate(256, 256) scale(3.2)">
+    <!-- Main compass circle -->
+    <circle cx="0" cy="0" r="40" fill="white"/>
+    
+    <!-- Compass arrow (North) -->
+    <path d="M0 -32 L8 -10 L0 -16 L-8 -10 L0 -32" fill="#184e81"/>
+    
+    <!-- Compass arrow (South) -->
+    <path d="M0 32 L8 10 L0 16 L-8 10 L0 32" fill="#184e81"/>
+    
+    <!-- Compass arrow (East) -->
+    <path d="M32 0 L10 -8 L16 0 L10 8 L32 0" fill="#184e81"/>
+    
+    <!-- Compass arrow (West) -->
+    <path d="M-32 0 L-10 8 L-16 0 L-10 -8 L-32 0" fill="#184e81"/>
+    
+    <!-- Center circle -->
+    <circle cx="0" cy="0" r="8" fill="#184e81"/>
+    
+    <!-- Inner decorative circle -->
+    <circle cx="0" cy="0" r="20" fill="none" stroke="#184e81" stroke-width="2" stroke-opacity="0.3"/>
+  </g>
+</svg>

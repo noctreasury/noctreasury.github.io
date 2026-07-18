@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>ISP Fault Manager | Treasury Link Issues</title>
+    <!-- Local CSS Resources -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
+    <link rel="stylesheet" href="../css/flatpickr.min.css">
+    <link rel="stylesheet" href="../css/sweetalert2.min.css">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background: #eef2f7;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 20px 16px;
+            margin: 0;
+        }
+        .app-card {
+            max-width: 100%;
+            width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .page-header {
+            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+            color: white;
+            padding: 15px 25px;
+        }
+        .page-header h4 {
+            margin: 0;
+            font-weight: 600;
+        }
+        .page-header i {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+        .tab-header {
+            display: flex;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0 24px;
+        }
+        .tab-btn {
+            padding: 16px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            background: transparent;
+            border: none;
+            color: #475569;
+            transition: 0.2s;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+        }
+        .tab-btn i { margin-right: 8px; font-size: 1.1rem; }
+        .tab-btn.active {
+            color: #1e4a76;
+            border-bottom-color: #1e4a76;
+            background: white;
+        }
+        .tab-pane {
+            display: none;
+            padding: 30px 32px;
+            background: white;
+        }
+        .tab-pane.active-pane {
+            display: block;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+        .required:after {
+            content: "*";
+            color: #dc2626;
+            margin-left: 4px;
+        }
+        .btn-primary-custom {
+            background: #0f3b5f;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-primary-custom:hover:not(:disabled) {
+            background: #0a2c46;
+            transform: translateY(-1px);
+        }
+        .btn-secondary-custom {
+            background: #64748b;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            color: white;
+        }
+        .btn-outline-custom {
+            border: 1px solid #cbd5e1;
+            background: white;
+            border-radius: 40px;
+            padding: 8px 20px;
+        }
+        .form-control, .form-select {
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            padding: 8px 12px;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #0f3b5f;
+            box-shadow: 0 0 0 3px rgba(15,59,95,0.1);
+        }
+        .info-banner {
+            background: #eef2ff;
+            border-radius: 16px;
+            padding: 12px 18px;
+            margin-bottom: 20px;
+            border-left: 5px solid #1e4a76;
+            font-size: 0.85rem;
+        }
+        .action-icons i {
+            font-size: 1.2rem;
+            margin: 0 5px;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .action-icons i.bi-pencil-square { color: #3b82f6; }
+        .action-icons i.bi-trash3 { color: #dc2626; }
+        .badge-down { background-color: #dc2626; color: white; padding: 4px 12px; border-radius: 30px; font-size: 0.7rem; font-weight: 500; }
+        .badge-up { background-color: #10b981; color: white; padding: 4px 12px; border-radius: 30px; font-size: 0.7rem; }
+        .badge-pending { background-color: #f59e0b; color: white; padding: 4px 12px; border-radius: 30px; font-size: 0.7rem; }
+        #global-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(3px);
+        }
+        .modal-content { border-radius: 24px; }
+        .select2-container--bootstrap-5 .select2-selection { border-radius: 12px !important; min-height: 42px; }
+        .flatpickr-input { background: white; cursor: pointer; }
+        .table thead th { background: #f1f5f9; }
+        .filter-bar {
+            background: #f8fafc;
+            padding: 15px 18px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .filter-bar label {
+            font-weight: 600;
+            margin-bottom: 0;
+            color: #1e4a76;
+        }
+        .filter-bar select {
+            width: 220px;
+        }
+        .filter-bar .btn-view {
+            background: #0f3b5f;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .filter-bar .btn-view:hover {
+            background: #0a2c46;
+            transform: translateY(-1px);
+        }
+        .filter-bar .btn-view i {
+            margin-right: 6px;
+        }
+        @media (max-width: 700px) {
+            .tab-pane { padding: 20px; }
+            .tab-btn { padding: 12px 16px; font-size: 0.9rem; }
+            .filter-bar select { width: 100%; }
+            .filter-bar .btn-view { width: 100%; justify-content: center; }
+        }
+        /* Edit Modal Styling */
+        .edit-modal .modal-body { padding: 25px; }
+        .edit-modal .form-label { font-weight: 600; font-size: 0.9rem; }
+        
+        /* Fix for Select2 dropdown z-index inside modal */
+        .select2-container--bootstrap-5.select2-container--open {
+            z-index: 9999 !important;
+        }
+        
+        /* Table container loading state */
+        .table-loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+<div class="app-card">
+    <div class="page-header d-flex align-items-center">
+        <i class="bi bi-hdd-stack-fill"></i>
+        <div>
+            <h4>ISP Daily Fault Management</h4>
+            <small class="opacity-75">Railtel | BSNL VPNoFTTH | BSNL MPLS — Link Down Tracker</small>
+        </div>
+    </div>
+    <div class="tab-header">
+        <button class="tab-btn active" id="tabAddBtn"><i class="bi bi-plus-circle"></i> Add Complaint</button>
+        <button class="tab-btn" id="tabListBtn"><i class="bi bi-table"></i> Manage Records</button>
+    </div>
+    
+    <!-- Form Pane (Add only - no edit here, edit via modal) -->
+    <div id="addPane" class="tab-pane active-pane">
+        <h4 class="mb-3"><i class="bi bi-plus-circle"></i> Register New Fault</h4>
+        <div class="info-banner">
+            <i class="bi bi-info-circle-fill"></i> Fill details below. Treasury & Connection auto-fetch Circuit ID where possible.
+        </div>
+        <form id="faultForm">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label class="form-label required">Treasury Name</label>
+                    <select id="treasurySelect" class="form-select" style="width:100%"></select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label required">Connection (ISP)</label>
+                    <select id="connectionSelect" class="form-select" style="width:100%"></select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Circuit ID / Telephone</label>
+                    <input type="text" id="circuitId" class="form-control" placeholder="Auto-fetched or manual">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label required">Call Registered Date</label>
+                    <input type="text" id="callDate" class="form-control flatpickr-date" placeholder="DD/MM/YYYY" autocomplete="off">
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label required">Last Followed up Details</label>
+                    <div class="row g-2">
+                        <div class="col-md-5">
+                            <select id="followupSelect" class="form-select" style="width:100%"></select>
+                        </div>
+                        <div class="col-md-7">
+                            <input type="text" id="followupText" class="form-control" placeholder="Docket ID / additional info (e.g., IM7275249)">
+                        </div>
+                    </div>
+                    <small class="text-muted">Select base action + add custom text (combined saved)</small>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Remarks</label>
+                    <textarea id="remarks" class="form-control" rows="2" placeholder="Connection suspended / any notes"></textarea>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label required">Link Status</label>
+                    <select id="linkStatus" class="form-select" style="width:100%"></select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label required">Resolve Status</label>
+                    <select id="resolveStatus" class="form-select" style="width:100%"></select>
+                </div>
+                <div class="col-12 mt-3">
+                    <button type="submit" id="submitBtn" class="btn btn-primary-custom px-5"><i class="bi bi-save"></i> Add Record</button>
+                    <button type="button" id="clearFormBtn" class="btn btn-outline-custom ms-2"><i class="bi bi-eraser"></i> Clear</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- DataTable Pane (Manage Records with Filter) -->
+    <div id="listPane" class="tab-pane">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <h5><i class="bi bi-hdd-stack"></i> ISP Faults</h5>
+            <button id="refreshTableBtn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-repeat"></i> Refresh</button>
+        </div>
+        
+        <!-- Filter Bar with View Button -->
+        <div class="filter-bar">
+            <label><i class="bi bi-funnel-fill"></i> Filter by Resolve Status:</label>
+            <select id="resolveStatusFilter" class="form-select select2-filter" style="width: 250px;">
+                <option value="ALL">-- All Records --</option>
+            </select>
+            <button id="viewFilterBtn" class="btn-view"><i class="bi bi-eye"></i> View</button>
+            <span class="text-muted small ms-auto" id="filterRecordCount">Click "View" to load records</span>
+            <button id="clearFilterBtn" class="btn btn-sm btn-outline-secondary" title="Clear Filter"><i class="bi bi-x-circle"></i> Clear</button>
+        </div>
+        
+        <div class="table-responsive" id="tableContainer">
+            <table id="faultsTable" class="table table-striped table-hover" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Ref #</th>
+                        <th>Treasury Name</th>
+                        <th>Connection</th>
+                        <th>Circuit ID</th>
+                        <th>Call Date</th>
+                        <th>Last Followup</th>
+                        <th>Remarks</th>
+                        <th>Link Status</th>
+                        <th>Resolve Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT MODAL POPUP (similar to add form) -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Edit Fault Record</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editRowId">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label required">Treasury Name</label>
+                        <select id="editTreasurySelect" class="form-select" style="width:100%"></select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label required">Connection (ISP)</label>
+                        <select id="editConnectionSelect" class="form-select" style="width:100%"></select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Circuit ID / Telephone</label>
+                        <input type="text" id="editCircuitId" class="form-control" placeholder="Circuit ID">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label required">Call Registered Date</label>
+                        <input type="text" id="editCallDate" class="form-control flatpickr-edit" placeholder="DD/MM/YYYY">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label required">Last Followed up Details</label>
+                        <div class="row g-2">
+                            <div class="col-md-5">
+                                <select id="editFollowupSelect" class="form-select" style="width:100%"></select>
+                            </div>
+                            <div class="col-md-7">
+                                <input type="text" id="editFollowupText" class="form-control" placeholder="Additional details">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Remarks</label>
+                        <textarea id="editRemarks" class="form-control" rows="2" placeholder="Remarks"></textarea>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label required">Link Status</label>
+                        <select id="editLinkStatus" class="form-select" style="width:100%"></select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label required">Resolve Status</label>
+                        <select id="editResolveStatus" class="form-select" style="width:100%"></select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button id="confirmUpdateBtn" class="btn btn-primary-custom">Update Record</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script src="../js/jquery.dataTables.min.js"></script>
+<script src="../js/dataTables.bootstrap5.min.js"></script>
+<script src="../js/select2.min.js"></script>
+<script src="../js/flatpickr.min.js"></script>
+<script src="../js/sweetalert2.all.min.js"></script>
+
+<script>
+    // =====================================================
+    // CONFIGURATION - Google Sheets API with API Key
+    // =====================================================
+    const SPREADSHEET_ID = "1T7GsX08h9B6tT7doDjfg4MgULk7JZaOa1YT7cF_otQI";
+    const API_KEY = "AIzaSyDc8tegwi2rgHyDFYm7uWBqVqQ7Fwb3uWM";
+    
+    // IMPORTANT: Replace with your deployed Apps Script Web App URL
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwf3AurlrdRx4KYGuuKg0gw9XLsYeHURMRKkpf4kiNK1mWECrFLcKVTjD55LZBKbtAX/exec";
+    
+    const SHEET_FAULTS = "Details";
+    const SHEET_TREASURIES = "Treasuries and  Code";
+    const SHEET_CONNECTIONS = "Connections and source URL Deta";
+    const SHEET_FOLLOWUP = "Followed up Details";
+    const SHEET_LINKSTATUS = "Link Status";
+    const SHEET_RESOLVE = "Resolve Status";
+    
+    let dataTable = null;
+    let faultRecords = [];
+    let filteredRecords = [];
+    let treasuryOptions = [];
+    let connectionOptions = [];
+    let followupOptions = [];
+    let linkStatusOptions = [];
+    let resolveStatusOptions = [];
+    let connectionMapping = {};
+    let flatpickrInstance, editFlatpickr;
+    let currentFilterStatus = "Pending";
+    let isTableLoaded = false;
+    let isMetadataLoaded = false;
+    
+    function showLoading(msg) { 
+        if($('#global-loading-overlay').length) return; 
+        $('body').append(`<div id="global-loading-overlay"><div style="background:white;padding:30px;border-radius:24px;text-align:center;"><i class="bi bi-arrow-repeat" style="font-size:48px;color:#0f3b5f;animation:spin 1s linear infinite;"></i><p>${msg}</p></div></div>`); 
+    }
+    function hideLoading() { $('#global-loading-overlay').remove(); }
+    function getTodayDMY() { let d = new Date(); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`; }
+    function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
+    
+    // Check if resolve status is considered "Pending" (includes empty, null, or "Pending")
+    function isPendingStatus(status) {
+        if (!status || status.trim() === "") return true;
+        const lowerStatus = status.toString().toLowerCase().trim();
+        return lowerStatus === "pending";
+    }
+    
+    // Filter records based on selected resolve status
+    function filterRecordsByStatus(records, statusFilter) {
+        if (statusFilter === "ALL") {
+            return [...records];
+        } else if (statusFilter === "Pending (Including Blank)") {
+            return records.filter(record => isPendingStatus(record.resolveStatus));
+        } else {
+            return records.filter(record => record.resolveStatus === statusFilter);
+        }
+    }
+    
+    // Update the DataTable with filtered records
+    function updateTableWithFilter() {
+        const selectedFilter = $('#resolveStatusFilter').val();
+        let recordsToShow;
+        
+        if (selectedFilter === "ALL") {
+            recordsToShow = [...faultRecords];
+            currentFilterStatus = "ALL";
+        } else if (selectedFilter === "Pending (Including Blank)") {
+            recordsToShow = faultRecords.filter(record => isPendingStatus(record.resolveStatus));
+            currentFilterStatus = "Pending (Including Blank)";
+        } else {
+            recordsToShow = faultRecords.filter(record => record.resolveStatus === selectedFilter);
+            currentFilterStatus = selectedFilter;
+        }
+        
+        filteredRecords = recordsToShow;
+        
+        if (dataTable) {
+            dataTable.clear();
+            dataTable.rows.add(filteredRecords);
+            dataTable.draw();
+        }
+        
+        // Update record count display
+        const countText = filteredRecords.length === 1 ? "1 record" : `${filteredRecords.length} records`;
+        const filterText = selectedFilter === "ALL" ? "Showing all" : `Showing ${countText} with status: ${selectedFilter}`;
+        $('#filterRecordCount').text(filterText);
+    }
+    
+    // Populate filter dropdown with resolve status options
+    function populateFilterDropdown() {
+        const filterSelect = $('#resolveStatusFilter');
+        filterSelect.empty();
+        
+        // Add ALL option
+        filterSelect.append('<option value="ALL">-- All Records --</option>');
+        
+        // Add special "Pending (Including Blank)" option first (default)
+        filterSelect.append('<option value="Pending (Including Blank)" selected>⏳ Pending </option>');
+        
+        // Add all resolve status options from sheet
+        resolveStatusOptions.forEach(opt => {
+            if (opt !== "Pending") {
+                filterSelect.append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`);
+            }
+        });
+        
+        // Initialize Select2 for filter dropdown
+        if ($('#resolveStatusFilter').hasClass('select2-hidden-accessible')) {
+            $('#resolveStatusFilter').select2('destroy');
+        }
+        $('#resolveStatusFilter').select2({
+            theme: "bootstrap-5",
+            placeholder: "Filter by status",
+            width: '250px'
+        });
+        
+        // Set default value to "Pending (Including Blank)"
+        $('#resolveStatusFilter').val("Pending (Including Blank)").trigger('change');
+    }
+    
+    // Google Sheets API direct read
+    async function fetchSheetDataDirect(sheetName, range = "A:Z") {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(sheetName)}!${range}?key=${API_KEY}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            return data.values || [];
+        } catch(e) { console.error(`Error fetching ${sheetName}:`, e); return []; }
+    }
+    
+    // Load all fault records sorted ascending by Ref #
+    async function loadFaultRecords() {
+        showLoading("Loading fault records...");
+        const rows = await fetchSheetDataDirect(SHEET_FAULTS, "A:I");
+        hideLoading();
+        if(!rows || rows.length < 2) return [];
+        const records = [];
+        for(let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if(row.length > 0 && row[0] && row[0].toString().trim() !== "") {
+                records.push({
+                    rowIndex: i + 1,
+                    refNo: row[0] || "",
+                    treasuryName: row[1] || "",
+                    connection: row[2] || "",
+                    circuitId: row[3] || "",
+                    callDate: row[4] || "",
+                    lastFollowup: row[5] || "",
+                    remarks: row[6] || "",
+                    linkStatus: row[7] || "",
+                    resolveStatus: row[8] || ""
+                });
+            }
+        }
+        // Sort ascending by reference number
+        records.sort((a, b) => {
+            let numA = parseFloat(a.refNo) || 0;
+            let numB = parseFloat(b.refNo) || 0;
+            return numA - numB;
+        });
+        faultRecords = records;
+        return records;
+    }
+    
+    // Load metadata for dropdowns (only for Add tab initially)
+    async function loadMetadata() {
+        if (isMetadataLoaded) return;
+        
+        showLoading("Loading form data...");
+        let treasRows = await fetchSheetDataDirect(SHEET_TREASURIES, "A:B");
+        treasuryOptions = [];
+        if(treasRows && treasRows.length > 1) {
+            for(let i = 1; i < treasRows.length; i++) {
+                let name = treasRows[i][0] ? treasRows[i][0].toString().trim() : "";
+                let code = treasRows[i][1] ? treasRows[i][1].toString().trim() : "";
+                if(name && code) treasuryOptions.push({ id: code, text: name });
+            }
+        }
+        
+        let connRows = await fetchSheetDataDirect(SHEET_CONNECTIONS, "A:E");
+        connectionOptions = [];
+        connectionMapping = {};
+        if(connRows && connRows.length > 1) {
+            for(let i = 1; i < connRows.length; i++) {
+                let connName = connRows[i][0] ? connRows[i][0].toString().trim() : "";
+                if(connName) {
+                    connectionOptions.push({ id: connName, text: connName });
+                    connectionMapping[connName] = {
+                        sheetId: connRows[i][1] || "",
+                        sheetByName: connRows[i][2] || "",
+                        sourceRangeCode: connRows[i][3] || "",
+                        sourceRangeCircuit: connRows[i][4] || ""
+                    };
+                }
+            }
+        }
+        
+        let followRows = await fetchSheetDataDirect(SHEET_FOLLOWUP, "A:A");
+        followupOptions = [];
+        if(followRows && followRows.length > 1) {
+            for(let i = 1; i < followRows.length; i++) {
+                let val = followRows[i][0] ? followRows[i][0].toString().trim() : "";
+                if(val) followupOptions.push(val);
+            }
+        }
+        
+        let linkRows = await fetchSheetDataDirect(SHEET_LINKSTATUS, "A:A");
+        linkStatusOptions = [];
+        if(linkRows && linkRows.length > 1) {
+            for(let i = 1; i < linkRows.length; i++) {
+                let val = linkRows[i][0] ? linkRows[i][0].toString().trim() : "";
+                if(val) linkStatusOptions.push(val);
+            }
+        }
+        
+        let resolveRows = await fetchSheetDataDirect(SHEET_RESOLVE, "A:A");
+        resolveStatusOptions = [];
+        if(resolveRows && resolveRows.length > 1) {
+            for(let i = 1; i < resolveRows.length; i++) {
+                let val = resolveRows[i][0] ? resolveRows[i][0].toString().trim() : "";
+                if(val && val !== "Resolve Status") resolveStatusOptions.push(val);
+            }
+        }
+        
+        // Ensure "Pending" is in options if not present
+        if (!resolveStatusOptions.includes("Pending")) {
+            resolveStatusOptions.unshift("Pending");
+        }
+        
+        isMetadataLoaded = true;
+        hideLoading();
+    }
+    
+    // Auto fetch Circuit ID
+    async function autoFetchCircuitId(connectionName, treasuryCode, treasuryName) {
+        if(!connectionName || !treasuryCode) return "";
+        const connInfo = connectionMapping[connectionName];
+        if(!connInfo || !connInfo.sheetId || !connInfo.sheetByName) return "";
+        try {
+            const targetSheetId = connInfo.sheetId;
+            const sheetName = connInfo.sheetByName;
+            const codeCol = connInfo.sourceRangeCode;
+            const circuitCol = connInfo.sourceRangeCircuit;
+            const range = `${codeCol}:${circuitCol}`;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${targetSheetId}/values/${encodeURIComponent(sheetName)}!${range}?key=${API_KEY}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            if(data && data.values) {
+                for(let i = 0; i < data.values.length; i++) {
+                    const codeValue = data.values[i][0] ? data.values[i][0].toString().trim() : "";
+                    if(codeValue === treasuryCode || codeValue === treasuryName) {
+                        return data.values[i][1] ? data.values[i][1].toString().trim() : "";
+                    }
+                }
+            }
+            return "";
+        } catch(e) { return ""; }
+    }
+    
+    // Destroy existing Select2 instances
+    function destroySelect2(selector) {
+        if ($(selector).hasClass('select2-hidden-accessible')) {
+            $(selector).select2('destroy');
+        }
+    }
+    
+    // Populate Select2 controls for Add Form
+    function initAddFormSelect2() {
+        destroySelect2('#treasurySelect');
+        destroySelect2('#connectionSelect');
+        destroySelect2('#followupSelect');
+        destroySelect2('#linkStatus');
+        destroySelect2('#resolveStatus');
+        
+        $('#treasurySelect').empty().append('<option></option>');
+        treasuryOptions.forEach(opt => { 
+            $('#treasurySelect').append(`<option value="${escapeHtml(opt.id)}">${escapeHtml(opt.text)}</option>`);
+        });
+        
+        $('#connectionSelect').empty().append('<option></option>');
+        connectionOptions.forEach(opt => { 
+            $('#connectionSelect').append(`<option value="${escapeHtml(opt.id)}">${escapeHtml(opt.text)}</option>`);
+        });
+        
+        $('#followupSelect').empty().append('<option></option>');
+        followupOptions.forEach(opt => { 
+            $('#followupSelect').append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`);
+        });
+        
+        $('#linkStatus').empty().append('<option></option>');
+        linkStatusOptions.forEach(opt => { 
+            $('#linkStatus').append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`);
+        });
+        
+        $('#resolveStatus').empty().append('<option></option>');
+        resolveStatusOptions.forEach(opt => { 
+            $('#resolveStatus').append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`);
+        });
+        
+        $('#treasurySelect').select2({ theme: "bootstrap-5", placeholder: "Select Treasury", allowClear: true, width: '100%' });
+        $('#connectionSelect').select2({ theme: "bootstrap-5", placeholder: "Select Connection (ISP)", allowClear: true, width: '100%' });
+        $('#followupSelect').select2({ theme: "bootstrap-5", placeholder: "Select action type", allowClear: true, width: '100%' });
+        $('#linkStatus').select2({ theme: "bootstrap-5", placeholder: "Select status", width: '100%' });
+        $('#resolveStatus').select2({ theme: "bootstrap-5", placeholder: "Select status", width: '100%' });
+        
+        $('#linkStatus').val("Link Down").trigger('change');
+        $('#resolveStatus').val("Pending").trigger('change');
+    }
+    
+    // Populate Select2 controls for Edit Modal
+    function initEditModalSelect2() {
+        destroySelect2('#editTreasurySelect');
+        destroySelect2('#editConnectionSelect');
+        destroySelect2('#editFollowupSelect');
+        destroySelect2('#editLinkStatus');
+        destroySelect2('#editResolveStatus');
+        
+        $('#editTreasurySelect').empty().append('<option></option>');
+        treasuryOptions.forEach(opt => { 
+            $('#editTreasurySelect').append(`<option value="${escapeHtml(opt.id)}">${escapeHtml(opt.text)}</option>`);
+        });
+        
+        $('#editConnectionSelect').empty().append('<option></option>');
+        connectionOptions.forEach(opt => { 
+            $('#editConnectionSelect').append(`<option value="${escapeHtml(opt.id)}">${escapeHtml(opt.text)}</option>`);
+        });
+        
+        $('#editFollowupSelect').empty().append('<option></option>');
+        followupOptions.forEach(opt => { 
+            $('#editFollowupSelect').append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`);
+        });
+        
+        $('#editLinkStatus').empty().append('<option></option>');
+        linkStatusOptions.forEach(opt => { 
+            $('#editLinkStatus').append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`);
+        });
+        
+        $('#editResolveStatus').empty().append('<option></option>');
+        resolveStatusOptions.forEach(opt => { 
+            $('#editResolveStatus').append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`);
+        });
+        
+        $('#editTreasurySelect').select2({ theme: "bootstrap-5", placeholder: "Select Treasury", allowClear: true, dropdownParent: $('#editModal'), width: '100%' });
+        $('#editConnectionSelect').select2({ theme: "bootstrap-5", placeholder: "Select Connection", allowClear: true, dropdownParent: $('#editModal'), width: '100%' });
+        $('#editFollowupSelect').select2({ theme: "bootstrap-5", placeholder: "Select action", allowClear: true, dropdownParent: $('#editModal'), width: '100%' });
+        $('#editLinkStatus').select2({ theme: "bootstrap-5", placeholder: "Select status", dropdownParent: $('#editModal'), width: '100%' });
+        $('#editResolveStatus').select2({ theme: "bootstrap-5", placeholder: "Select status", dropdownParent: $('#editModal'), width: '100%' });
+        
+        $('#editLinkStatus').val("Link Down").trigger('change');
+        $('#editResolveStatus').val("Pending").trigger('change');
+    }
+    
+    // NO-CORS write operations
+    async function saveRecordNoCors(recordData, isUpdate = false, rowId = null) {
+        const action = isUpdate ? "UPDATE_FAULT" : "ADD_FAULT";
+        const payload = { action, sheetName: SHEET_FAULTS, data: recordData, rowId: rowId };
+        showLoading(isUpdate ? "Updating..." : "Adding record...");
+        
+        try {
+            await fetch(APPS_SCRIPT_URL, { 
+                method: "POST", 
+                mode: "no-cors",
+                cache: "no-cache",
+                headers: { "Content-Type": "application/json" }, 
+                body: JSON.stringify(payload) 
+            });
+            hideLoading();
+            Swal.fire({
+                icon: "success",
+                title: isUpdate ? "Updated!" : "Added!",
+                text: "Record saved successfully. Refresh the list to see changes.",
+                timer: 2000,
+                showConfirmButton: false
+            });
+            return true;
+        } catch(err) {
+            hideLoading();
+            console.error("Save error:", err);
+            Swal.fire("Error", "Failed to save record. Check network and Apps Script deployment.", "error");
+            return false;
+        }
+    }
+    
+    async function deleteRecordNoCors(rowId, refNo) {
+        const confirm = await Swal.fire({ title: `Delete ${refNo}?`, text: "This action cannot be undone", icon: "warning", showCancelButton: true, confirmButtonColor: "#dc2626", confirmButtonText: "Yes, delete" });
+        if(!confirm.isConfirmed) return false;
+        
+        const payload = { action: "DELETE_FAULT", sheetName: SHEET_FAULTS, rowId: rowId };
+        showLoading("Deleting...");
+        try {
+            await fetch(APPS_SCRIPT_URL, { method: "POST", mode: "no-cors", cache: "no-cache", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+            hideLoading();
+            Swal.fire("Deleted!", "Record removed.", "success");
+            return true;
+        } catch(e) {
+            hideLoading();
+            Swal.fire("Error", "Delete failed", "error");
+            return false;
+        }
+    }
+    
+    // Add form submit
+    $('#faultForm').on('submit', async function(e) {
+        e.preventDefault();
+        const treasuryCode = $('#treasurySelect').val();
+        const treasuryName = $('#treasurySelect option:selected').text();
+        if(!treasuryCode) { Swal.fire("Required", "Select Treasury", "warning"); return; }
+        const connection = $('#connectionSelect').val();
+        if(!connection) { Swal.fire("Required", "Select Connection", "warning"); return; }
+        const callDate = $('#callDate').val();
+        if(!callDate) { Swal.fire("Required", "Call Registered Date", "warning"); return; }
+        
+        let followupCombined = "";
+        const followBase = $('#followupSelect').val();
+        const followExtra = $('#followupText').val().trim();
+        if(followBase) followupCombined = followBase + (followExtra ? " " + followExtra : "");
+        else if(followExtra) followupCombined = followExtra;
+        
+        const record = {
+            treasuryName: treasuryName,
+            connection: connection,
+            circuitId: $('#circuitId').val() || "",
+            callDate: callDate,
+            lastFollowup: followupCombined,
+            remarks: $('#remarks').val() || "",
+            linkStatus: $('#linkStatus').val(),
+            resolveStatus: $('#resolveStatus').val()
+        };
+        
+        const success = await saveRecordNoCors(record, false, null);
+        if(success) {
+            resetForm();
+            // Reload records if table is already loaded
+            if (isTableLoaded) {
+                await loadFaultRecords();
+                updateTableWithFilter();
+            }
+        }
+    });
+    
+    // Edit modal - open with record data
+    async function openEditModal(record) {
+        initEditModalSelect2();
+        
+        $('#editRowId').val(record.rowIndex);
+        const treasuryItem = treasuryOptions.find(t => t.text === record.treasuryName);
+        if(treasuryItem) $('#editTreasurySelect').val(treasuryItem.id).trigger('change');
+        else $('#editTreasurySelect').val(null).trigger('change');
+        
+        $('#editConnectionSelect').val(record.connection).trigger('change');
+        $('#editCircuitId').val(record.circuitId);
+        $('#editCallDate').val(record.callDate);
+        if(editFlatpickr) editFlatpickr.setDate(record.callDate, false);
+        
+        let matchedBase = followupOptions.find(f => record.lastFollowup && record.lastFollowup.startsWith(f));
+        if(matchedBase) {
+            $('#editFollowupSelect').val(matchedBase).trigger('change');
+            let rest = record.lastFollowup.substring(matchedBase.length).trim();
+            $('#editFollowupText').val(rest);
+        } else {
+            $('#editFollowupSelect').val(null).trigger('change');
+            $('#editFollowupText').val(record.lastFollowup || '');
+        }
+        $('#editRemarks').val(record.remarks);
+        $('#editLinkStatus').val(record.linkStatus || 'Link Down').trigger('change');
+        $('#editResolveStatus').val(record.resolveStatus || 'Pending').trigger('change');
+        
+        $('#editModal').modal('show');
+    }
+    
+    // Update via modal
+    $('#confirmUpdateBtn').on('click', async function() {
+        const rowId = $('#editRowId').val();
+        const treasuryName = $('#editTreasurySelect option:selected').text();
+        if(!$('#editTreasurySelect').val()) { Swal.fire("Required", "Select Treasury", "warning"); return; }
+        const connection = $('#editConnectionSelect').val();
+        if(!connection) { Swal.fire("Required", "Select Connection", "warning"); return; }
+        const callDate = $('#editCallDate').val();
+        if(!callDate) { Swal.fire("Required", "Call Registered Date", "warning"); return; }
+        
+        let followupCombined = "";
+        const followBase = $('#editFollowupSelect').val();
+        const followExtra = $('#editFollowupText').val().trim();
+        if(followBase) followupCombined = followBase + (followExtra ? " " + followExtra : "");
+        else if(followExtra) followupCombined = followExtra;
+        
+        const record = {
+            treasuryName: treasuryName,
+            connection: connection,
+            circuitId: $('#editCircuitId').val() || "",
+            callDate: callDate,
+            lastFollowup: followupCombined,
+            remarks: $('#editRemarks').val() || "",
+            linkStatus: $('#editLinkStatus').val(),
+            resolveStatus: $('#editResolveStatus').val()
+        };
+        
+        const success = await saveRecordNoCors(record, true, parseInt(rowId));
+        if(success) {
+            $('#editModal').modal('hide');
+            if (isTableLoaded) {
+                await loadFaultRecords();
+                updateTableWithFilter();
+            }
+        }
+    });
+    
+    // Auto-fetch circuit on connection change
+    $('#connectionSelect').on('change', async function() {
+        const conn = $(this).val();
+        const treasuryCode = $('#treasurySelect').val();
+        const treasuryName = $('#treasurySelect option:selected').text();
+        if(conn && treasuryCode) {
+            const circuit = await autoFetchCircuitId(conn, treasuryCode, treasuryName);
+            $('#circuitId').val(circuit);
+        }
+    });
+    
+    $(document).on('change', '#editConnectionSelect', async function() {
+        const conn = $(this).val();
+        const treasuryCode = $('#editTreasurySelect').val();
+        const treasuryName = $('#editTreasurySelect option:selected').text();
+        if(conn && treasuryCode) {
+            const circuit = await autoFetchCircuitId(conn, treasuryCode, treasuryName);
+            $('#editCircuitId').val(circuit);
+        }
+    });
+    
+    // Filter change handler - just update the filter value, don't auto-load
+    $('#resolveStatusFilter').on('change', function() {
+        // Update record count display to show what will be loaded
+        const selectedFilter = $(this).val();
+        if (faultRecords.length > 0 && isTableLoaded) {
+            updateTableWithFilter();
+        } else {
+            // Just show count of what would be loaded
+            const filtered = filterRecordsByStatus(faultRecords, selectedFilter);
+            const countText = filtered.length === 1 ? "1 record" : `${filtered.length} records`;
+            $('#filterRecordCount').text(`Click "View" to load ${countText} with status: ${selectedFilter}`);
+        }
+    });
+    
+    // View button - load records based on selected filter
+    $('#viewFilterBtn').on('click', async function() {
+        showLoading("Loading records...");
+        if (!isTableLoaded) {
+            // First time loading - initialize DataTable
+            await loadFaultRecords();
+            initDataTable();
+            isTableLoaded = true;
+        } else {
+            // Refresh existing data
+            await loadFaultRecords();
+        }
+        populateFilterDropdown();
+        updateTableWithFilter();
+        hideLoading();
+    });
+    
+    $('#clearFilterBtn').on('click', function() {
+        $('#resolveStatusFilter').val("Pending (Including Blank)").trigger('change');
+        if (isTableLoaded) {
+            updateTableWithFilter();
+        }
+    });
+    
+    function resetForm() {
+        $('#faultForm')[0].reset();
+        $('#circuitId').val('');
+        $('#callDate').val(getTodayDMY());
+        $('#followupText').val('');
+        $('#remarks').val('');
+        $('#treasurySelect').val(null).trigger('change');
+        $('#connectionSelect').val(null).trigger('change');
+        $('#linkStatus').val('Link Down').trigger('change');
+        $('#resolveStatus').val('Pending').trigger('change');
+        if(flatpickrInstance) flatpickrInstance.setDate(new Date(), true);
+    }
+    
+    async function refreshTableAndRecords() {
+        if (isTableLoaded) {
+            await loadFaultRecords();
+            updateTableWithFilter();
+        }
+    }
+    
+    function initDataTable() {
+        if(dataTable) {
+            dataTable.destroy();
+            dataTable = null;
+        }
+        
+        dataTable = $('#faultsTable').DataTable({
+            data: [],
+            columns: [
+                { data: "refNo" }, { data: "treasuryName" }, { data: "connection" }, { data: "circuitId" }, { data: "callDate" },
+                { data: "lastFollowup", render: d => d ? (d.length>35 ? d.substring(0,35)+"..." : d) : "" },
+                { data: "remarks", render: d => d ? (d.length>25 ? d.substring(0,25)+"..." : d) : "" },
+                { data: "linkStatus", render: d => `<span class="badge-down">${d || 'Down'}</span>` },
+                { data: "resolveStatus", render: d => {
+                    if (d === "Resolved") return '<span class="badge-up">Resolved</span>';
+                    if (isPendingStatus(d)) return '<span class="badge-pending">Pending</span>';
+                    return `<span class="badge-down" style="background:#6c757d;">${d || 'Pending'}</span>`;
+                }},
+                { data: null, render: (row) => `<div class="action-icons"><i class="bi bi-pencil-square edit-record-btn" data-rowidx="${row.rowIndex}" style="cursor:pointer;"></i><i class="bi bi-trash3 delete-record-btn" data-rowidx="${row.rowIndex}" data-ref="${escapeHtml(row.refNo)}" style="cursor:pointer;"></i></div>` }
+            ],
+            order: [[0, 'asc']],
+            pageLength: 25,
+            drawCallback: function() { 
+                $('.edit-record-btn').off('click').on('click', function() {
+                    const rowIdx = $(this).data('rowidx');
+                    const record = filteredRecords.find(r => r.rowIndex === rowIdx);
+                    if(record) openEditModal(record);
+                });
+                $('.delete-record-btn').off('click').on('click', async function() {
+                    const rowIdx = $(this).data('rowidx');
+                    const ref = $(this).data('ref');
+                    const success = await deleteRecordNoCors(rowIdx, ref);
+                    if(success) {
+                        if (isTableLoaded) {
+                            await loadFaultRecords();
+                            updateTableWithFilter();
+                        }
+                    }
+                });
+            }
+        });
+    }
+    
+    function initFlatpickr() {
+        flatpickrInstance = flatpickr("#callDate", { dateFormat: "d/m/Y", defaultDate: new Date() });
+        editFlatpickr = flatpickr("#editCallDate", { dateFormat: "d/m/Y", defaultDate: new Date() });
+    }
+    
+    function switchTab(tabId) {
+        if(tabId === 'add') {
+            $("#addPane").addClass("active-pane");
+            $("#listPane").removeClass("active-pane");
+            $("#tabAddBtn").addClass("active");
+            $("#tabListBtn").removeClass("active");
+            // Ensure form is ready when switching to add tab
+            if (isMetadataLoaded) {
+                setTimeout(function() { initAddFormSelect2(); }, 100);
+            }
+        } else {
+            $("#listPane").addClass("active-pane");
+            $("#addPane").removeClass("active-pane");
+            $("#tabListBtn").addClass("active");
+            $("#tabAddBtn").removeClass("active");
+            // Update filter count display
+            if (faultRecords.length > 0 && isTableLoaded) {
+                updateTableWithFilter();
+            } else {
+                const selectedFilter = $('#resolveStatusFilter').val();
+                const filtered = filterRecordsByStatus(faultRecords, selectedFilter);
+                const countText = filtered.length === 1 ? "1 record" : `${filtered.length} records`;
+                $('#filterRecordCount').text(`Click "View" to load ${countText} with status: ${selectedFilter}`);
+            }
+        }
+    }
+    
+    $('#clearFormBtn').on('click', resetForm);
+    $('#refreshTableBtn').on('click', async () => { 
+        if (isTableLoaded) {
+            await refreshTableAndRecords();
+        }
+    });
+    $('#tabAddBtn').on('click', () => { switchTab('add'); resetForm(); });
+    $('#tabListBtn').on('click', () => { switchTab('list'); });
+    
+    $(async function() {
+        // Only load metadata (dropdown options) initially - this is needed for the Add form
+        showLoading("Loading form data...");
+        await loadMetadata();
+        hideLoading();
+        
+        // Initialize only Add form related components
+        initAddFormSelect2();
+        initFlatpickr();
+        resetForm();
+        
+        // Populate filter dropdown with available status options (from loaded metadata)
+        populateFilterDropdown();
+        
+        // Set initial filter count message
+        $('#filterRecordCount').text('Click "View" to load records');
+        
+        // We DO NOT load fault records or initialize DataTable on page load
+        // This will happen only when user clicks "View" button in the Manage Records tab
+    });
+</script>
+</body>
+</html>

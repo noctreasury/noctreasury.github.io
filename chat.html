@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Branch Communication Hub | NOC Chat with Delete</title>
+    
+    <!-- Bootstrap 5.3 + icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #f0f2f5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .chat-container {
+            max-width: 100%;
+            margin: 0 auto;
+            height: 100vh;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            box-shadow: none;
+        }
+        
+        .chat-header {
+            background: #ffffff;
+            color: #1f2c34;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            border-bottom: 0.5px solid #e9edef;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .branch-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .branch-info h6 {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin: 0;
+            color: #1f2c34;
+        }
+        
+        .branch-badge {
+            background: #f0f2f5;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .branch-badge i {
+            color: #25d366;
+            font-size: 0.9rem;
+        }
+        
+        .branch-input {
+            background: transparent;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 16px;
+            color: #1f2c34;
+            width: 150px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .branch-input::placeholder {
+            color: #8696a0;
+            font-weight: normal;
+        }
+        
+        .branch-input:focus {
+            outline: none;
+            background: #e9edef;
+        }
+        
+        .online-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: #25d366;
+            background: #f0f2f5;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+        
+        .online-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #25d366;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        .refresh-control {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #f0f2f5;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+        
+        .refresh-control i {
+            font-size: 0.8rem;
+            color: #54656f;
+        }
+        
+        .refresh-control input {
+            width: 50px;
+            background: transparent;
+            border: none;
+            border-radius: 15px;
+            padding: 2px 6px;
+            color: #1f2c34;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .refresh-control input:focus {
+            outline: none;
+        }
+        
+        .refresh-control label {
+            font-size: 0.65rem;
+            margin: 0;
+            color: #8696a0;
+        }
+        
+        .notification-toggle {
+            background: #f0f2f5;
+            border: none;
+            color: #54656f;
+            cursor: pointer;
+            opacity: 0.8;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        
+        .notification-toggle:hover {
+            background: #e9edef;
+            opacity: 1;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+            background: #efeae2;
+            background-image: radial-gradient(circle at 10% 20%, rgba(0,0,0,0.02) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        
+        .message {
+            margin-bottom: 12px;
+            display: flex;
+            animation: fadeInUp 0.2s ease;
+            position: relative;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message-own {
+            justify-content: flex-end;
+        }
+        
+        .message-other {
+            justify-content: flex-start;
+        }
+        
+        .message-bubble {
+            max-width: 70%;
+            padding: 8px 12px;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+            box-shadow: 0 1px 0.5px rgba(0,0,0,0.05);
+        }
+        
+        .message-own .message-bubble {
+            background: #dcf8c5;
+            color: #111b21;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .message-other .message-bubble {
+            background: #ffffff;
+            color: #111b21;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .admin-message .message-bubble {
+            background: #fff3e0;
+            border-left: 3px solid #ff9800;
+        }
+        
+        .all-mention-highlight {
+            background: #ff9800;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+        
+        .message-branch {
+            font-size: 0.68rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #54656f;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        
+        .admin-branch {
+            color: #ff9800;
+        }
+        
+        .message-text {
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        .message-footer {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 4px;
+            margin-top: 4px;
+            font-size: 0.65rem;
+            color: #667781;
+        }
+        
+        .mention-highlight {
+            background: #ffe6b3;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .tick-mark {
+            font-size: 0.7rem;
+        }
+        
+        .tick-read {
+            color: #34b7f1;
+        }
+        
+        .reply-indicator {
+            background: rgba(0,0,0,0.04);
+            padding: 5px 8px;
+            border-radius: 10px;
+            margin-bottom: 5px;
+            font-size: 0.7rem;
+            border-left: 3px solid #25d366;
+            color: #667781;
+        }
+        
+        .reply-btn {
+            background: none;
+            border: none;
+            font-size: 0.65rem;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+            padding: 2px 6px;
+            border-radius: 12px;
+            color: #25d366;
+        }
+        
+        .reply-btn:hover {
+            opacity: 1;
+            background: rgba(0,0,0,0.04);
+        }
+        
+        .message-menu-btn {
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            color: #667781;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+            line-height: 1;
+            padding: 0 4px;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .message-menu-btn:hover {
+            opacity: 1;
+            background: rgba(0,0,0,0.08);
+        }
+        
+        .message-dropdown {
+            position: fixed;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 10000;
+            min-width: 140px;
+            overflow: hidden;
+            animation: fadeInScale 0.15s ease;
+        }
+        
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .dropdown-item-custom {
+            padding: 10px 16px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f0f2f5;
+        }
+        
+        .dropdown-item-custom:last-child {
+            border-bottom: none;
+        }
+        
+        .dropdown-item-custom:hover {
+            background: #f5f5f5;
+        }
+        
+        .dropdown-item-custom.delete-item {
+            color: #dc3545;
+        }
+        
+        .dropdown-item-custom.delete-item i {
+            color: #dc3545;
+        }
+        
+        .chat-input-area {
+            padding: 10px 16px;
+            background: #f0f2f5;
+            border-top: 0.5px solid #e9edef;
+        }
+        
+        .reply-preview {
+            background: #ffffff;
+            padding: 8px 12px;
+            border-radius: 16px;
+            margin-bottom: 8px;
+            display: none;
+            font-size: 0.8rem;
+            position: relative;
+            border-left: 4px solid #25d366;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        
+        .reply-preview.active {
+            display: block;
+        }
+        
+        .cancel-reply {
+            position: absolute;
+            right: 12px;
+            top: 10px;
+            cursor: pointer;
+            color: #8696a0;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+        
+        .form-control {
+            border-radius: 24px !important;
+            border: none;
+            resize: none;
+            font-size: 0.9rem;
+            padding: 10px 16px;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        
+        .form-control:focus {
+            border: none;
+            box-shadow: 0 1px 2px rgb(0 123 255 / 34%);
+            outline: none;
+        }
+        
+        .send-btn {
+            border-radius: 50% !important;
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            background: #007bff;
+            border-color: #007bff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .send-btn i {
+            font-size: 1.2rem;
+            color: #ffffff;
+        }
+        
+        .send-btn:hover {
+            background: #0069d9;
+            border-color: #0062cc;
+            transform: scale(1.02);
+        }
+        
+        .send-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .send-btn:disabled {
+            background: #b2dfc5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status-badge {
+            background: #25d366;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.6rem;
+        }
+        
+        .replied-badge {
+            background: #8696a0;
+        }
+        
+        .new-badge {
+            background: #ff9800;
+        }
+        
+        .all-mention-badge {
+            background: #ff9800;
+        }
+        
+        .loading-spinner {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .active-users-panel {
+            background: #ffffff;
+            border-bottom: 0.5px solid #e9edef;
+            padding: 8px 16px;
+            font-size: 0.7rem;
+            overflow-x: auto;
+            white-space: nowrap;
+            color: #54656f;
+        }
+        
+        .active-user {
+            display: inline-flex;
+            align-items: center;
+            background: #f0f2f5;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin: 2px 4px;
+            font-size: 0.7rem;
+            color: #1f2c34;
+        }
+        
+        .active-user.admin {
+            background: #fff3e0;
+        }
+        
+        .active-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #25d366;
+            margin-right: 6px;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .mention-suggestion {
+            position: absolute;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .mention-suggestion-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background 0.2s;
+        }
+        
+        .mention-suggestion-item:hover {
+            background: #f0f2f5;
+        }
+        
+        @media (max-width: 768px) {
+            .message-bubble {
+                max-width: 85%;
+            }
+            .chat-header {
+                padding: 10px 12px;
+            }
+            .branch-info h6 {
+                font-size: 1rem;
+            }
+        }
+        
+        .connection-status {
+            position: fixed;
+            right: 10px;
+            top: 70px;
+            z-index: 9999;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            background: #25d366;
+            color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        
+        .message-id {
+            font-size: 0.55rem;
+            color: #8696a0;
+            margin-right: 6px;
+        }
+        
+        .quick-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        
+        .quick-btn {
+            font-size: 0.65rem;
+            padding: 4px 10px;
+            border-radius: 16px;
+            background: #f0f2f5;
+            border: none;
+            color: #075e54;
+            transition: all 0.2s;
+        }
+        
+        .quick-btn:hover {
+            background: #e9edef;
+            color: #054a44;
+        }
+        
+        .cache-info {
+            font-size: 0.6rem;
+            opacity: 0.6;
+            margin-left: 4px;
+        }
+        
+        #countdownDisplay {
+            font-size: 0.7rem;
+            color: #54656f;
+            margin-left: 4px;
+        }
+    </style>
+</head>
+<body>
+<div class="chat-container">
+    <div class="chat-header">
+        <div class="branch-info">
+            <h6 class="mb-0"><i class="bi bi-chat-dots-fill" style="color: #25d366;"></i> NOC Chat</h6>
+            <div class="branch-badge">
+                <i class="bi bi-building"></i> 
+                <input type="text" id="branchCodeInput" class="branch-input" placeholder="Enter BRcode" maxlength="10">
+                <span id="cacheIndicator" class="cache-info" title="Loaded from cache">📦</span>
+            </div>
+            <div class="online-status">
+                <span class="online-dot"></span>
+                <span id="onlineStatusText">Online</span>
+            </div>
+            <button class="notification-toggle" id="toggleToneBtn" title="Toggle Sound">
+                <i class="bi bi-volume-up-fill"></i>
+            </button>
+        </div>
+        <div id="connectionStatus" class="connection-status">🟢 Online</div>
+        <div class="refresh-control">
+            <i class="bi bi-arrow-repeat"></i>
+            <input type="number" id="refreshIntervalInput" value="8" min="1" max="59" step="1">
+            <label>sec</label>
+            <span id="countdownDisplay"></span>
+        </div>
+    </div>
+    
+    <div class="active-users-panel" id="activeUsersPanel">
+        <i class="bi bi-people-fill"></i> Active: <span id="activeCount">0</span>
+        <span id="activeUsersList"></span>
+    </div>
+    
+    <div class="chat-messages" id="chatMessages">
+        <div class="loading-spinner" id="initialLoading">
+            <div class="spinner-border text-success" role="status" style="width: 30px; height: 30px;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 text-muted small">Loading messages...</p>
+        </div>
+    </div>
+    
+    <div class="chat-input-area">
+        <div class="reply-preview" id="replyPreview">
+            <i class="bi bi-reply-fill" style="color: #25d366;"></i> Replying to: <strong><span id="replyToBranch"></span></strong>
+            <br><small id="replyToMessage"></small>
+            <span class="cancel-reply" onclick="cancelReply()">✕</span>
+        </div>
+        
+        <div class="input-group">
+            <textarea class="form-control" id="messageInput" rows="1" placeholder="Type a message... @mention branch, @Admin, or @All"></textarea>
+            <button class="btn send-btn" id="sendBtn">
+              <i class="bi bi-arrow-right"></i>
+            </button>
+        </div>
+        <div class="quick-actions">
+            <button class="quick-btn" onclick="quickMention('Admin')"><i class="bi bi-star-fill"></i> @Admin</button>
+            <button class="quick-btn" onclick="quickMention('All')"><i class="bi bi-people-fill"></i> @All</button>
+        </div>
+        <div id="mentionSuggestions" class="mention-suggestion"></div>
+    </div>
+</div>
+
+<script>
+    // ======================== CONFIGURATION ========================
+    const SPREADSHEET_ID = "1fkiFo1i60NxA_ujl1GhPmNnSLKI6seb3YiMVhPxZjgM";
+    const SHEET_NAME = "Chats";
+    const API_KEY = "AIzaSyBAuS3Brpsw5JOJnjNJii1UlFa7ClXf8d4";
+    // IMPORTANT: Update this URL with your deployed Apps Script URL
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx2GQE3P0II0drjw7ENXlKsYN7wL29W9H86hNXQno6i287ptbt0wIAJA7buXC1EkKB9Yg/exec";
+    
+    // Global variables
+    let branchCode = null;
+    let messages = [];
+    let refreshTimer = null;
+    let countdownInterval = null;
+    let heartbeatTimer = null;
+    let replyingTo = null;
+    let activeBranches = new Map();
+    let isWindowActive = true;
+    let lastMessageIds = new Set();
+    let notificationSound = null;
+    let soundEnabled = true;
+    let currentRefreshInterval = 8;
+    let isLoading = false;
+    let initialLoadDone = false;
+    let activeDropdown = null;
+    
+    // ======================== NOTIFICATION SOUND ========================
+    function initNotificationSound() {
+        try {
+            notificationSound = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3');
+            notificationSound.volume = 0.3;
+            notificationSound.load();
+        } catch(e) {
+            console.log("Audio not supported");
+            notificationSound = null;
+        }
+    }
+    
+    function playNotificationSound() {
+        if (!soundEnabled) return;
+        try {
+            if (notificationSound) {
+                notificationSound.currentTime = 0;
+                notificationSound.play().catch(() => {});
+            }
+        } catch(e) {}
+    }
+    
+    // ======================== BRANCH MANAGEMENT WITH CACHE ========================
+    function isValidBranch(code) {
+        if (!code) return false;
+        code = code.toString().toUpperCase().trim();
+        return /^BR\d{4}$/i.test(code) || code === "ADMIN";
+    }
+    
+    function getBranchFromStorage() {
+        let branch = localStorage.getItem('branchCode');
+        if (branch && isValidBranch(branch)) return branch.toUpperCase();
+        branch = localStorage.getItem('selectedBranch');
+        if (branch && isValidBranch(branch)) return branch.toUpperCase();
+        return null;
+    }
+    
+    function saveBranchToStorage(branch) {
+        if (branch && isValidBranch(branch)) {
+            const upperBranch = branch.toUpperCase();
+            localStorage.setItem('branchCode', upperBranch);
+            localStorage.setItem('selectedBranch', upperBranch);
+            return upperBranch;
+        }
+        return null;
+    }
+    
+    // ======================== DELETE MESSAGE FUNCTION (Using no-cors) ========================
+    async function deleteMessageFromSheet(messageId) {
+        if (!branchCode) {
+            Swal.fire('Error', 'Please set your branch code first', 'warning');
+            return false;
+        }
+        
+        try {
+            // Use no-cors mode for Google Apps Script
+            const response = await fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { 
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    action: "DELETE_MESSAGE",
+                    messageId: messageId,
+                    branchCode: branchCode,
+                    timestamp: new Date().toISOString()
+                })
+            });
+            
+            // With no-cors, we can't read the response, but the request is sent
+            // Wait a moment for the server to process
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Reload messages to confirm deletion
+            await loadMessages();
+            return true;
+            
+        } catch (error) {
+            console.error("Delete error:", error);
+            Swal.fire('Error', 'Failed to delete message. Please try again.', 'error');
+            return false;
+        }
+    }
+    
+    // ======================== CLOSE DROPDOWN ========================
+    function closeDropdown() {
+        if (activeDropdown) {
+            $(activeDropdown).remove();
+            activeDropdown = null;
+        }
+    }
+    
+    // ======================== SHOW DROPDOWN MENU ========================
+    function showMessageMenu(event, messageId, messageBranch) {
+        event.stopPropagation();
+        closeDropdown();
+        
+        // Only allow deletion: either own message OR admin branch
+        const canDelete = (messageBranch === branchCode) || (branchCode === 'ADMIN');
+        if (!canDelete) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Cannot Delete',
+                text: 'You can only delete your own messages',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000
+            });
+            return;
+        }
+        
+        const button = $(event.currentTarget);
+        const offset = button.offset();
+        
+        const $dropdown = $(`
+            <div class="message-dropdown" style="top: ${offset.top + 30}px; left: ${offset.left - 100}px;">
+                <div class="dropdown-item-custom delete-item" data-msg-id="${messageId}" data-msg-branch="${messageBranch}">
+                    <i class="bi bi-trash3"></i> Delete Chat
+                </div>
+            </div>
+        `);
+        
+        $('body').append($dropdown);
+        activeDropdown = $dropdown[0];
+        
+        // Handle delete click
+        $dropdown.find('.delete-item').on('click', async function(e) {
+            e.stopPropagation();
+            const msgId = parseInt($(this).data('msg-id'));
+            const msgBranch = $(this).data('msg-branch');
+            closeDropdown();
+            
+            // Double-check permission
+            if (msgBranch !== branchCode && branchCode !== 'ADMIN') {
+                Swal.fire('Error', 'You do not have permission to delete this message', 'error');
+                return;
+            }
+            
+            const confirmResult = await Swal.fire({
+                title: 'Delete Message?',
+                text: 'This message will be permanently removed from the chat for everyone.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            });
+            
+            if (confirmResult.isConfirmed) {
+                const success = await deleteMessageFromSheet(msgId);
+                if (success) {
+                    Swal.fire('Deleted!', 'Message has been deleted.', 'success', { toast: true, timer: 2000, showConfirmButton: false, position: 'top-end' });
+                }
+            }
+        });
+        
+        // Close when clicking outside
+        setTimeout(() => {
+            $(document).one('click', function() {
+                closeDropdown();
+            });
+        }, 100);
+    }
+    
+    // ======================== READ MESSAGES FROM SHEET ========================
+    async function readMessagesFromSheet() {
+        if (!branchCode) return [];
+        try {
+            const range = `${SHEET_NAME}!A:K`;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${API_KEY}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (!data.values || data.values.length <= 1) return [];
+            
+            const rows = data.values.slice(1);
+            const allMessages = [];
+            const newMessageIds = new Set();
+            
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (row.length >= 1 && row[0]) {
+                    const id = parseInt(row[0]);
+                    if (!isNaN(id)) {
+                        let messageText = row[2] || "";
+                        let displayMessage = messageText;
+                        const replyPrefixMatch = messageText.match(/^\[REPLY TO #\d+\]\s*/i);
+                        if (replyPrefixMatch) {
+                            displayMessage = messageText.substring(replyPrefixMatch[0].length);
+                        }
+                        const msg = {
+                            id: id,
+                            branchCode: (row[1] || "").toUpperCase(),
+                            originalMessage: messageText,
+                            message: displayMessage,
+                            timestamp: row[3] || "",
+                            replyToId: row[4] ? parseInt(row[4]) : 0,
+                            replyMessage: row[5] || "",
+                            status: row[6] || "Sent",
+                            delivered: row[7] === "TRUE",
+                            read: row[8] === "TRUE",
+                            readBy: row[9] || "",
+                            allMentionReadBy: row[10] || ""
+                        };
+                        allMessages.push(msg);
+                        newMessageIds.add(msg.id);
+                    }
+                }
+            }
+            
+            const hasNewMessages = [...newMessageIds].some(id => !lastMessageIds.has(id));
+            if (hasNewMessages && messages.length > 0 && !isLoading) {
+                const newMsgs = allMessages.filter(m => !lastMessageIds.has(m.id) && m.branchCode !== branchCode);
+                for (let newMsg of newMsgs) {
+                    const isMentioned = newMsg.message.toLowerCase().includes(`@${branchCode.toLowerCase()}`);
+                    const isAllMention = newMsg.message.toLowerCase().includes('@all');
+                    if (isMentioned || isAllMention) {
+                        playNotificationSound();
+                    }
+                }
+            }
+            
+            lastMessageIds = newMessageIds;
+            allMessages.sort((a, b) => a.id - b.id);
+            
+            const relevantMessages = allMessages.filter(msg => {
+                const isOwn = msg.branchCode === branchCode;
+                const isReply = msg.replyToId > 0;
+                const originalMsg = allMessages.find(m => m.id === msg.replyToId);
+                const isReplyToMe = isReply && originalMsg && originalMsg.branchCode === branchCode;
+                const isNewFromOther = !isOwn && msg.replyToId === 0 && msg.status !== "Replied";
+                const isMentioned = !isOwn && msg.message.toLowerCase().includes(`@${branchCode.toLowerCase()}`);
+                const isAllMention = !isOwn && msg.message.toLowerCase().includes('@all');
+                const isAdmin = branchCode === 'ADMIN';
+                return isOwn || isReplyToMe || isNewFromOther || isMentioned || isAllMention || isAdmin;
+            });
+            
+            return relevantMessages.map(msg => ({
+                ...msg,
+                isOwnMessage: msg.branchCode === branchCode,
+                canReply: (msg.branchCode !== branchCode && msg.replyToId === 0 && msg.status !== "Replied") || branchCode === 'ADMIN',
+                isMention: !msg.isOwnMessage && msg.message.toLowerCase().includes(`@${branchCode.toLowerCase()}`),
+                isAllMention: !msg.isOwnMessage && msg.message.toLowerCase().includes('@all'),
+                hasSeenAllMention: msg.allMentionReadBy.includes(branchCode),
+                isAdmin: msg.branchCode === 'ADMIN',
+                messageStatus: getMessageStatus(msg)
+            }));
+            
+        } catch (error) {
+            console.error("Error reading messages:", error);
+            return [];
+        }
+    }
+    
+    function getMessageStatus(message) {
+        if (message.branchCode !== branchCode) return null;
+        if (message.read && message.readBy) return { type: 'read', icon: 'bi-check2-all', color: '#34b7f1', text: 'Seen' };
+        else if (message.delivered) return { type: 'delivered', icon: 'bi-check2-all', color: '#8696a0', text: 'Delivered' };
+        else return { type: 'sent', icon: 'bi-check2', color: '#8696a0', text: 'Sent' };
+    }
+    
+    // ======================== SEND MESSAGE ========================
+    async function sendMessage(message, replyToId = null) {
+        if (!message.trim()) return false;
+        if (!branchCode) {
+            Swal.fire('Error', 'Please set your branch code first', 'warning');
+            return false;
+        }
+        const action = replyToId ? "REPLY_MESSAGE" : "SEND_MESSAGE";
+        const payload = { action, branchCode, message: message.trim(), timestamp: new Date().toISOString() };
+        if (replyToId) payload.replyToId = replyToId;
+        
+        const sendBtn = $('#sendBtn');
+        sendBtn.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i>');
+        try {
+            await fetch(APPS_SCRIPT_URL, { 
+                method: "POST", 
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" }, 
+                body: JSON.stringify(payload) 
+            });
+            $('#messageInput').val('');
+            cancelReply();
+            await loadMessages();
+            return true;
+        } catch (error) {
+            Swal.fire('Error', 'Unable to send message', 'error');
+            return false;
+        } finally {
+            sendBtn.prop('disabled', false).html('<i class="bi bi-arrow-right"></i>');
+        }
+    }
+    
+    // ======================== RENDER MESSAGES WITH DROPDOWN BUTTON ========================
+    function formatDateTime(timestamp) {
+        if (!timestamp) return 'Just now';
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffMins = Math.floor((now - date) / 60000);
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins} min ago`;
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        let hours = date.getHours();
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        return `${day}/${month} ${hours}:${minutes} ${ampm}`;
+    }
+    
+    function highlightMentions(text, currentBranch) {
+        let highlighted = text.replace(/@ALL/gi, match => `<span class="all-mention-highlight">${match}</span>`);
+        const mentionRegex = /@(BR\d{4}|ADMIN)/gi;
+        highlighted = highlighted.replace(mentionRegex, (match, branch) => {
+            if (branch.toUpperCase() === currentBranch) return `<span class="mention-highlight">${match}</span>`;
+            return match;
+        });
+        return highlighted;
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) { 
+            return m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'; 
+        });
+    }
+    
+    function renderMessages() {
+        const container = $('#chatMessages');
+        if (!messages || messages.length === 0) {
+            container.html(`<div class="text-center text-muted" style="padding: 50px;"><i class="bi bi-chat-square-text" style="font-size: 48px; color: #cbd5e1;"></i><h6 class="mt-3" style="color: #8696a0;">No messages yet</h6></div>`);
+            return;
+        }
+        
+        let html = '';
+        messages.forEach(message => {
+            const isOwn = message.isOwnMessage;
+            const isAdmin = message.isAdmin;
+            const formattedTime = formatDateTime(message.timestamp);
+            const isReply = message.replyToId > 0;
+            const messageStatus = message.messageStatus;
+            const adminClass = isAdmin && !isOwn ? 'admin-message' : '';
+            
+            let originalMessageText = '';
+            if (isReply) {
+                const originalMsg = messages.find(m => m.id === message.replyToId);
+                if (originalMsg) originalMessageText = originalMsg.message;
+            }
+            
+            const highlightedMessage = highlightMentions(message.message, branchCode);
+            const branchDisplay = message.branchCode === 'ADMIN' ? '<span class="admin-branch"><i class="bi bi-star-fill"></i> ADMIN</span>' : escapeHtml(message.branchCode);
+            
+            html += `
+                <div class="message ${isOwn ? 'message-own' : 'message-other'} ${adminClass}" data-msg-id="${message.id}">
+                    <div class="message-bubble">
+                        <div class="message-branch">
+                            <span><i class="bi bi-building"></i> ${branchDisplay}</span>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <span class="message-id">#${message.id}</span>
+                                <button class="message-menu-btn" onclick="event.stopPropagation(); showMessageMenu(event, ${message.id}, '${escapeHtml(message.branchCode)}')">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                            </div>
+                        </div>
+                        ${isReply ? `<div class="reply-indicator"><i class="bi bi-reply-fill"></i> Reply to #${message.replyToId}: "${escapeHtml(originalMessageText.substring(0, 80))}"</div>` : ''}
+                        <div class="message-text">${highlightedMessage}</div>
+                        <div class="message-footer">
+                            <span>${formattedTime}</span>
+                            ${messageStatus ? `<span class="tick-mark tick-${messageStatus.type}"><i class="${messageStatus.icon}"></i> ${messageStatus.text}</span>` : ''}
+                            ${!isOwn && message.canReply ? `<button class="reply-btn" onclick="startReply(${message.id}, '${escapeHtml(message.branchCode)}', '${escapeHtml(message.message.substring(0, 50))}')"><i class="bi bi-reply-fill"></i> Reply</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.html(html);
+        scrollToBottom();
+    }
+    
+    function scrollToBottom() {
+        const container = document.getElementById('chatMessages');
+        if (container) container.scrollTop = container.scrollHeight;
+    }
+    
+    // ======================== OTHER FUNCTIONS ========================
+    async function loadMessages() {
+        if (!branchCode || isLoading) return;
+        isLoading = true;
+        try {
+            const newMessages = await readMessagesFromSheet();
+            messages = newMessages;
+            renderMessages();
+            updateConnectionStatus(true);
+            await getActiveBranches();
+            if (!initialLoadDone) {
+                $('#initialLoading').hide();
+                initialLoadDone = true;
+            }
+        } catch (error) {
+            updateConnectionStatus(false);
+        } finally {
+            isLoading = false;
+        }
+    }
+    
+    async function getActiveBranches() {
+        try {
+            const range = `ActiveBranches!A:C`;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${API_KEY}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            const now = new Date();
+            const activeThreshold = 12000;
+            if (data.values && data.values.length > 1) {
+                activeBranches.clear();
+                for (let i = 1; i < data.values.length; i++) {
+                    const row = data.values[i];
+                    if (row.length >= 2) {
+                        const lastSeen = new Date(row[1]);
+                        if (now - lastSeen < activeThreshold) activeBranches.set(row[0], { lastSeen });
+                    }
+                }
+            }
+            updateActiveUsersDisplay();
+        } catch (error) {
+            console.error("Error getting active branches:", error);
+        }
+    }
+    
+    function updateActiveUsersDisplay() {
+        const activeList = $('#activeUsersList');
+        let activeListArray = [];
+        for (let branch of activeBranches.keys()) {
+            if (branch !== branchCode) {
+                const isAdmin = branch === 'ADMIN';
+                activeListArray.push(`<span class="active-user ${isAdmin ? 'admin' : ''}"><span class="active-dot"></span>${escapeHtml(branch)}</span>`);
+            }
+        }
+        $('#activeCount').text(activeListArray.length);
+        activeList.html(activeListArray.join(' '));
+    }
+    
+    function startReply(id, branch, preview) {
+        replyingTo = id;
+        $('#replyPreview').addClass('active');
+        $('#replyToBranch').text(branch);
+        $('#replyToMessage').text(preview);
+        $('#messageInput').focus();
+    }
+    
+    function cancelReply() { 
+        replyingTo = null; 
+        $('#replyPreview').removeClass('active'); 
+    }
+    
+    function quickMention(branch) { 
+        const cur = $('#messageInput').val(); 
+        $('#messageInput').val(cur + (cur ? ' ' : '') + `@${branch} `).focus(); 
+    }
+    
+    function updateConnectionStatus(isOnline) { 
+        const status = $('#connectionStatus'); 
+        status.html(isOnline ? '🟢 Online' : '🔴 Offline').css('background', isOnline ? '#25d366' : '#dc3545'); 
+        $('#onlineStatusText').text(isOnline ? 'Online' : 'Offline');
+        setTimeout(() => status.fadeOut(2000, function() { $(this).fadeIn(2000); }), 3000); 
+    }
+    
+    function startAutoRefresh() {
+        if (refreshTimer) clearInterval(refreshTimer);
+        if (countdownInterval) clearInterval(countdownInterval);
+        const intervalSeconds = currentRefreshInterval;
+        let countdown = intervalSeconds;
+        refreshTimer = setInterval(async () => { await loadMessages(); countdown = intervalSeconds; $('#countdownDisplay').text(`${countdown}s`); }, intervalSeconds * 1000);
+        countdownInterval = setInterval(() => { countdown--; if (countdown >= 0) $('#countdownDisplay').text(`${countdown}s`); if (countdown <= 0) countdown = intervalSeconds; }, 1000);
+        $('#countdownDisplay').text(`${countdown}s`);
+    }
+    
+    function setupMentionDetection() {
+        $('#messageInput').on('input', function() {
+            const val = $(this).val();
+            const lastWord = val.split(' ').pop();
+            if (lastWord.startsWith('@')) {
+                const term = lastWord.substring(1).toLowerCase();
+                const allBranches = [...activeBranches.keys()];
+                if (!allBranches.includes('ADMIN')) allBranches.push('ADMIN');
+                const suggestions = ['All', ...allBranches].filter(b => b !== branchCode && b.toLowerCase().includes(term)).slice(0, 8);
+                if (suggestions.length) {
+                    const rect = $(this).get(0).getBoundingClientRect();
+                    $('#mentionSuggestions').html(suggestions.map(s => `<div class="mention-suggestion-item" data-branch="${s}">@${s} ${s === 'ADMIN' ? '⭐' : s === 'All' ? '🌐' : ''}</div>`)).css({ display: 'block', position: 'fixed', top: Math.min(rect.bottom + 5, window.innerHeight - 150), left: rect.left });
+                    $('.mention-suggestion-item').off('click').on('click', function() { const br = $(this).data('branch'); const txt = $('#messageInput').val(); $('#messageInput').val(txt.replace(/@\w*$/, `@${br} `)); $('#mentionSuggestions').hide(); $('#messageInput').focus(); });
+                } else $('#mentionSuggestions').hide();
+            } else $('#mentionSuggestions').hide();
+        });
+        $(document).on('click', function(e) { if (!$(e.target).closest('#mentionSuggestions').length) $('#mentionSuggestions').hide(); });
+    }
+    
+    async function updateHeartbeat() {
+        if (!branchCode) return;
+        try {
+            await fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "HEARTBEAT",
+                    branchCode: branchCode,
+                    timestamp: new Date().toISOString(),
+                    isActive: isWindowActive
+                })
+            });
+        } catch (error) {
+            console.error("Heartbeat error:", error);
+        }
+    }
+    
+    function startHeartbeat() {
+        if (heartbeatTimer) clearInterval(heartbeatTimer);
+        updateHeartbeat();
+        heartbeatTimer = setInterval(() => updateHeartbeat(), 5000);
+    }
+    
+    function setupWindowFocusTracking() {
+        window.addEventListener('focus', () => {
+            isWindowActive = true;
+            updateHeartbeat();
+            loadMessages();
+        });
+        window.addEventListener('blur', () => {
+            isWindowActive = false;
+            updateHeartbeat();
+        });
+        document.addEventListener('visibilitychange', () => {
+            isWindowActive = !document.hidden;
+            if (isWindowActive) loadMessages();
+        });
+    }
+    
+    async function init() {
+        initNotificationSound();
+        if (Notification.permission === "default") Notification.requestPermission();
+        
+        const savedInterval = localStorage.getItem('refreshInterval');
+        if (savedInterval) { currentRefreshInterval = parseInt(savedInterval); $('#refreshIntervalInput').val(currentRefreshInterval); }
+        
+        const savedBranch = getBranchFromStorage();
+        if (savedBranch) { 
+            branchCode = savedBranch; 
+            $('#branchCodeInput').val(branchCode); 
+            await loadMessages();
+        } else { 
+            $('#chatMessages').html(`<div class="text-center text-muted" style="padding:50px;"><i class="bi bi-chat-square-text" style="font-size:48px;"></i><h5>Welcome to NOC Chat</h5><p>Please enter your branch code.</p></div>`); 
+            $('#initialLoading').hide(); 
+            initialLoadDone = true; 
+        }
+        
+        $('#branchCodeInput').on('change', async function() { 
+            const nb = $(this).val().toUpperCase().trim(); 
+            if (isValidBranch(nb)) { 
+                branchCode = saveBranchToStorage(nb); 
+                initialLoadDone = false; 
+                $('#initialLoading').show(); 
+                await loadMessages();
+                Swal.fire({ icon:'success', title:'Branch Set', text:`Welcome ${branchCode}!`, toast:true, timer:2000, showConfirmButton:false });
+            } else if (nb) { 
+                Swal.fire('Invalid Format', 'Use BR1001 or ADMIN', 'warning'); 
+                $(this).val(branchCode || ''); 
+            } 
+        });
+        
+        $('#refreshIntervalInput').on('change', function() { 
+            const newVal = parseInt($(this).val()); 
+            if (!isNaN(newVal) && newVal>=1 && newVal<=59) { 
+                currentRefreshInterval = newVal; 
+                localStorage.setItem('refreshInterval', currentRefreshInterval); 
+                startAutoRefresh(); 
+            } 
+        });
+        
+        startAutoRefresh();
+        startHeartbeat();
+        setupMentionDetection();
+        setupWindowFocusTracking();
+        
+        $('#sendBtn').on('click', async () => { 
+            const msg = $('#messageInput').val(); 
+            if (replyingTo) await sendMessage(msg, replyingTo); 
+            else await sendMessage(msg); 
+        });
+        
+        $('#messageInput').on('keypress', function(e) { 
+            if (e.which === 13 && !e.shiftKey) { 
+                e.preventDefault(); 
+                $('#sendBtn').click(); 
+            } 
+        });
+        
+        $('#toggleToneBtn').on('click', function() { 
+            soundEnabled = !soundEnabled; 
+            $(this).html(soundEnabled ? '<i class="bi bi-volume-up-fill"></i>' : '<i class="bi bi-volume-mute-fill"></i>'); 
+            localStorage.setItem('soundEnabled', soundEnabled); 
+            Swal.fire('Notification', soundEnabled ? 'Sound enabled' : 'Sound disabled', 'info', { toast: true, timer: 1500 }); 
+        });
+        
+        const savedSound = localStorage.getItem('soundEnabled'); 
+        if (savedSound !== null) { 
+            soundEnabled = savedSound === 'true'; 
+            $('#toggleToneBtn').html(soundEnabled ? '<i class="bi bi-volume-up-fill"></i>' : '<i class="bi bi-volume-mute-fill"></i>'); 
+        }
+        
+        window.addEventListener('click', () => closeDropdown());
+    }
+    
+    // Make functions globally accessible
+    window.showMessageMenu = showMessageMenu;
+    window.startReply = startReply;
+    window.cancelReply = cancelReply;
+    window.quickMention = quickMention;
+    
+    $(document).ready(init);
+</script>
+</body>
+</html>

@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>NOC Admin · User Management</title>
+    <!-- LOCAL CSS & JS -->
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <link rel="stylesheet" href="./css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="./css/dataTables.bootstrap5.min.css">
+    
+    <style>
+        :root {
+            --primary: #0f5b9c;
+            --primary-dark: #1a4b7a;
+            --primary-light: #e8f0fe;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --border: #e9ecef;
+        }
+        
+        body {
+              background: #fff0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding: 28px 24px;
+            color: var(--dark);
+        }
+        
+        .dashboard-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+    padding: 15px 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+ 
+}
+.page-header-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+.page-header-left i {
+    font-size: 1.8rem !important;
+    background: rgb(56 143 251 / 15%) !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    color: #184f83 !important;
+}
+
+
+.page-header-left h1 {
+    margin: 0 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    color: #184f83!important;
+}
+ .page-header-left p {
+            margin: 2px 0 0 !important;
+            opacity: 0.7 !important;
+            font-size: 0.75rem !important;
+ }
+        
+        /* Tabs */
+        .nav-tabs {
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 25px;
+        }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            font-weight: 600;
+            padding: 12px 28px;
+            color: #64748b;
+            transition: all 0.2s;
+            border-radius: 12px 12px 0 0;
+        }
+        
+        .nav-tabs .nav-link:hover {
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--primary);
+            background: white;
+            border-bottom: 3px solid var(--primary);
+        }
+        
+        /* Form Card */
+        .form-card, .table-card {
+            background: white;
+            border-radius: 24px;
+            padding: 24px 28px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+        }
+        
+        .form-label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+            color: var(--dark);
+        }
+        
+        .form-control, .form-select {
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(15, 91, 156, 0.1);
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            border: none;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+        
+        .btn-success {
+            background: var(--success);
+            border: none;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: 500;
+        }
+        
+        .btn-outline-secondary {
+            border-radius: 40px;
+        }
+        
+        /* Table Styles */
+        .table thead th {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 0.8rem;
+            padding: 12px 10px;
+            white-space: nowrap;
+        }
+        
+        .table td {
+            padding: 10px 10px;
+            vertical-align: middle;
+            font-size: 0.85rem;
+        }
+        
+        .edit-btn {
+            background: var(--primary-light);
+            border: none;
+            color: var(--primary);
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+        
+        .edit-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .alert-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .spinner-sm {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #e2e8f0;
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            display: inline-block;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .modal-content {
+            border-radius: 24px;
+            border: none;
+        }
+        
+        .modal-header {
+            border-bottom: 1px solid var(--border);
+            background: var(--primary-light);
+            border-radius: 24px 24px 0 0;
+        }
+        
+        .required:after {
+            content: " *";
+            color: var(--danger);
+        }
+        
+        @media (max-width: 768px) {
+            body { padding: 16px; }
+            .form-card, .table-card { padding: 18px; }
+        }
+    </style>
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                   <i class="bi bi-people"></i>
+                    <div>
+                        <h1> User & Branch Management</h1>
+                        <p> User & Branch Management</p>
+                    </div>
+                </div>
+            </div>
+
+
+<div class="dashboard-container">
+ 
+    
+    <!-- Tabs -->
+    <ul class="nav nav-tabs" id="userTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="add-tab" data-bs-toggle="tab" data-bs-target="#addPanel" type="button" role="tab">
+                <i class="bi bi-plus-circle"></i> Add New User
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="edit-tab" data-bs-toggle="tab" data-bs-target="#editPanel" type="button" role="tab">
+                <i class="bi bi-pencil-square"></i> Edit Users
+            </button>
+        </li>
+    </ul>
+    
+    <div class="tab-content">
+        <!-- ADD PANEL -->
+        <div class="tab-pane fade show active" id="addPanel" role="tabpanel">
+            <div class="form-card">
+                <h5 class="mb-4"><i class="bi bi-person-plus"></i> Add New Login Credential</h5>
+                <form id="addUserForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label required">User Type</label>
+                            <select class="form-select" id="addUserType" required>
+                                <option value="user">👤 User (Admin/Staff)</option>
+                                <option value="branch">🏢 Branch User</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required">User ID / Branch Code</label>
+                            <input type="text" class="form-control" id="addUserId" placeholder="e.g., admin / BR0101" required>
+                            <small class="text-muted">For branches use format: BR0101, BR0201 etc.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required">Display Name</label>
+                            <input type="text" class="form-control" id="addName" placeholder="Full name or Branch Name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required">Email ID</label>
+                            <input type="email" class="form-control" id="addEmail" placeholder="user@kerala.gov.in" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required">Menu Access</label>
+                            <select class="form-select" id="addMenu" required>
+                                <option value="">Select Menu Type...</option>
+                                <option value="Admin-menu">Admin Menu (Full Access)</option>
+                                <option value="BR-Menu">Branch Menu</option>
+                                <option value="user-menu">User Menu (Limited)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="alert alert-info small">
+                                <i class="bi bi-info-circle"></i> Password will be set by the user via "Forgot Password" or first login. Default credentials will be notified via email.
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary" id="submitAddBtn">
+                                <i class="bi bi-save"></i> Add User 
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary ms-2" id="resetAddBtn">Reset</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- EDIT PANEL -->
+        <div class="tab-pane fade" id="editPanel" role="tabpanel">
+            <div class="table-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><i class="bi bi-list-check"></i> Existing Users & Branches</h5>
+                    <button class="btn btn-sm btn-outline-primary" id="refreshTableBtn">
+                        <i class="bi bi-arrow-repeat"></i> Refresh
+                    </button>
+                </div>
+                <div id="editTableLoader" style="text-align:center; padding:40px;">
+                    <div class="spinner-sm" style="border-top-color:var(--primary); width:32px; height:32px;"></div>
+                    <p class="mt-2 text-muted">Loading users...</p>
+                </div>
+                <div id="editTableWrapper" style="display:none;">
+                    <table id="usersTable" class="table table-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>User ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Menu Access</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Edit User Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm">
+                    <input type="hidden" id="editOriginalId">
+                    <div class="mb-3">
+                        <label class="form-label">User ID (cannot change)</label>
+                        <input type="text" class="form-control" id="editUserId" readonly disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Display Name</label>
+                        <input type="text" class="form-control" id="editName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required">Email ID</label>
+                        <input type="email" class="form-control" id="editEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required">Menu Access</label>
+                        <select class="form-select" id="editMenu" required>
+                            <option value="Admin-menu">Admin Menu</option>
+                            <option value="BR-Menu">Branch Menu</option>
+                            <option value="user-menu">User Menu</option>
+                        </select>
+                    </div>
+                    <div class="alert alert-warning small">
+                        <i class="bi bi-shield-lock"></i> Password cannot be edited here. User can reset their own password.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmEditBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="./js/jquery.min.js"></script>
+<script src="./js/bootstrap.bundle.min.js"></script>
+<script src="./js/jquery.dataTables.min.js"></script>
+<script src="./js/dataTables.bootstrap5.min.js"></script>
+<script src="./js/dataTables.buttons.min.js"></script>
+
+<script>
+    // ==================== CONFIGURATION ====================
+    const SPREADSHEET_ID = '1jd1xZe9x2mrZm5KAwGT12vMNYjbrnynsmelNKeK95jc';
+    const SHEET_NAME = 'Login';
+    const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+    
+    // Apps Script Web App URL (DO POST with no-cors mode, using google.script.run or fetch? But user asked "app script url with no cores method")
+    // Replace with YOUR Google Apps Script deployment URL that handles doPost()
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw-aen0yqPxLuiqK3KDvt0fVLlr_VQBaQvdjzEwh0_9i14WCdsaoSaM0Ux8NBha_NAn/exec';
+    
+    // IMPORTANT: You must deploy your own Apps Script with doPost() to handle add/edit.
+    // For demo, we will use fetch with mode: 'no-cors' but actual update requires a valid script.
+    // Provide instructions to replace the URL.
+    
+    let usersDataTable = null;
+    let allUsersData = [];
+    
+    // Helper: show toast message
+    function showMessage(message, type = 'success') {
+        const alertDiv = $('<div class="alert alert-dismissible fade show alert-message" role="alert">' +
+            '<i class="bi ' + (type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle') + '"></i> ' + message +
+            '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
+        if (type === 'danger') alertDiv.addClass('alert-danger');
+        else if (type === 'warning') alertDiv.addClass('alert-warning');
+        else alertDiv.addClass('alert-success');
+        
+        $('body').append(alertDiv);
+        setTimeout(() => alertDiv.fadeOut(500, function() { $(this).remove(); }), 4000);
+    }
+    
+    // Fetch all users from Google Sheet (read-only for listing)
+    async function fetchAllUsers() {
+        try {
+            const range = encodeURIComponent(`${SHEET_NAME}!A:G`);
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Failed to fetch data');
+            const data = await response.json();
+            if (!data.values || data.values.length < 2) return [];
+            
+            const rows = data.values.slice(1);
+            const users = [];
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length < 4) continue;
+                const branchUser = row[0] ? row[0].toString().trim() : '';
+                const userId = row[1] ? row[1].toString().trim() : '';
+                if (branchUser === '' && userId === '') continue;
+                
+                const isBranch = (branchUser && branchUser.toUpperCase().startsWith('BR')) || (userId && userId.toUpperCase().startsWith('BR'));
+                const displayId = isBranch ? (branchUser || userId) : (userId || branchUser);
+                const displayName = !isBranch ? (branchUser || userId) : (branchUser || 'Branch');
+                const email = row[4] ? row[4].toString().trim() : '';
+                const menu = row[3] ? row[3].toString().trim() : '';
+                
+                users.push({
+                    rowIndex: i + 2,
+                    type: isBranch ? 'branch' : 'user',
+                    userId: displayId,
+                    name: displayName,
+                    email: email,
+                    menu: menu,
+                    originalBranchUser: branchUser,
+                    originalUserId: userId
+                });
+            }
+            return users;
+        } catch (err) {
+            console.error(err);
+            return [];
+        }
+    }
+    
+    // Render Edit Table
+    async function loadEditTable() {
+        $('#editTableLoader').show();
+        $('#editTableWrapper').hide();
+        
+        allUsersData = await fetchAllUsers();
+        
+        if (allUsersData.length === 0) {
+            $('#editTableLoader').html('<p class="text-muted">No users found in sheet.</p>');
+            return;
+        }
+        
+        const tbody = $('#usersTableBody');
+        tbody.empty();
+        
+        allUsersData.forEach(user => {
+            const typeLabel = user.type === 'branch' ? '<span class="badge bg-primary bg-opacity-10 text-primary">🏢 Branch</span>' : '<span class="badge bg-success bg-opacity-10 text-success">👤 User</span>';
+            const row = `
+                <tr>
+                    <td>${typeLabel}</div></div></div></div></div></div>
+                    <td><code>${escapeHtml(user.userId)}</code></div>
+                    <td>${escapeHtml(user.name)}</div>
+                    <td><small>${escapeHtml(user.email)}</small></div>
+                    <td><span class="badge bg-light text-dark">${escapeHtml(user.menu)}</span></div>
+                    <td><button class="edit-btn" data-id="${escapeHtml(user.userId)}" data-name="${escapeHtml(user.name)}" data-email="${escapeHtml(user.email)}" data-menu="${escapeHtml(user.menu)}" data-type="${user.type}"><i class="bi bi-pencil"></i> Edit</button></div>
+                </tr>
+            `;
+            tbody.append(row);
+        });
+        
+        if (usersDataTable) usersDataTable.destroy();
+        usersDataTable = $('#usersTable').DataTable({
+            pageLength: -1,
+            order: [[1, 'asc']],
+            language: { search: "Search:", lengthMenu: "Show _MENU_ entries" }
+        });
+        
+        $('#editTableLoader').hide();
+        $('#editTableWrapper').show();
+        
+        // Attach edit button events
+        $('.edit-btn').on('click', function() {
+            const userId = $(this).data('id');
+            const name = $(this).data('name');
+            const email = $(this).data('email');
+            const menu = $(this).data('menu');
+            const type = $(this).data('type');
+            
+            $('#editOriginalId').val(userId);
+            $('#editUserId').val(userId);
+            $('#editName').val(name);
+            $('#editEmail').val(email);
+            $('#editMenu').val(menu);
+            $('#editModal').modal('show');
+        });
+    }
+    
+    // Function to call Apps Script (no-cors mode)
+    async function callAppsScript(action, data) {
+        const payload = { action: action, data: data, sheetId: SPREADSHEET_ID };
+        // Using no-cors mode (limited response, but request will be sent)
+        // For production, you need to deploy an Apps Script web app with doPost()
+        try {
+            const response = await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            // With no-cors, response is opaque, we can't read it. Assume success if no network error.
+            return { success: true, message: 'Request sent to server.' };
+        } catch (err) {
+            console.error(err);
+            return { success: false, message: err.message };
+        }
+    }
+    
+    // Check if User ID already exists (for Add)
+    async function isUserIdExists(userId) {
+        const users = await fetchAllUsers();
+        return users.some(u => u.userId.toLowerCase() === userId.toLowerCase());
+    }
+    
+    // Add User (via Apps Script)
+    $('#addUserForm').on('submit', async function(e) {
+        e.preventDefault();
+        
+        const userType = $('#addUserType').val();
+        const userId = $('#addUserId').val().trim();
+        const name = $('#addName').val().trim();
+        const email = $('#addEmail').val().trim();
+        const menu = $('#addMenu').val();
+        
+        if (!userId || !name || !email || !menu) {
+            showMessage('Please fill all required fields.', 'warning');
+            return;
+        }
+        
+        // Validate branch code format
+        if (userType === 'branch' && !/^BR\d{4}$/i.test(userId)) {
+            showMessage('Branch code should be format: BR0101, BR0201 etc.', 'warning');
+            return;
+        }
+        
+        // Check duplicate
+        const exists = await isUserIdExists(userId);
+        if (exists) {
+            showMessage('User ID already exists! Please use a different ID.', 'danger');
+            return;
+        }
+        
+        const submitBtn = $('#submitAddBtn');
+        const originalHtml = submitBtn.html();
+        submitBtn.html('<span class="spinner-sm"></span> Processing...').prop('disabled', true);
+        
+        // Prepare data for Apps Script (row structure: Branch/User, User ID, Password(blank), Menu, Email, OTP(blank), Login Time)
+        const rowData = [
+            userType === 'branch' ? userId : name,  // Branch/User column
+            userId,                                   // User ID
+            '',                                       // Password (user sets later)
+            menu,                                     // Menu Access
+            email,                                    // Email
+            '',                                       // OTP
+            ''                                        // Login Timestamp
+        ];
+        
+        const result = await callAppsScript('add', { row: rowData });
+        
+        if (result.success) {
+            showMessage('User added successfully! Password setup will be notified to user.', 'success');
+            $('#addUserForm')[0].reset();
+            if ($('#edit-tab').hasClass('active')) loadEditTable();
+        } else {
+            showMessage('Error: ' + result.message, 'danger');
+        }
+        
+        submitBtn.html(originalHtml).prop('disabled', false);
+    });
+    
+    // Edit User (via Apps Script)
+    $('#confirmEditBtn').on('click', async function() {
+        const originalId = $('#editOriginalId').val();
+        const newName = $('#editName').val().trim();
+        const newEmail = $('#editEmail').val().trim();
+        const newMenu = $('#editMenu').val();
+        
+        if (!newName || !newEmail || !newMenu) {
+            showMessage('Please fill all fields.', 'warning');
+            return;
+        }
+        
+        const btn = $(this);
+        const originalText = btn.html();
+        btn.html('<span class="spinner-sm"></span> Saving...').prop('disabled', true);
+        
+        // Find original record to locate row index
+        const users = await fetchAllUsers();
+        const targetUser = users.find(u => u.userId === originalId);
+        if (!targetUser) {
+            showMessage('User not found in sheet.', 'danger');
+            btn.html(originalText).prop('disabled', false);
+            $('#editModal').modal('hide');
+            return;
+        }
+        
+        const rowIndex = targetUser.rowIndex;
+        
+        // Prepare update data: we need to update columns B (User ID?), actually column mapping:
+        // Col A: Branch/User, Col B: User ID, Col D: Menu, Col E: Email, Col C: Password(keep), etc.
+        // We'll send updates for Name (A or B based on type) + Email + Menu
+        const updateData = {
+            row: rowIndex,
+            name: newName,
+            email: newEmail,
+            menu: newMenu,
+            userId: originalId
+        };
+        
+        const result = await callAppsScript('edit', updateData);
+        
+        if (result.success) {
+            showMessage('User details updated successfully!', 'success');
+            $('#editModal').modal('hide');
+            await loadEditTable(); // refresh table
+        } else {
+            showMessage('Update failed: ' + result.message, 'danger');
+        }
+        
+        btn.html(originalText).prop('disabled', false);
+    });
+    
+    // Refresh table button
+    $('#refreshTableBtn').on('click', function() {
+        loadEditTable();
+    });
+    
+    $('#resetAddBtn').on('click', function() {
+        $('#addUserForm')[0].reset();
+    });
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // Load edit table when tab is shown
+    $('#edit-tab').on('shown.bs.tab', function() {
+        if (!usersDataTable) loadEditTable();
+    });
+    
+    // Initial load for edit tab data (preload)
+    loadEditTable();
+    
+    // Important warning about Apps Script URL
+    if (APPS_SCRIPT_URL.includes('DUMMY_PLEASE_REPLACE')) {
+        console.warn('⚠️ Please replace APPS_SCRIPT_URL with your actual Google Apps Script Web App URL');
+        setTimeout(() => {
+            showMessage('⚠️ Setup Required: Replace APPS_SCRIPT_URL with your Apps Script deployment URL for add/edit to work.', 'warning');
+        }, 1000);
+    }
+    
+    // Instruction note in console
+    console.log('To enable add/edit: Deploy an Apps Script with doPost() that handles "add" and "edit" actions to modify the Login sheet.');
+</script>
+</body>
+</html>

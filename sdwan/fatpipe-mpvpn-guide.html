@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FatPipe MPVPN User Manual - Network Operations Center</title>
+    
+    <!-- LOCAL CSS -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    
+    <style>
+        :root {
+            --primary: #0f5b9c;
+            --primary-dark: #1a4b7a;
+            --primary-light: #e8f0fe;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --border: #e9ecef;
+        }
+        
+        body {
+             background: #fff0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            color: var(--dark);
+        }
+        
+        /* Header */
+        .manual-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 30px 40px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .header-icon {
+            width: 70px;
+            height: 70px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+        }
+        
+        .header-text h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+        
+        .header-text p {
+            margin: 5px 0 0;
+            opacity: 0.85;
+        }
+        
+        .version-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        
+        /* Navigation Tabs */
+        .nav-manual {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 0 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        .nav-manual .nav-link {
+            padding: 15px 25px;
+            font-weight: 500;
+            color: #64748b;
+            border: none;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .nav-manual .nav-link i {
+            margin-right: 8px;
+        }
+        
+        .nav-manual .nav-link.active {
+            color: var(--primary);
+            background: transparent;
+            border-bottom-color: var(--primary);
+        }
+        
+        .nav-manual .nav-link:hover:not(.active) {
+            color: var(--primary-dark);
+            background: var(--primary-light);
+        }
+        
+        /* Content Container */
+        .content-container {
+            padding: 30px;
+           
+            margin: 0 auto;
+        }
+        
+        /* Search Bar */
+        .search-bar {
+            background: white;
+            border-radius: 60px;
+            padding: 10px 20px;
+            margin-bottom: 25px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .search-bar i {
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+        
+        .search-bar input {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 10px 0;
+            font-size: 1rem;
+        }
+        
+        .search-bar input::placeholder {
+            color: #94a3b8;
+        }
+        
+        .search-results-count {
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+        
+        /* Table of Contents Sidebar */
+        .toc-sidebar {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 20px;
+            position: sticky;
+            top: 20px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+        
+        .toc-sidebar h5 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-light);
+        }
+        
+        .toc-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .toc-list li {
+            margin-bottom: 8px;
+        }
+        
+        .toc-list a {
+            color: var(--dark);
+            text-decoration: none;
+            font-size: 0.85rem;
+            display: block;
+            padding: 5px 0;
+            transition: all 0.2s;
+            border-left: 2px solid transparent;
+            padding-left: 10px;
+        }
+        
+        .toc-list a:hover {
+            color: var(--primary);
+            border-left-color: var(--primary);
+        }
+        
+        .toc-list a.active {
+            color: var(--primary);
+            border-left-color: var(--primary);
+            background: var(--primary-light);
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .toc-sub {
+            list-style: none;
+            padding-left: 20px;
+            margin-top: 5px;
+        }
+        
+        /* Main Content */
+        .main-content {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 35px;
+        }
+        
+        .chapter {
+            margin-bottom: 40px;
+            scroll-margin-top: 80px;
+        }
+        
+        .chapter:last-child {
+            margin-bottom: 0;
+        }
+        
+        .chapter-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-light);
+        }
+        
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin: 25px 0 15px;
+        }
+        
+        .subsection-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin: 20px 0 12px;
+            padding-left: 12px;
+            border-left: 3px solid var(--primary);
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 8px 0 8px 25px;
+            position: relative;
+        }
+        
+        .feature-list li:before {
+            content: "▹";
+            color: var(--primary);
+            position: absolute;
+            left: 0;
+        }
+        
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px 20px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        .note-box {
+            background: var(--primary-light);
+            border-left: 4px solid var(--primary);
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #f59e0b;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .info-box {
+            background: #e8f0fe;
+            border-left: 4px solid #3b82f6;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        table th {
+            background: var(--primary);
+            color: white;
+            padding: 10px 12px;
+            font-weight: 500;
+        }
+        
+        table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .badge-feature {
+            background: var(--success);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        
+        .badge-addon {
+            background: var(--warning);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        
+        .highlight {
+            background: var(--primary-light);
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #64748b;
+            font-size: 0.8rem;
+            border-top: 1px solid var(--border);
+            margin-top: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .manual-header { padding: 20px; }
+            .header-title { flex-direction: column; text-align: center; }
+            .content-container { padding: 15px; }
+            .main-content { padding: 20px; }
+            .chapter-title { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="manual-header">
+        <div class="header-title">
+            <div class="header-icon">
+                <i class="bi bi-router"></i>
+            </div>
+            <div class="header-text">
+                <h1>FatPipe MPVPN User Manual</h1>
+                <p>Multi-Path Virtual Private Network - High Speed Router Clustering Device</p>
+                <div class="version-badge">
+                    <i class="bi bi-tag"></i> Version 10.1.2
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-manual" id="manualTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="content-tab" data-bs-toggle="tab" data-bs-target="#contentPane" type="button" role="tab">
+                <i class="bi bi-book"></i> Documentation
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="features-tab" data-bs-toggle="tab" data-bs-target="#featuresPane" type="button" role="tab">
+                <i class="bi bi-star"></i> Features & Add-ons
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="support-tab" data-bs-toggle="tab" data-bs-target="#supportPane" type="button" role="tab">
+                <i class="bi bi-headset"></i> Technical Support
+            </button>
+        </li>
+    </ul>
+    
+    <div class="tab-content">
+        <!-- Documentation Tab -->
+        <div class="tab-pane fade show active" id="contentPane" role="tabpanel">
+            <div class="content-container">
+                <div class="row g-4">
+                    <!-- Table of Contents Sidebar -->
+                    <div class="col-lg-3 order-lg-1 order-2">
+                        <div class="toc-sidebar">
+                            <h5><i class="bi bi-list-ul"></i> Table of Contents</h5>
+                            <ul class="toc-list" id="tocList">
+                                <li><a href="#overview">Overview</a></li>
+                                <li><a href="#chapter1">Chapter 1: Initial Setup</a>
+                                    <ul class="toc-sub">
+                                        <li><a href="#quick-install">Quick Install Instructions</a></li>
+                                    </ul>
+                                </li>
+                                <li><a href="#chapter2">Chapter 2: Interfaces</a>
+                                    <ul class="toc-sub">
+                                        <li><a href="#lan-config">LAN Configuration</a></li>
+                                        <li><a href="#wan-config">WAN Configuration</a></li>
+                                    </ul>
+                                </li>
+                                <li><a href="#chapter3">Chapter 3: System</a>
+                                    <ul class="toc-sub">
+                                        <li><a href="#users">Users & Authentication</a></li>
+                                        <li><a href="#unit-failover">Unit Failover</a></li>
+                                        <li><a href="#dhcp">DHCP Server</a></li>
+                                    </ul>
+                                </li>
+                                <li><a href="#chapter4">Chapter 4: Load Balancing</a>
+                                    <ul class="toc-sub">
+                                        <li><a href="#algorithms">Algorithms</a></li>
+                                        <li><a href="#smartdns">SmartDNS™</a></li>
+                                    </ul>
+                                </li>
+                                <li><a href="#chapter5">Chapter 5: Routing</a>
+                                    <ul class="toc-sub">
+                                        <li><a href="#inbound">Inbound Policy</a></li>
+                                        <li><a href="#outbound">Outbound Policy</a></li>
+                                        <li><a href="#vpn">VPN Configuration</a></li>
+                                        <li><a href="#mpsec">MPSeC</a></li>
+                                    </ul>
+                                </li>
+                                <li><a href="#chapter7">Chapter 7: Quality of Service (QoS)</a></li>
+                                <li><a href="#chapter8">Chapter 8: Site Load Balancing</a></li>
+                                <li><a href="#chapter9">Chapter 9: Server Load Balancing</a></li>
+                                <li><a href="#chapter10">Chapter 10: VPN</a></li>
+                                <li><a href="#chapter14">Chapter 14: Central Manager</a></li>
+                                <li><a href="#appendix">Appendices & Warranty</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Main Content -->
+                    <div class="col-lg-9 order-lg-2 order-1">
+                        <div class="search-bar">
+                            <i class="bi bi-search"></i>
+                            <input type="text" id="searchInput" placeholder="Search documentation... (Ctrl+F for browser search)">
+                            <span class="search-results-count" id="searchCount"></span>
+                        </div>
+                        
+                        <div class="main-content" id="mainContent">
+                            <!-- Overview -->
+                            <div id="overview" class="chapter">
+                                <h1 class="chapter-title">Overview</h1>
+                                <p>FatPipe® MPVPN is a high-speed router-clustering device from FatPipe Networks. It is the ultimate solution for companies that want the highest levels of WAN redundancy, reliability, and speed for data traffic directed from the network to the Internet as well as data traffic directed to servers hosted internally.</p>
+                                
+                                <div class="info-box">
+                                    <i class="bi bi-info-circle-fill me-2"></i>
+                                    <strong>Key Capability:</strong> MPVPN aggregates any combination of DS3, T1, E3, E1, DSL, OCx, ISDN, wireless, 3G, 4G, and cable lines. It enables dynamic data transmission over multiple paths for combined speed and redundancy.
+                                </div>
+                                
+                                <h3 class="section-title">Available Throughput Options</h3>
+                                <ul class="feature-list">
+                                    <li>Small companies and branch offices - Starting at 5 Mbps</li>
+                                    <li>Enterprise level customers - Up to 40 Gbps</li>
+                                </ul>
+                            </div>
+                            
+                            <!-- Chapter 1: Initial Setup -->
+                            <div id="chapter1" class="chapter">
+                                <h1 class="chapter-title">Chapter 1: Initial Setup</h1>
+                                <p>This chapter provides you with the information required to setup the cable connections and the initial configuration for FatPipe MPVPN.</p>
+                                
+                                <div id="quick-install">
+                                    <h2 class="section-title">Quick Install Instructions</h2>
+                                    <ol class="feature-list">
+                                        <li>Connect the MPVPN unit to a UPS outlet and power on</li>
+                                        <li>Connect LAN interface to your local network and WAN interfaces to your WAN routers</li>
+                                        <li>Configure Management PC with IP address <span class="highlight">192.168.0.10</span>, Subnet Mask <span class="highlight">255.255.255.0</span>, Gateway <span class="highlight">192.168.0.1</span></li>
+                                        <li>Point web browser to <span class="highlight">http://192.168.0.1</span></li>
+                                        <li>Login with username "<span class="highlight">Administrator</span>" (case-sensitive, no password by default)</li>
+                                        <li>Configure WAN interfaces with IP Address, Subnet Mask, and Default Gateway</li>
+                                        <li>Configure LAN interface (keep default 192.168.0.1 if no conflict)</li>
+                                    </ol>
+                                </div>
+                                
+                                <div class="warning-box">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                    <strong>Important:</strong> Please refer to the Preinstall Worksheet included in your customer packet. If you want a FatPipe Technical Support Engineer to assist with installation, fill out the Preinstall Worksheet at least 72 hours prior to installation.
+                                </div>
+                            </div>
+                            
+                            <!-- Chapter 2: Interfaces -->
+                            <div id="chapter2" class="chapter">
+                                <h1 class="chapter-title">Chapter 2: Interfaces</h1>
+                                
+                                <div id="lan-config">
+                                    <h2 class="section-title">LAN Configuration</h2>
+                                    <p>The Interface section is where you configure settings for the LAN and WAN interfaces of MPVPN.</p>
+                                    <ul class="feature-list">
+                                        <li><strong>Enable Proxy ARP</strong> - Default enabled, respond to ARP requests for any IPs belonging to WAN subnets</li>
+                                        <li><strong>VLAN</strong> - Virtual Local Area Network support (Range 0 to 4096)</li>
+                                        <li><strong>Enable DHCP Relay</strong> - Relay DHCP requests from LAN to DHCP server on WAN side</li>
+                                        <li><strong>IPv4/IPv6</strong> - Configure IP addresses and subnet masks</li>
+                                    </ul>
+                                </div>
+                                
+                                <div id="wan-config">
+                                    <h2 class="section-title">WAN Configuration</h2>
+                                    <ul class="feature-list">
+                                        <li><strong>ISP Name</strong> - Give name to the WAN interface</li>
+                                        <li><strong>Route Test</strong> - When to perform route test (Always / On Primary Failure)</li>
+                                        <li><strong>Link Stabilizing Factor</strong> - Number of consecutive failures/successes before changing line status</li>
+                                        <li><strong>Weight</strong> - For Weighted Load balancing algorithm</li>
+                                        <li><strong>Spillover Priority Level</strong> - Assign priorities to prevent line saturation</li>
+                                        <li><strong>Bandwidth (kbps)</strong> - Upload/Download bandwidth for QoS</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <!-- Chapter 3: System -->
+                            <div id="chapter3" class="chapter">
+                                <h1 class="chapter-title">Chapter 3: System</h1>
+                                
+                                <div id="users">
+                                    <h2 class="section-title">Users & Authentication</h2>
+                                    <p>Manage user accounts with Administrator or User privileges. Supports LDAP and Active Directory Services for centralized authentication.</p>
+                                    <div class="note-box">
+                                        <i class="bi bi-shield-lock-fill me-2"></i>
+                                        <strong>Security Features:</strong> Account lockout threshold, minimum password length, and mixed password requirements.
+                                    </div>
+                                </div>
+                                
+                                <div id="unit-failover">
+                                    <h2 class="section-title">Unit Failover</h2>
+                                    <p>Configure MPVPN units to automatically failover in case of hardware failure. At least two units required for implementation.</p>
+                                    <ul class="feature-list">
+                                        <li><strong>Group ID</strong> - Uniquely identifies failover group (1-255)</li>
+                                        <li><strong>Access IP/Mask</strong> - Private subnet common to both units</li>
+                                        <li><strong>Role</strong> - Primary or Backup</li>
+                                        <li><strong>Stateful Failover</strong> - Ensures all sessions failover transparently</li>
+                                    </ul>
+                                </div>
+                                
+                                <div id="dhcp">
+                                    <h2 class="section-title">DHCP Server</h2>
+                                    <p>Built-in DHCP Server to assign IP addresses to devices on your LAN.</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Chapter 4: Load Balancing -->
+                            <div id="chapter4" class="chapter">
+                                <h1 class="chapter-title">Chapter 4: Load Balancing</h1>
+                                
+                                <div id="algorithms">
+                                    <h2 class="section-title">Load Balancing Algorithms</h2>
+                                    <table>
+                                        <thead><tr><th>Algorithm</th><th>Description</th><th>Best For</th></tr></thead>
+                                        <tbody>
+                                            <tr><td><strong>Round Robin</strong></td><td>Sends sessions down lines in rotating order</td><td>Similar speed connections</td></tr>
+                                            <tr><td><strong>Response Time</strong></td><td>Balances based on average response time</td><td>Unequal speed connections</td></tr>
+                                            <tr><td><strong>Fastest Route</strong></td><td>Per-destination balancing, fastest line for each destination</td><td>Ensuring fastest route per session</td></tr>
+                                            <tr><td><strong>Weighted</strong></td><td>Balances traffic in proportion to defined WAN weights</td><td>Controlled traffic distribution</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div id="smartdns">
+                                    <h2 class="section-title">SmartDNS™</h2>
+                                    <p>Patented technology providing inbound load balancing to public facing servers in the LAN.</p>
+                                    <ul class="feature-list">
+                                        <li><strong>Load Balancing</strong> - Advertises different paths into a host on LAN</li>
+                                        <li><strong>Speed</strong> - Speeds up delivery of inbound traffic</li>
+                                        <li><strong>Failover</strong> - Dynamically senses failures and adjusts DNS replies</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <!-- Chapter 5: Routing -->
+                            <div id="chapter5" class="chapter">
+                                <h1 class="chapter-title">Chapter 5: Routing</h1>
+                                
+                                <div id="inbound">
+                                    <h2 class="section-title">Inbound Policy</h2>
+                                    <p>Configured to allow access from WAN to servers or machines on the LAN. By default, FatPipe denies all inbound connections.</p>
+                                </div>
+                                
+                                <div id="outbound">
+                                    <h2 class="section-title">Outbound Policy</h2>
+                                    <p>Applies to any traffic initiated on the LAN side going out. Supports QoS rules and various traffic modes.</p>
+                                    <div class="code-block">
+                                        // Example Outbound Policy parameters
+                                        • Protocol: TCP/UDP/ALL
+                                        • Source IP/Mask: Specify source network
+                                        • Destination IP/Mask or Domain Name
+                                        • Traffic Mode: Interface Priority / Interface Specific / Mixed Priority
+                                    </div>
+                                </div>
+                                
+                                <div id="vpn">
+                                    <h2 class="section-title">VPN Configuration</h2>
+                                    <p>FatPipe VPN allows site-to-site VPNs and remote user (Road Warrior) connections.</p>
+                                    <ul class="feature-list">
+                                        <li>Supports Pre-Shared Secret and RSA Signature authentication</li>
+                                        <li>NAT-Traversal (Auto or Forced mode)</li>
+                                        <li>IPSec Certificates for user-specific authentication</li>
+                                    </ul>
+                                </div>
+                                
+                                <div id="mpsec">
+                                    <h2 class="section-title">MPSeC (Multi-Path Security)</h2>
+                                    <p>Provides significantly more security of data transmission by creating multiple, independent data pathways between two or more locations.</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Chapter 7: QoS -->
+                            <div id="chapter7" class="chapter">
+                                <h1 class="chapter-title">Chapter 7: Quality of Service (QoS)</h1>
+                                <p>QoS is an add-on feature that allows you to prioritize WAN traffic, essential for real-time traffic including voice and video.</p>
+                                <ul class="feature-list">
+                                    <li><strong>Priority Levels:</strong> 0 (highest) to 7 (Best Effort)</li>
+                                    <li><strong>Committed Rate (CR):</strong> Guaranteed bandwidth (min 8 kbps, max 90% of link bandwidth)</li>
+                                    <li><strong>Burst Rate:</strong> Upper limit for available bandwidth</li>
+                                    <li><strong>Layer 7 QoS:</strong> Application-level classification for 180+ predefined applications</li>
+                                </ul>
+                            </div>
+                            
+                            <!-- Chapter 8: Site Load Balancing -->
+                            <div id="chapter8" class="chapter">
+                                <h1 class="chapter-title">Chapter 8: Site Load Balancing</h1>
+                                <p>Optional add-on feature for inbound connectivity to Internet accessible servers. Allows Site Failover between geographically separate locations.</p>
+                                <div class="info-box">
+                                    <i class="bi bi-diagram-3-fill me-2"></i>
+                                    Site Load Balancing shares weighted traffic between two sites utilizing all lines available at each site.
+                                </div>
+                            </div>
+                            
+                            <!-- Chapter 9: Server Load Balancing -->
+                            <div id="chapter9" class="chapter">
+                                <h1 class="chapter-title">Chapter 9: Server Load Balancing</h1>
+                                <p>Add-on feature for inbound connection load balancing. Supports HTTP and TCP-based applications.</p>
+                                <ul class="feature-list">
+                                    <li><strong>Balance Methods:</strong> Round Robin, Least Connection, Source</li>
+                                    <li><strong>Balance Modes:</strong> TCP mode, HTTP mode</li>
+                                    <li><strong>Health Checks:</strong> SSL Check, SMTP Check, HTTP Check</li>
+                                </ul>
+                            </div>
+                            
+                            <!-- Chapter 10: VPN -->
+                            <div id="chapter10" class="chapter">
+                                <h1 class="chapter-title">Chapter 10: VPN</h1>
+                                <p>Add-on feature supporting site-to-site VPNs and mobile VPN clients (Road Warriors).</p>
+                                <div class="note-box">
+                                    <i class="bi bi-shield-check me-2"></i>
+                                    <strong>Supported Clients:</strong> Greenbow VPN Client, Windows XP/VPN Client, Windows Vista (Business & Enterprise) VPN Client
+                                </div>
+                            </div>
+                            
+                            <!-- Chapter 14: Central Manager -->
+                            <div id="chapter14" class="chapter">
+                                <h1 class="chapter-title">Chapter 14: Central Manager</h1>
+                                <p>Add-on module allowing management of all FatPipe appliances from a single console.</p>
+                                <ul class="feature-list">
+                                    <li>Organize units into groups with secret key for secure communication</li>
+                                    <li>Global Outbound Policy - Apply single policy to one or all devices</li>
+                                    <li>Global QoS - Apply QoS policies to multiple sites</li>
+                                    <li>Monitoring and alerting capabilities</li>
+                                </ul>
+                            </div>
+                            
+                            <!-- Appendices -->
+                            <div id="appendix" class="chapter">
+                                <h1 class="chapter-title">Appendices & Warranty</h1>
+                                
+                                <h2 class="section-title">FatPipe Virtual Appliance</h2>
+                                <p>Comes as an installer file running on Microsoft Windows based operating systems (Windows 7, 32-bit supported).</p>
+                                
+                                <h2 class="section-title">Technical Support</h2>
+                                <div class="info-box">
+                                    <i class="bi bi-telephone-fill me-2"></i>
+                                    <strong>Contact:</strong> (800) 724-8521 or (801) 281-3434 ext. 3<br>
+                                    <strong>Email:</strong> support@FatPipeinc.com<br>
+                                    <strong>Website:</strong> www.FatPipeinc.com<br>
+                                    <strong>Hours:</strong> Monday-Friday, 8:00am to 6:00pm MST (Extended Support 24/7)
+                                </div>
+                                
+                                <h2 class="section-title">Product Warranty</h2>
+                                <p>FatPipe Networks warrants its hardware products to the original purchaser against defects in materials and workmanship for one year from shipment.</p>
+                                
+                                <div class="warning-box">
+                                    <i class="bi bi-file-text-fill me-2"></i>
+                                    <strong>Software License:</strong> The Licensed Products are the property of FatPipe Networks. Reverse engineering, modification, or copying is prohibited without prior written permission.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <footer>
+                            <i class="bi bi-c-circle"></i> 
+
+                        </footer>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Features Tab -->
+        <div class="tab-pane fade" id="featuresPane" role="tabpanel">
+            <div class="content-container">
+                <div class="main-content">
+                    <h1 class="chapter-title">Features & Add-ons</h1>
+                    
+                    <h2 class="section-title">Core Features</h2>
+                    <table>
+                        <thead><tr><th>Feature</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td>WAN Aggregation</td><td>Combine DS3, T1, E3, E1, DSL, OCx, ISDN, wireless, 3G, 4G, cable lines</td></tr>
+                            <tr><td>Load Balancing</td><td>Round Robin, Response Time, Fastest Route, Weighted</td></tr>
+                            <tr><td>SmartDNS™</td><td>Patented inbound load balancing and failover</td></tr>
+                            <tr><td>Unit Failover</td><td>High availability with active-standby failover</td></tr>
+                            <tr><td>IPv6 Support</td><td>Full IPv6 LAN and WAN configuration</td></tr>
+                            <tr><td>VLAN Support</td><td>Virtual Local Area Network (0-4096)</td></tr>
+                        </tbody>
+                    </table>
+                    
+                    <h2 class="section-title">Optional Add-ons</h2>
+                    <table>
+                        <thead><tr><th>Add-on</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td>Quality of Service (QoS)</td><td>Prioritize traffic, Layer 7 application classification</td></tr>
+                            <tr><td>Site Load Balancing</td><td>Inbound load balancing for geographically separate sites</td></tr>
+                            <tr><td>Server Load Balancing</td><td>Load balance inbound connections to servers</td></tr>
+                            <tr><td>VPN</td><td>Site-to-site and remote user VPN connectivity</td></tr>
+                            <tr><td>VPN Site Failover</td><td>Failover VPN tunnels to disaster recovery sites</td></tr>
+                            <tr><td>WAN Optimization</td><td>Compression, caching, HTTPS acceleration</td></tr>
+                            <tr><td>Central Manager</td><td>Manage multiple FatPipe devices from single console</td></tr>
+                            <tr><td>Web Content Blocking (SatBooster)</td><td>Block file types, lossy image compression</td></tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="note-box">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        For purchasing information, please contact your local FatPipe representative or call (800) 724-8521.
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Support Tab -->
+        <div class="tab-pane fade" id="supportPane" role="tabpanel">
+            <div class="content-container">
+                <div class="main-content">
+                    <h1 class="chapter-title">Technical Support</h1>
+                    
+                    <div class="info-box">
+                        <i class="bi bi-headset fs-1 d-block mb-3"></i>
+                        <h3>Contact FatPipe Networks</h3>
+                        <p><strong>Phone:</strong> (800) 724-8521 or (801) 281-3434<br>
+                        <strong>Press 3 for Technical Support</strong></p>
+                        <p><strong>Email:</strong> support@FatPipeinc.com</p>
+                        <p><strong>Website:</strong> www.FatPipeinc.com</p>
+                        <p><strong>Address:</strong> 4455 South 700 East, First Floor, Salt Lake City, UT 84107</p>
+                    </div>
+                    
+                    <h2 class="section-title">Support Hours</h2>
+                    <ul class="feature-list">
+                        <li><strong>Standard Support:</strong> Monday - Friday, 8:00am to 6:00pm MST</li>
+                        <li><strong>Extended Support:</strong> 24/7 (available for scheduled installations and upgrades)</li>
+                    </ul>
+                    
+                    <h2 class="section-title">Frequently Asked Questions</h2>
+                    <p>Visit our website for answers to the most Frequently Asked Questions (FAQs).</p>
+                    
+                    <h2 class="section-title">Returns</h2>
+                    <p>To return a unit for repairs, contact Customer Service for a Return Merchandise Authorization Number (RMA#). Write this number on the outside of the package. No unit will be accepted without an RMA number.</p>
+                    
+                    <div class="warning-box">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Note:</strong> FatPipe Networks does not charge for standard Technical Support for the first 90 days from purchase date. Feature enhancements and version upgrades are available with a support agreement package.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- LOCAL SCRIPTS -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Search functionality
+            $('#searchInput').on('keyup', function() {
+                const searchTerm = $(this).val().toLowerCase();
+                const content = $('#mainContent');
+                const chapters = content.find('.chapter');
+                let matchCount = 0;
+                
+                if (searchTerm.length < 2) {
+                    chapters.show();
+                    $('.highlight-search').contents().unwrap();
+                    $('#searchCount').text('');
+                    return;
+                }
+                
+                chapters.each(function() {
+                    const chapter = $(this);
+                    const text = chapter.text().toLowerCase();
+                    
+                    if (text.indexOf(searchTerm) > -1) {
+                        chapter.show();
+                        matchCount++;
+                        // Highlight matches
+                        const html = chapter.html();
+                        const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                        const newHtml = html.replace(regex, '<span class="highlight-search" style="background: #fef3c7; padding: 0 2px; border-radius: 3px;">$1</span>');
+                        chapter.html(newHtml);
+                    } else {
+                        chapter.hide();
+                    }
+                });
+                
+                $('#searchCount').text(matchCount > 0 ? `${matchCount} section(s) found` : 'No results found');
+            });
+            
+            // Smooth scroll for anchor links
+            $('a[href^="#"]').on('click', function(e) {
+                e.preventDefault();
+                const target = $(this.hash);
+                if (target.length) {
+                    $('html, body').animate({
+                        scrollTop: target.offset().top - 80
+                    }, 500);
+                }
+            });
+            
+            // Update active TOC based on scroll
+            $(window).on('scroll', function() {
+                const scrollPos = $(window).scrollTop() + 100;
+                $('.chapter').each(function() {
+                    const id = $(this).attr('id');
+                    const offset = $(this).offset().top;
+                    if (scrollPos >= offset) {
+                        $('.toc-list a').removeClass('active');
+                        $(`.toc-list a[href="#${id}"]`).addClass('active');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - NOC / blog</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="../images/favicon.svg">
+
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+        }
+        body {
+            background: #f8fafc;
+            min-height: 100vh;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        .login-card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            max-width: 450px;
+            width: 100%;
+        }
+        .login-logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .login-logo i {
+            font-size: 4rem;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .login-logo h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-top: 0.5rem;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .form-control {
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e2e8f0;
+        }
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        .btn-login {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border: none;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            font-weight: 600;
+            font-size: 1rem;
+            width: 100%;
+            color: white;
+            transition: transform 0.2s;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #4338ca, #6d28d9);
+        }
+        .input-group-text {
+            background: transparent;
+            border-right: none;
+            border-radius: 0.75rem 0 0 0.75rem;
+        }
+        .input-group .form-control {
+            border-left: none;
+            border-radius: 0 0.75rem 0.75rem 0;
+        }
+        .toast-custom {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1f1f1f;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 48px;
+            z-index: 1090;
+            opacity: 0;
+            transition: opacity 0.25s;
+            pointer-events: none;
+        }
+        .auth-links {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .auth-links a {
+            color: #64748b;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .auth-links a:hover {
+            color: var(--primary);
+        }
+        .home-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #f1f5f9;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            margin-bottom: 1rem;
+        }
+        .home-link:hover {
+            background: #e2e8f0;
+            transform: translateX(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <!-- Home/Blog Link at top -->
+            <div class="mb-3">
+                <a href="./index.html" class="home-link">
+                    <i class="bi bi-house-door"></i> Read Articles
+                </a>
+            </div>
+
+            <div class="login-logo">
+                <i class="bi bi-journal-bookmark-fill"></i>
+                <h2>/blog</h2>
+                <p class="text-muted mt-2">Sign in to manage your posts</p>
+            </div>
+
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Author Name</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                        <input type="text" class="form-control" id="username" placeholder="Enter your author name" required autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                        <input type="password" class="form-control" id="password" placeholder="Enter your password" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-login">
+                    <i class="bi bi-box-arrow-in-right"></i> Sign In
+                </button>
+
+                <!-- Authentication Links -->
+                <div class="auth-links">
+                    <a href="reset-password.html">
+                        <i class="bi bi-key"></i> Forgot Password?
+                    </a>
+                    <a href="register.html">
+                        <i class="bi bi-person-plus"></i> Register as Author
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="liveToast" class="toast-custom"><i class="bi bi-check-lg me-2"></i><span id="toastMsg"></span></div>
+
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="config.js"></script>
+    <script>
+        function showToastMessage(msg, isError = false) {
+            const toastEl = document.getElementById('liveToast');
+            const span = document.getElementById('toastMsg');
+            span.innerText = msg;
+            toastEl.style.background = isError ? '#dc2626' : '#1f1f1f';
+            toastEl.style.opacity = '1';
+            setTimeout(() => { toastEl.style.opacity = '0'; }, 3000);
+        }
+
+        async function verifyLogin(username, password) {
+            try {
+                // Fetch profiles from sheet (columns A to F)
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/Profiles!A:F?key=${CONFIG.API_KEY}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                const rows = data.values || [];
+
+                if (rows.length < 2) {
+                    return { success: false, error: 'No user profiles found' };
+                }
+
+                // Look for matching author
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    const authorName = row[0]?.trim();
+                    const storedPassword = row[4]?.trim();      // Column E: Password
+                    const confirmStatus = row[5]?.trim();       // Column F: Confirm (must be "Yes")
+                    
+                    if (authorName && authorName.toLowerCase() === username.toLowerCase()) {
+                        // Check if account is confirmed
+                        if (confirmStatus !== "Yes" && confirmStatus !== "yes" && confirmStatus !== "YES") {
+                            return { 
+                                success: false, 
+                                error: 'Account not confirmed. Please contact administrator.' 
+                            };
+                        }
+                        
+                        // Check password
+                        const validPassword = storedPassword && storedPassword === password;
+                        
+                        if (validPassword) {
+                            return {
+                                success: true,
+                                authorName: authorName,
+                                designation: row[1] || '',
+                                about: row[2] || '',
+                                imageUrl: row[3] || null
+                            };
+                        } else {
+                            return { success: false, error: 'Invalid password' };
+                        }
+                    }
+                }
+                return { success: false, error: 'Author not found' };
+            } catch (error) {
+                console.error('Login error:', error);
+                return { success: false, error: 'Failed to verify credentials. Please try again.' };
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!username || !password) {
+                showToastMessage('Please enter both username and password', true);
+                return;
+            }
+
+            // Show loading state
+            const submitBtn = document.querySelector('.btn-login');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Verifying...';
+            submitBtn.disabled = true;
+
+            try {
+                const result = await verifyLogin(username, password);
+                
+                if (result.success) {
+                    // Store session data in sessionStorage (clears when browser closes)
+                    sessionStorage.setItem('blogLoggedIn', 'true');
+                    sessionStorage.setItem('blogAuthorName', result.authorName);
+                    sessionStorage.setItem('blogAuthorDesignation', result.designation || '');
+                    sessionStorage.setItem('blogAuthorAbout', result.about || '');
+                    sessionStorage.setItem('blogAuthorImage', result.imageUrl || '');
+                    
+                    showToastMessage(`Welcome back, ${result.authorName}! Redirecting...`);
+                    
+                    // Redirect to post editor
+                    setTimeout(() => {
+                        window.location.href = 'post-editor.html';
+                    }, 1000);
+                } else {
+                    showToastMessage(result.error || 'Login failed', true);
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            } catch (error) {
+                showToastMessage('Login error: ' + error.message, true);
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Optional: Enter key submit
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+</body>
+</html>

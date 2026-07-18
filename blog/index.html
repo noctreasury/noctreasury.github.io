@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>NOC / blog</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="../images/favicon.svg">
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/swiper-bundle.min.css">
+    <!-- Custom Blog CSS -->
+    <link rel="stylesheet" href="css/blog.css">
+</head>
+<body>
+
+<!-- Full page loader - shows until content is ready -->
+<div id="pageLoader" class="page-loader">
+    <div class="loader-content">
+        <div class="spinner-custom"></div>
+        <div class="loader-text"></div>
+    </div>
+</div>
+
+<header id="main-header"></header>
+
+<main class="container py-4 py-lg-5">
+    <!-- Search Results Info Bar -->
+    <div id="searchResultsInfo" style="display: none;"></div>
+    
+    <div id="heroPostContainer" class="mb-5"></div>
+    
+    <div id="relatedSection" style="display: none;" class="mb-5">
+        <h3 class="fw-semibold mb-3"><i class="bi bi-tag"></i> More in <span id="relatedCategoryName"></span></h3>
+        <div class="row g-4" id="relatedGrid"></div>
+    </div>
+    
+    <div id="sliderSection" class="mb-5" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="fw-semibold"><i class="bi bi-clock-history"></i> Recent articles</h3>
+            <div>
+                <button class="btn btn-sm btn-outline-secondary me-2" id="prevSlide"><i class="bi bi-chevron-left"></i></button>
+                <button class="btn btn-sm btn-outline-secondary" id="nextSlide"><i class="bi bi-chevron-right"></i></button>
+            </div>
+        </div>
+        <div class="swiper mySwiper">
+            <div class="swiper-wrapper" id="swiperWrapper"></div>
+        </div>
+    </div>
+    
+    <div id="remainingPostsSection">
+        <h3 class="fw-semibold mb-3"><i class="bi bi-grid-3x3-gap"></i> All articles</h3>
+        <div class="row g-4" id="allPostsGrid"></div>
+        <div id="loadMoreTrigger" class="load-more-trigger">
+            <button class="btn btn-outline-primary rounded-pill px-4" id="loadMoreBtn"><i class="bi bi-arrow-down"></i> Load more</button>
+        </div>
+        <div id="noMoreMsg" class="text-center text-muted small d-none"><i class="bi bi-check2-circle"></i> You've reached the end</div>
+    </div>
+</main>
+
+<!-- Mobile Search Modal -->
+<div id="mobileSearchModal" class="mobile-search-modal">
+    <div class="mobile-search-card">
+        <div class="mobile-search-header">
+            <i class="bi bi-search" style="color: var(--primary);"></i>
+            <input type="text" id="mobileSearchInput" class="mobile-search-input" placeholder="Search by title, category, tags, author...">
+            <button class="mobile-search-close" id="closeMobileSearch">&times;</button>
+        </div>
+    </div>
+</div>
+
+<footer class="py-4 mt-5">
+    <div class="container text-center text-muted small">
+        <i class="bi bi-c-circle"></i> NOC / blog
+    </div>
+</footer>
+
+<script src="js/bootstrap.bundle.min.js"></script>
+<script src="js/swiper-bundle.min.js"></script>
+<script src="config.js"></script>
+<script src="js/home.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Confirm Power Status | Bulk Update</title>
+    
+    <!-- LOCAL CSS - Using existing resources -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="../css/flatpickr.min.css">
+    <link rel="stylesheet" href="../css/sweetalert2.min.css">
+    
+    <style>
+        * { box-sizing: border-box; }
+        body {
+             background: #fff0;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 20px 16px;
+        }
+        .app-card {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+   #global-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+              background: #fff0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            /*backdrop-filter: blur(3px);*/
+        }
+  .page-header {
+    padding: 15px 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+ 
+}
+.page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-header-left i {
+    font-size: 1.8rem !important;
+    background: rgb(56 143 251 / 15%) !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    color: #184f83 !important;
+}
+
+
+.page-header-left h1 {
+    margin: 0 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    color: #184f83!important;
+}
+ .page-header-left p {
+            margin: 2px 0 0;
+            opacity: 0.7;
+            font-size: 0.75rem;
+ }
+        .filter-section {
+            padding: 25px 30px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .filter-label {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .filter-label i {
+            color: #0f5b9c;
+        }
+        .form-control, .form-select {
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            padding: 10px 15px;
+        }
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+            border: none;
+            padding: 10px 25px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(15, 91, 156, 0.3);
+        }
+        .btn-success-custom {
+            background: #10b981;
+            border: none;
+            padding: 10px 25px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-success-custom:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+        .btn-warning-custom {
+            background: #f59e0b;
+            border: none;
+            padding: 10px 25px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-warning-custom:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+        }
+        .btn-secondary-custom {
+            background: #64748b;
+            border: none;
+            padding: 10px 25px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-secondary-custom:hover {
+            background: #475569;
+        }
+        .table-container {
+            padding: 20px 30px;
+        }
+        .badge-up {
+            background-color: #10b981;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 40px;
+            font-weight: 500;
+        }
+        .badge-down {
+            background-color: #ef4444;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 40px;
+        }
+        .badge-confirmed {
+            background-color: #0f5b9c;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 40px;
+            font-weight: 500;
+        }
+        .select-all-row {
+            background: #f8fafc;
+            padding: 12px 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+            border: 1px solid #e9ecef;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .dataTables_wrapper .dataTables_filter input {
+            border-radius: 30px;
+            padding: 6px 12px;
+            border: 1px solid #cbd5e1;
+        }
+        .dataTables_wrapper .dataTables_length select {
+            border-radius: 30px;
+            padding: 6px 12px;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(3px);
+        }
+        .loading-content {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 24px;
+            text-align: center;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.2);
+        }
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #0f5b9c;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .stats-info {
+            background: #e8f0fe;
+            border-radius: 12px;
+            padding: 12px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .stats-info span {
+            font-weight: 600;
+            color: #0f5b9c;
+        }
+        @media (max-width: 768px) {
+            body { padding: 15px; }
+            .filter-section { padding: 20px; }
+            .table-container { padding: 15px; }
+            .select-all-row { flex-direction: column; }
+            .action-buttons { width: 100%; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                     <i class="bi bi-check-circle"></i>
+                    <div>
+                        <h1>Confirm Power Status</h1>
+                        <p>Confirm Power Status </p>
+                    </div>
+                </div>
+            </div>
+    <div class="app-card">
+
+        
+        <div class="filter-section">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="filter-label"><i class="bi bi-calendar-week"></i> From Date</label>
+                    <input type="text" id="fromDate" class="form-control flatpickr-from" placeholder="DD/MM/YYYY">
+                </div>
+                <div class="col-md-5">
+                    <label class="filter-label"><i class="bi bi-calendar-week"></i> To Date</label>
+                    <input type="text" id="toDate" class="form-control flatpickr-to" placeholder="DD/MM/YYYY">
+                </div>
+                <div class="col-md-2">
+                    <button id="viewBtn" class="btn-primary-custom w-100">
+                        <i class="bi bi-search"></i> View
+                    </button>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="stats-info" id="statsInfo" style="display: none;">
+                        <span><i class="bi bi-database"></i> Total Records: <span id="totalRecords">0</span></span>
+                        <span><i class="bi bi-check-circle"></i> Confirmed: <span id="confirmedCount">0</span></span>
+                        <span><i class="bi bi-clock-history"></i> Pending: <span id="pendingCount">0</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="table-container">
+
+            
+            <div id="logsContainer">
+                <div class="table-responsive">
+                    <table id="powerLogsTable" class="table table-striped table-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;"><input type="checkbox" id="headerCheckbox" style="display: none;"></th>
+                                <th>ID</th>
+                                <th>Branch</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Confirm. Status</th>
+                                <th>Timestamp (ISO)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="8" class="text-center py-5">Select date range and click "View Records"</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+            <div id="selectAllContainer" style="display: none;">
+                <div class="select-all-row">
+                    <div class="d-flex align-items-center gap-3">
+                        
+                      
+                        <span id="selectedCount" class="badge bg-primary">0 selected</span>
+                    </div>
+                    <div class="action-buttons">
+                        <button id="confirmSelectedBtn" class="btn-success-custom">
+                            <i class="bi bi-check-circle"></i> Confirm 
+                        </button>
+                        <button id="reverseSelectedBtn" class="btn-warning-custom">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reverse 
+                        </button>
+                        <button id="refreshTableBtn" class="btn-secondary-custom">
+                            <i class="bi bi-arrow-repeat"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+    </div>
+    
+    <!-- LOCAL SCRIPTS -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/jquery.dataTables.min.js"></script>
+    <script src="../js/dataTables.bootstrap5.min.js"></script>
+    <script src="../js/flatpickr.min.js"></script>
+    <script src="../js/sweetalert2.min.js"></script>
+
+    <script>
+        // ======================== CONFIGURATION ========================
+        const DATA_SHEET_ID = "1dHllRe0lHgpX4LAKIP-3abKBcSvBqlIOR0TaheG4aRc";
+        const DATA_SHEET_NAME = "Data";
+        const API_KEY = "AIzaSyBAuS3Brpsw5JOJnjNJii1UlFa7ClXf8d4";
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyurANd-E9Pa1kkqhAz5PPqOdjZb4WerExNkw85OXVoLN2IqftDucskRTUPfnvZtFo1/exec";
+
+        let dataTable = null;
+        let currentRecords = [];
+        let flatpickrFrom, flatpickrTo;
+
+        // ======================== PARSE DATE (DD/MM/YYYY to Date object) ========================
+        function parseDMY(dateStr) {
+            if (!dateStr) return null;
+            const parts = dateStr.split('/');
+            if (parts.length !== 3) return null;
+            // Create date at noon UTC to avoid timezone issues
+            return new Date(Date.UTC(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]), 12, 0, 0));
+        }
+        
+        function formatDateDMY(dateObj) {
+            if (!dateObj) return "";
+            let d = dateObj.getUTCDate().toString().padStart(2,'0');
+            let m = (dateObj.getUTCMonth()+1).toString().padStart(2,'0');
+            let y = dateObj.getUTCFullYear();
+            return `${d}/${m}/${y}`;
+        }
+
+        // ======================== SET DEFAULT DATES (Current Month) ========================
+        function setDefaultDates() {
+            const now = new Date();
+            const firstDay = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1, 12, 0, 0));
+            const lastDay = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 12, 0, 0));
+            
+            flatpickrFrom = flatpickr("#fromDate", { 
+                dateFormat: "d/m/Y", 
+                defaultDate: firstDay
+            });
+            flatpickrTo = flatpickr("#toDate", { 
+                dateFormat: "d/m/Y", 
+                defaultDate: lastDay
+            });
+        }
+
+        // ======================== SHOW/HIDE LOADING ========================
+        function showLoading(message = 'Loading records...') {
+            if ($('#global-loading-overlay').length) return;
+            const overlay = $(`
+                <div id="global-loading-overlay" class="loading-overlay">
+                    <div class="loading-content">
+                        <div class="loading-spinner"></div>
+                        <p style="margin:0;font-weight:500;">${message}</p>
+                    </div>
+                </div>
+            `);
+            $('body').append(overlay);
+        }
+        
+        function hideLoading() {
+            $('#global-loading-overlay').remove();
+        }
+
+        // ======================== LOAD DATA (All Branches, Date Range) ========================
+        async function loadData() {
+            const fromDateStr = $('#fromDate').val();
+            const toDateStr = $('#toDate').val();
+            
+            if (!fromDateStr || !toDateStr) {
+                Swal.fire({ icon: 'warning', title: 'Missing Dates', text: 'Please select both From Date and To Date', confirmButtonColor: '#0f5b9c' });
+                return;
+            }
+            
+            showLoading('Fetching records...');
+            
+            const range = `${DATA_SHEET_NAME}!A:G`;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${DATA_SHEET_ID}/values/${range}?key=${API_KEY}`;
+            
+            try {
+                const resp = await fetch(url);
+                const data = await resp.json();
+                let rows = [];
+                
+                if (data.values && data.values.length > 1) {
+                    const sheetRows = data.values;
+                    const startIdx = (sheetRows[0][0] && sheetRows[0][0].toString().toLowerCase().includes("id")) ? 1 : 0;
+                    
+                    const fromDateObj = parseDMY(fromDateStr);
+                    const toDateObj = parseDMY(toDateStr);
+                    
+                    console.log("Date range:", fromDateObj, "to", toDateObj);
+                    
+                    for (let i = startIdx; i < sheetRows.length; i++) {
+                        const row = sheetRows[i];
+                        if (row.length >= 5 && row[0]) {
+                            const recordDate = row[2] || "";
+                            const recordDateObj = parseDMY(recordDate);
+                            
+                            let includeRecord = false;
+                            if (recordDateObj && fromDateObj && toDateObj) {
+                                includeRecord = recordDateObj >= fromDateObj && recordDateObj <= toDateObj;
+                            }
+                            
+                            if (includeRecord) {
+                                rows.push({
+                                    id: row[0],
+                                    branch: row[1] || "",
+                                    date: row[2] || "",
+                                    time: row[3] || "",
+                                    status: row[4] || "",
+                                    timestampISO: row[5] || "",
+                                    confirm: row[6] || ""
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                rows.sort((a, b) => (b.timestampISO || "").localeCompare(a.timestampISO || ""));
+                currentRecords = rows;
+                
+                // Update stats
+                const totalRecords = rows.length;
+                const confirmedCount = rows.filter(r => r.confirm === "Yes").length;
+                const pendingCount = totalRecords - confirmedCount;
+                
+                $('#totalRecords').text(totalRecords);
+                $('#confirmedCount').text(confirmedCount);
+                $('#pendingCount').text(pendingCount);
+                $('#statsInfo').show();
+                
+                renderDataTable(rows);
+                hideLoading();
+                
+                if (rows.length === 0) {
+                    Swal.fire({ icon: 'info', title: 'No Records', text: 'No records found in the selected date range', confirmButtonColor: '#0f5b9c' });
+                } else {
+                    Swal.fire({ icon: 'success', title: 'Records Loaded', text: `Found ${rows.length} record(s) in the date range`, timer: 2000, showConfirmButton: false });
+                }
+            } catch (err) {
+                console.error("Error loading data:", err);
+                hideLoading();
+                Swal.fire({ icon: 'error', title: 'Load Failed', text: 'Could not fetch data from sheet', confirmButtonColor: '#0f5b9c' });
+            }
+        }
+
+        // ======================== RENDER DATATABLE ========================
+        function renderDataTable(records) {
+            const tableBody = $("#powerLogsTable tbody");
+            
+            if (dataTable) {
+                dataTable.destroy();
+                tableBody.empty();
+            }
+            
+            if (records.length === 0) {
+                tableBody.html('<tr><td colspan="8" class="text-center py-5">No records found in the selected date range</td></tr>');
+                $('#selectAllContainer').hide();
+                $('#statsInfo').hide();
+                return;
+            }
+            
+            $('#selectAllContainer').show();
+            
+            dataTable = $("#powerLogsTable").DataTable({
+                data: records,
+                columns: [
+                    { data: null, title: '<input type="checkbox" id="headerCheckbox">', orderable: false, width: "40px",
+                        render: function(row) {
+                            return `<input type="checkbox" class="row-checkbox" data-id="${row.id}">`;
+                        }
+                    },
+                    { data: "id", title: "ID" },
+                    { data: "branch", title: "Treasury / Branch" },
+                    { data: "date", title: "Date" },
+                    { data: "time", title: "Time" },
+                    { data: "status", title: "Status", render: function(data) {
+                        return data === "Up" ? '<span class="badge-up">🟢 Up</span>' : '<span class="badge-down">🔴 Down</span>';
+                    } },
+                    { data: "confirm", title: "Confirm", render: function(data) {
+                        return data === "Yes" ? '<span class="badge-confirmed">✓ Confirmed</span>' : '<span class="text-muted">—</span>';
+                    } },
+                    { data: "timestampISO", title: "Timestamp (ISO)", visible: false }
+                ],
+                order: [[7, "desc"]],
+                pageLength: 25,
+                language: { search: "Filter:" },
+                drawCallback: function() {
+                    updateHeaderCheckboxState();
+                    updateSelectedCount();
+                }
+            });
+            
+            // Header checkbox event
+            $(document).off('change', '#headerCheckbox').on('change', '#headerCheckbox', function() {
+                const isChecked = $(this).is(':checked');
+                $('.row-checkbox').prop('checked', isChecked);
+                updateSelectedCount();
+            });
+            
+            // Row checkbox events
+            $(document).off('change', '.row-checkbox').on('change', '.row-checkbox', function() {
+                updateHeaderCheckboxState();
+                updateSelectedCount();
+            });
+        }
+        
+        function updateHeaderCheckboxState() {
+            const total = $('.row-checkbox').length;
+            const checked = $('.row-checkbox:checked').length;
+            const headerCheckbox = $('#headerCheckbox');
+            
+            if (total === 0) {
+                headerCheckbox.prop('checked', false).prop('indeterminate', false);
+            } else if (checked === total) {
+                headerCheckbox.prop('checked', true).prop('indeterminate', false);
+            } else if (checked > 0) {
+                headerCheckbox.prop('checked', false).prop('indeterminate', true);
+            } else {
+                headerCheckbox.prop('checked', false).prop('indeterminate', false);
+            }
+        }
+        
+        function updateSelectedCount() {
+            const count = $('.row-checkbox:checked').length;
+            $('#selectedCount').text(`${count} selected`);
+        }
+        
+        function getSelectedRowIds() {
+            const ids = [];
+            $('.row-checkbox:checked').each(function() {
+                ids.push($(this).data('id'));
+            });
+            return ids;
+        }
+
+        // ======================== UPDATE G COLUMN ========================
+        async function updateGColumn(rowIds, value) {
+            if (rowIds.length === 0) {
+                Swal.fire({ icon: 'warning', title: 'No Selection', text: 'Please select at least one record', confirmButtonColor: '#0f5b9c' });
+                return;
+            }
+            
+            const actionText = value === "Yes" ? "confirm" : "reverse";
+            const confirmText = value === "Yes" ? "Confirm" : "Reverse";
+            const successText = value === "Yes" ? "confirmed" : "reversed";
+            
+            const result = await Swal.fire({
+                title: `${confirmText} Selected Records?`,
+                text: `Are you sure you want to ${actionText} ${rowIds.length} record(s)?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: value === "Yes" ? '#10b981' : '#f59e0b',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: `Yes, ${confirmText}!`
+            });
+            
+            if (!result.isConfirmed) return;
+            
+            showLoading(`${confirmText} records...`);
+            
+            let successCount = 0;
+            let failCount = 0;
+            
+            for (const rowId of rowIds) {
+                try {
+                    const payload = { action: "UPDATE_CONFIRM", rowId: rowId, confirmValue: value };
+                    await fetch(APPS_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(payload) });
+                    successCount++;
+                } catch (err) {
+                    console.error(`Failed to update row ${rowId}:`, err);
+                    failCount++;
+                }
+            }
+            
+            hideLoading();
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Update Complete',
+                html: `${successCount} record(s) ${successText}<br>${failCount} failed`,
+                confirmButtonColor: '#0f5b9c'
+            });
+            
+            // Refresh data
+            await loadData();
+        }
+
+        // ======================== EVENT HANDLERS ========================
+        $('#viewBtn').on('click', loadData);
+        
+        $('#confirmSelectedBtn').on('click', async () => {
+            const selectedIds = getSelectedRowIds();
+            await updateGColumn(selectedIds, "Yes");
+        });
+        
+        $('#reverseSelectedBtn').on('click', async () => {
+            const selectedIds = getSelectedRowIds();
+            await updateGColumn(selectedIds, "");
+        });
+        
+        $('#refreshTableBtn').on('click', loadData);
+        
+        // Month preset buttons (optional - add quick month selection)
+        function setCurrentMonth() {
+            const now = new Date();
+            const firstDay = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1, 12, 0, 0));
+            const lastDay = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 12, 0, 0));
+            flatpickrFrom.setDate(firstDay);
+            flatpickrTo.setDate(lastDay);
+            loadData();
+        }
+        
+        function setPreviousMonth() {
+            const now = new Date();
+            const firstDay = new Date(Date.UTC(now.getFullYear(), now.getMonth() - 1, 1, 12, 0, 0));
+            const lastDay = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 0, 12, 0, 0));
+            flatpickrFrom.setDate(firstDay);
+            flatpickrTo.setDate(lastDay);
+            loadData();
+        }
+        
+        // Add month selector buttons
+        function addMonthSelector() {
+            const filterSection = $('.filter-section .row:first');
+            filterSection.append(`
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="d-flex gap-2">
+                            <button id="currentMonthBtn" class="btn btn-outline-secondary btn-sm"><i class="bi bi-calendar-month"></i> Current Month</button>
+                            <button id="previousMonthBtn" class="btn btn-outline-secondary btn-sm"><i class="bi bi-calendar-minus"></i> Previous Month</button>
+                        </div>
+                    </div>
+                </div>
+            `);
+            $('#currentMonthBtn').on('click', setCurrentMonth);
+            $('#previousMonthBtn').on('click', setPreviousMonth);
+        }
+        
+        // ======================== INIT ========================
+        $(document).ready(function() {
+            setDefaultDates();
+            addMonthSelector();
+            
+            // Auto-load current month data on page load
+            setTimeout(() => {
+                loadData();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Ping Tool - Gateway Selection</title>
+    
+    <!-- LOCAL CSS -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
+    
+    <style>
+        :root {
+            --primary: #0f5b9c;
+            --primary-dark: #1a4b7a;
+            --primary-light: #e8f0fe;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --border: #e9ecef;
+        }
+        
+        body {
+             background: #fff0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding: 20px;
+            color: var(--dark);
+        }
+        
+        .container-ping {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+       .page-header {
+    padding: 15px 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+ 
+}
+.page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-header-left i {
+    font-size: 1.8rem !important;
+    background: rgb(56 143 251 / 15%) !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    color: #184f83 !important;
+}
+
+
+.page-header-left h1 {
+    margin: 0 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    color: #184f83!important;
+}
+ .page-header-left p {
+            margin: 2px 0 0;
+            opacity: 0.7;
+            font-size: 0.75rem;
+ }
+        .card-ping {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,20,40,0.12);
+            border: 1px solid var(--border);
+        }
+        
+        /* Tab Navigation */
+        .nav-tabs-custom {
+            display: flex;
+            gap: 5px;
+            background: var(--light);
+            padding: 8px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border: 1px solid var(--border);
+        }
+        
+        .nav-tab-custom {
+            flex: 1;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+            border: none;
+            background: transparent;
+        }
+        
+        .nav-tab-custom.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(15, 91, 156, 0.2);
+        }
+        
+        .tab-pane {
+            display: none;
+        }
+        
+        .tab-pane.active {
+            display: block;
+        }
+        
+        .input-group-custom {
+            margin-bottom: 20px;
+        }
+        
+        .input-group-custom label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-control, .form-select {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 15px;
+            font-family: monospace;
+        }
+        
+        .select2-container--bootstrap-5 .select2-selection {
+            border-radius: 12px !important;
+            border: 1px solid var(--border) !important;
+            padding: 8px 12px;
+            min-height: 48px;
+        }
+        
+        .btn-ping, .btn-traceroute {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border: none;
+            color: white;
+            padding: 12px 32px;
+            border-radius: 40px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .btn-ping:hover:not(:disabled), .btn-traceroute:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(15, 91, 156, 0.3);
+        }
+        
+        .btn-ping:disabled, .btn-traceroute:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .results-area {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #e2e8f0;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 25px;
+        }
+        
+        .result-line {
+            padding: 5px 0;
+            border-bottom: 1px solid #334155;
+            font-family: monospace;
+        }
+        
+        .result-success {
+            color: #10b981;
+        }
+        
+        .result-error {
+            color: #ef4444;
+        }
+        
+        .result-info {
+            color: #60a5fa;
+        }
+        
+        .result-warning {
+            color: #f59e0b;
+        }
+        
+        .ping-stats {
+            background: var(--light);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            flex: 1;
+            min-width: 100px;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+        
+        .preset-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .preset-btn {
+            background: var(--primary-light);
+            border: none;
+            padding: 6px 15px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--primary);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .preset-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .gateway-status {
+            background: var(--primary-light);
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-top: 10px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .gateway-status i {
+            color: var(--primary);
+        }
+        
+        .manual-gateway-input {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border);
+        }
+        
+        .manual-gateway-input .form-control {
+            font-size: 0.9rem;
+        }
+        
+        .hop-item {
+            padding: 4px 0;
+            font-family: monospace;
+            border-bottom: 1px dotted #334155;
+        }
+        
+        .hop-number {
+            display: inline-block;
+            width: 40px;
+            color: #94a3b8;
+        }
+        
+        .hop-ip {
+            display: inline-block;
+            width: 160px;
+            color: #60a5fa;
+        }
+        
+        .hop-time {
+            color: #e2e8f0;
+        }
+        
+        @media (max-width: 768px) {
+            body { padding: 16px; }
+            .card-ping { padding: 20px; }
+            .ping-stats { flex-direction: column; }
+            .nav-tab-custom { padding: 8px 12px; font-size: 0.85rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                       <i class="bi bi-hdd-network-fill"></i>
+                    <div>
+                        <h1>Network Diagnostic Tool</h1>
+                        <p>Ping & Traceroute with Gateway Selection | ICMP simulation via HTTP</p>
+                    </div>
+                </div>
+            </div>
+    <div class="container-ping">
+        <!-- Header -->
+      
+        
+        <!-- Main Card -->
+        <div class="card-ping">
+            <!-- Gateway Selection -->
+            <div class="input-group-custom">
+                <label><i class="bi bi-router"></i> Select Gateway (Optional)</label>
+                <select id="gatewaySelect" class="form-select" style="width: 100%;">
+                    <option value="">-- Default Gateway (No selection) --</option>
+                    <option value="loading" disabled>Loading gateways...</option>
+                </select>
+                <small class="text-muted mt-1">Choose a gateway to test connectivity through it. If none selected, uses default network route.</small>
+                
+                <!-- Manual Gateway Input -->
+                <div class="manual-gateway-input">
+                    <div class="d-flex gap-2">
+                        <input type="text" id="manualGateway" class="form-control" placeholder="Or enter custom gateway IP (e.g., 192.168.1.1)">
+                        <button type="button" id="addManualGatewayBtn" class="btn btn-outline-primary" style="border-radius: 40px; white-space: nowrap;">
+                            <i class="bi bi-plus-circle"></i> Add
+                        </button>
+                    </div>
+                    <small class="text-muted">Enter custom gateway IP if not listed above</small>
+                </div>
+            </div>
+            
+            <!-- Tab Navigation -->
+            <div class="nav-tabs-custom">
+                <button class="nav-tab-custom active" data-tab="ping">
+                    <i class="bi bi-play-circle"></i> Ping Test
+                </button>
+                <button class="nav-tab-custom" data-tab="traceroute">
+                    <i class="bi bi-diagram-3"></i> Traceroute
+                </button>
+            </div>
+            
+            <!-- PING TAB -->
+            <div id="pingTab" class="tab-pane active">
+                <!-- Preset Quick Select -->
+                <div class="preset-buttons">
+                    <button class="preset-btn" data-target="google.com">Google (google.com)</button>
+                    <button class="preset-btn" data-target="8.8.8.8">Google DNS (8.8.8.8)</button>
+                    <button class="preset-btn" data-target="cloudflare.com">Cloudflare</button>
+                    <button class="preset-btn" data-target="1.1.1.1">Cloudflare DNS (1.1.1.1)</button>
+                    <button class="preset-btn" data-target="github.com">GitHub</button>
+                </div>
+                
+                <!-- Input Section -->
+                <div class="input-group-custom">
+                    <label><i class="bi bi-globe"></i> Target IP Address or Hostname</label>
+                    <input type="text" id="pingTarget" class="form-control" placeholder="e.g., google.com, 8.8.8.8, 192.168.1.1">
+                </div>
+                
+                <!-- Options -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label><i class="bi bi-arrow-repeat"></i> Number of Pings</label>
+                        <select id="pingCount" class="form-select">
+                            <option value="1">1 ping</option>
+                            <option value="3" selected>3 pings</option>
+                            <option value="5">5 pings</option>
+                            <option value="10">10 pings</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label><i class="bi bi-hourglass-split"></i> Timeout (seconds)</label>
+                        <select id="pingTimeout" class="form-select">
+                            <option value="2">2 seconds</option>
+                            <option value="3" selected>3 seconds</option>
+                            <option value="5">5 seconds</option>
+                            <option value="10">10 seconds</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="d-flex gap-3">
+                    <button id="startPingBtn" class="btn-ping flex-grow-1">
+                        <i class="bi bi-play-fill"></i> Start Ping
+                    </button>
+                    <button id="stopPingBtn" class="btn-ping flex-grow-1" style="background: #64748b;" disabled>
+                        <i class="bi bi-stop-fill"></i> Stop
+                    </button>
+                    <button id="clearPingResultsBtn" class="btn-ping flex-grow-1" style="background: #94a3b8;">
+                        <i class="bi bi-trash"></i> Clear
+                    </button>
+                </div>
+                
+                <!-- Gateway Status Display -->
+                <div id="gatewayStatus" class="gateway-status" style="display: none;">
+                    <i class="bi bi-info-circle"></i>
+                    <span id="gatewayStatusText">Testing via selected gateway...</span>
+                </div>
+                
+                <!-- Results Area -->
+                <div class="results-area" id="pingResultsArea">
+                    <div class="result-info">Ready to ping. Enter target and click "Start Ping".</div>
+                </div>
+                
+                <!-- Statistics -->
+                <div class="ping-stats" id="statsArea" style="display: none;">
+                    <div class="stat-item">
+                        <div class="stat-value" id="packetsSent">0</div>
+                        <div class="stat-label">Packets Sent</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="packetsReceived">0</div>
+                        <div class="stat-label">Packets Received</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="packetsLost">0</div>
+                        <div class="stat-label">Packets Lost</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="lossPercent">0%</div>
+                        <div class="stat-label">Loss %</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="avgTime">—</div>
+                        <div class="stat-label">Avg Response (ms)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- TRACEROUTE TAB -->
+            <div id="tracerouteTab" class="tab-pane">
+                <!-- Preset Quick Select -->
+                <div class="preset-buttons">
+                    <button class="preset-btn" data-trace-target="google.com">Google (google.com)</button>
+                    <button class="preset-btn" data-trace-target="8.8.8.8">Google DNS (8.8.8.8)</button>
+                    <button class="preset-btn" data-trace-target="cloudflare.com">Cloudflare</button>
+                    <button class="preset-btn" data-trace-target="1.1.1.1">Cloudflare DNS (1.1.1.1)</button>
+                    <button class="preset-btn" data-trace-target="github.com">GitHub</button>
+                </div>
+                
+                <!-- Input Section -->
+                <div class="input-group-custom">
+                    <label><i class="bi bi-globe"></i> Target IP Address or Hostname</label>
+                    <input type="text" id="traceTarget" class="form-control" placeholder="e.g., google.com, 8.8.8.8, 192.168.1.1">
+                </div>
+                
+                <!-- Options -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label><i class="bi bi-arrow-repeat"></i> Max Hops</label>
+                        <select id="maxHops" class="form-select">
+                            <option value="10">10 hops</option>
+                            <option value="20" selected>20 hops</option>
+                            <option value="30">30 hops</option>
+                            <option value="50">50 hops</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label><i class="bi bi-hourglass-split"></i> Timeout (seconds)</label>
+                        <select id="traceTimeout" class="form-select">
+                            <option value="2">2 seconds</option>
+                            <option value="3" selected>3 seconds</option>
+                            <option value="5">5 seconds</option>
+                            <option value="10">10 seconds</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="d-flex gap-3">
+                    <button id="startTraceBtn" class="btn-traceroute flex-grow-1">
+                        <i class="bi bi-diagram-3"></i> Start Traceroute
+                    </button>
+                    <button id="stopTraceBtn" class="btn-traceroute flex-grow-1" style="background: #64748b;" disabled>
+                        <i class="bi bi-stop-fill"></i> Stop
+                    </button>
+                    <button id="clearTraceResultsBtn" class="btn-traceroute flex-grow-1" style="background: #94a3b8;">
+                        <i class="bi bi-trash"></i> Clear
+                    </button>
+                </div>
+                
+                <!-- Traceroute Results Area -->
+                <div class="results-area" id="traceResultsArea">
+                    <div class="result-info">Ready for traceroute. Enter target and click "Start Traceroute".</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- LOCAL SCRIPTS -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/select2.min.js"></script>
+    
+    <script>
+        // ==================== CONFIGURATION ====================
+        const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+        const SPREADSHEET_ID = '1jd1xZe9x2mrZm5KAwGT12vMNYjbrnynsmelNKeK95jc';
+        const SETTINGS_SHEET = 'settings';
+        const RANGE = 'A2:A';
+        
+        let gateways = [];
+        let isPinging = false;
+        let isTracing = false;
+        let pingAbortController = null;
+        let traceAbortController = null;
+        
+        // ==================== LOAD GATEWAYS FROM SHEET ====================
+        async function loadGateways() {
+            try {
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SETTINGS_SHEET)}!${RANGE}?key=${API_KEY}`;
+                console.log('Fetching gateways from:', url);
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                console.log('Gateways data:', data);
+                
+                if (data.values && data.values.length > 0) {
+                    gateways = data.values.map(row => row[0] ? row[0].toString().trim() : '').filter(g => g);
+                } else {
+                    gateways = [];
+                }
+                
+                populateGatewayDropdown();
+                
+            } catch (error) {
+                console.error('Error loading gateways:', error);
+                $('#gatewaySelect').html('<option value="">-- Error loading gateways --</option>');
+            }
+        }
+        
+        function populateGatewayDropdown() {
+            const $select = $('#gatewaySelect');
+            $select.empty();
+            $select.append('<option value="">-- Default Gateway (No selection) --</option>');
+            
+            if (gateways.length === 0) {
+                $select.append('<option value="" disabled>No gateways found in sheet</option>');
+            } else {
+                gateways.forEach(gateway => {
+                    $select.append(`<option value="${escapeHtml(gateway)}">${escapeHtml(gateway)}</option>`);
+                });
+            }
+            
+            $select.select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: 'Search or select gateway...',
+                allowClear: true
+            });
+        }
+        
+        // ==================== ADD MANUAL GATEWAY ====================
+        function addManualGateway() {
+            const manualGateway = $('#manualGateway').val().trim();
+            if (!manualGateway) {
+                alert('Please enter a valid gateway IP');
+                return;
+            }
+            
+            // Validate IP format
+            const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+            if (!ipPattern.test(manualGateway)) {
+                alert('Please enter a valid IP address');
+                return;
+            }
+            
+            // Check if already exists
+            if (gateways.includes(manualGateway)) {
+                alert('Gateway already exists in the list');
+                return;
+            }
+            
+            gateways.push(manualGateway);
+            gateways.sort();
+            
+            // Refresh dropdown
+            const $select = $('#gatewaySelect');
+            const currentVal = $select.val();
+            populateGatewayDropdown();
+            if (currentVal) $select.val(currentVal);
+            
+            $('#manualGateway').val('');
+            alert(`Gateway ${manualGateway} added successfully`);
+        }
+        
+        // ==================== PING FUNCTIONS ====================
+        async function testViaGateway(gatewayIp, target, timeout) {
+            const startTime = performance.now();
+            
+            try {
+                let gatewayUrl = gatewayIp;
+                if (!gatewayUrl.startsWith('http')) {
+                    gatewayUrl = `https://${gatewayIp}`;
+                }
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeout);
+                
+                await fetch(gatewayUrl, {
+                    method: 'HEAD',
+                    mode: 'no-cors',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                const targetStartTime = performance.now();
+                const targetController = new AbortController();
+                const targetTimeoutId = setTimeout(() => targetController.abort(), timeout);
+                
+                let targetUrl = target;
+                if (!targetUrl.startsWith('http')) {
+                    targetUrl = `https://${target}`;
+                }
+                
+                await fetch(targetUrl, {
+                    method: 'HEAD',
+                    mode: 'no-cors',
+                    signal: targetController.signal
+                });
+                
+                clearTimeout(targetTimeoutId);
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - targetStartTime);
+                
+                return { success: true, responseTime };
+                
+            } catch (error) {
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+                if (error.name === 'AbortError') {
+                    return { success: false, error: 'Timeout', responseTime };
+                }
+                return { success: false, error: error.message, responseTime };
+            }
+        }
+        
+        async function testDirect(target, timeout) {
+            const startTime = performance.now();
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeout);
+                
+                let url = target;
+                if (!url.startsWith('http')) {
+                    url = `https://${target}`;
+                }
+                
+                await fetch(url, {
+                    method: 'HEAD',
+                    mode: 'no-cors',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+                return { success: true, responseTime };
+                
+            } catch (error) {
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+                if (error.name === 'AbortError') {
+                    return { success: false, error: 'Timeout', responseTime };
+                }
+                return { success: false, error: error.message, responseTime };
+            }
+        }
+        
+        // ==================== TRACEROUTE FUNCTIONS ====================
+        async function performTraceroute(target, maxHops, timeout, gatewayIp) {
+            if (isTracing) {
+                addTraceResultLine('⚠️ Traceroute already in progress. Please wait or stop.', 'result-warning');
+                return;
+            }
+            
+            isTracing = true;
+            updateTraceButtonState(true);
+            clearTraceResults();
+            
+            addTraceResultLine(`========================================`, 'result-info');
+            addTraceResultLine(`TRACEROUTE to ${target}`, 'result-info');
+            if (gatewayIp) {
+                addTraceResultLine(`Via Gateway: ${gatewayIp}`, 'result-info');
+                // Test gateway first
+                const gatewayTest = await testDirect(gatewayIp, timeout);
+                if (!gatewayTest.success) {
+                    addTraceResultLine(`❌ Gateway ${gatewayIp} is NOT reachable!`, 'result-error');
+                    addTraceResultLine(`Cannot proceed with traceroute.`, 'result-error');
+                    isTracing = false;
+                    updateTraceButtonState(false);
+                    return;
+                } else {
+                    addTraceResultLine(`✅ Gateway ${gatewayIp} is reachable (${gatewayTest.responseTime}ms)`, 'result-success');
+                }
+            } else {
+                addTraceResultLine(`Using default network route`, 'result-info');
+            }
+            addTraceResultLine(`Max hops: ${maxHops}, Timeout: ${timeout/1000}s`, 'result-info');
+            addTraceResultLine(`========================================`, 'result-info');
+            
+            for (let hop = 1; hop <= maxHops; hop++) {
+                if (!isTracing) break;
+                
+                const startTime = performance.now();
+                let success = false;
+                let responseTime = 0;
+                let hopIp = '*';
+                
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), timeout);
+                    
+                    let url = target;
+                    if (!url.startsWith('http')) {
+                        url = `https://${target}`;
+                    }
+                    
+                    await fetch(url, {
+                        method: 'HEAD',
+                        mode: 'no-cors',
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    const endTime = performance.now();
+                    responseTime = Math.round(endTime - startTime);
+                    success = true;
+                    hopIp = target;
+                    
+                } catch (error) {
+                    responseTime = timeout;
+                }
+                
+                if (success) {
+                    addTraceResultLine(`${hop.toString().padStart(3)}  ${hopIp.padEnd(16)}  ${responseTime}ms`, 'result-success');
+                    addTraceResultLine(`========================================`, 'result-info');
+                    addTraceResultLine(`Trace complete! Destination reached at hop ${hop}`, 'result-success');
+                    break;
+                } else {
+                    addTraceResultLine(`${hop.toString().padStart(3)}  *  *  *  Request timeout`, 'result-error');
+                }
+                
+                await new Promise(r => setTimeout(r, 200));
+            }
+            
+            if (isTracing) {
+                addTraceResultLine(`========================================`, 'result-info');
+                addTraceResultLine(`Traceroute completed (max hops: ${maxHops})`, 'result-info');
+            }
+            
+            isTracing = false;
+            updateTraceButtonState(false);
+        }
+        
+        // ==================== PING TEST EXECUTION ====================
+        async function performPingTest(target, count, timeout, gatewayIp) {
+            if (isPinging) {
+                addPingResultLine('⚠️ Ping already in progress. Please wait or stop.', 'result-warning');
+                return;
+            }
+            
+            isPinging = true;
+            updatePingButtonState(true);
+            clearPingResults();
+            
+            if (gatewayIp) {
+                addPingResultLine(`🌐 Testing via Gateway: ${gatewayIp}`, 'result-info');
+                addPingResultLine(`📍 Target: ${target}`, 'result-info');
+                addPingResultLine(`🔍 Testing gateway connectivity first...`, 'result-info');
+                
+                const gatewayTest = await testDirect(gatewayIp, timeout);
+                if (!gatewayTest.success) {
+                    addPingResultLine(`❌ Gateway ${gatewayIp} is NOT reachable!`, 'result-error');
+                    addPingResultLine(`Cannot proceed with ping test.`, 'result-error');
+                    isPinging = false;
+                    updatePingButtonState(false);
+                    return;
+                } else {
+                    addPingResultLine(`✅ Gateway ${gatewayIp} is reachable (${gatewayTest.responseTime}ms)`, 'result-success');
+                }
+                addPingResultLine('', '');
+            } else {
+                addPingResultLine(`🌐 Using default network route`, 'result-info');
+                addPingResultLine(`📍 Target: ${target}`, 'result-info');
+            }
+            
+            addPingResultLine(`Starting ping test with ${count} request(s)`, 'result-info');
+            addPingResultLine('', '');
+            
+            let successCount = 0;
+            let totalTime = 0;
+            let times = [];
+            
+            for (let i = 1; i <= count; i++) {
+                if (!isPinging) break;
+                
+                let result;
+                if (gatewayIp) {
+                    result = await testViaGateway(gatewayIp, target, timeout);
+                } else {
+                    result = await testDirect(target, timeout);
+                }
+                
+                if (result.success) {
+                    successCount++;
+                    totalTime += result.responseTime;
+                    times.push(result.responseTime);
+                    addPingResultLine(`Reply from ${target}: time=${result.responseTime}ms`, 'result-success');
+                } else {
+                    addPingResultLine(`Request timed out for ${target}`, 'result-error');
+                }
+                
+                if (i < count && isPinging) {
+                    await new Promise(r => setTimeout(r, 500));
+                }
+            }
+            
+            isPinging = false;
+            updatePingButtonState(false);
+            
+            const packetsLost = count - successCount;
+            const lossPercent = ((packetsLost / count) * 100).toFixed(1);
+            const avgResponse = successCount > 0 ? Math.round(totalTime / successCount) : 0;
+            const minResponse = times.length > 0 ? Math.min(...times) : 0;
+            const maxResponse = times.length > 0 ? Math.max(...times) : 0;
+            
+            addPingResultLine('', '');
+            addPingResultLine('--- Statistics ---', 'result-info');
+            addPingResultLine(`Packets: Sent = ${count}, Received = ${successCount}, Lost = ${packetsLost} (${lossPercent}% loss)`, 'result-info');
+            if (successCount > 0) {
+                addPingResultLine(`Round trip times: Min = ${minResponse}ms, Max = ${maxResponse}ms, Avg = ${avgResponse}ms`, 'result-info');
+            } else {
+                addPingResultLine(`No response received from ${target}`, 'result-error');
+            }
+            
+            updateStatsDisplay(count, successCount, packetsLost, lossPercent, avgResponse);
+        }
+        
+        // ==================== UI HELPER FUNCTIONS ====================
+        function addPingResultLine(text, className = '') {
+            const resultsArea = document.getElementById('pingResultsArea');
+            const line = document.createElement('div');
+            line.className = `result-line ${className}`;
+            line.innerHTML = text || '&nbsp;';
+            resultsArea.appendChild(line);
+            line.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        function addTraceResultLine(text, className = '') {
+            const resultsArea = document.getElementById('traceResultsArea');
+            const line = document.createElement('div');
+            line.className = `result-line ${className}`;
+            line.innerHTML = text || '&nbsp;';
+            resultsArea.appendChild(line);
+            line.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        function clearPingResults() {
+            const resultsArea = document.getElementById('pingResultsArea');
+            resultsArea.innerHTML = '';
+            document.getElementById('statsArea').style.display = 'none';
+        }
+        
+        function clearTraceResults() {
+            const resultsArea = document.getElementById('traceResultsArea');
+            resultsArea.innerHTML = '';
+        }
+        
+        function updatePingButtonState(pinging) {
+            const startBtn = document.getElementById('startPingBtn');
+            const stopBtn = document.getElementById('stopPingBtn');
+            
+            if (pinging) {
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            } else {
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+        }
+        
+        function updateTraceButtonState(tracing) {
+            const startBtn = document.getElementById('startTraceBtn');
+            const stopBtn = document.getElementById('stopTraceBtn');
+            
+            if (tracing) {
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            } else {
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+        }
+        
+        function updateStatsDisplay(sent, received, lost, lossPercent, avgTime) {
+            const statsArea = document.getElementById('statsArea');
+            statsArea.style.display = 'flex';
+            
+            document.getElementById('packetsSent').textContent = sent;
+            document.getElementById('packetsReceived').textContent = received;
+            document.getElementById('packetsLost').textContent = lost;
+            document.getElementById('lossPercent').textContent = `${lossPercent}%`;
+            document.getElementById('avgTime').textContent = avgTime > 0 ? `${avgTime} ms` : '—';
+        }
+        
+        // ==================== EVENT HANDLERS ====================
+        document.getElementById('startPingBtn').addEventListener('click', async () => {
+            const target = document.getElementById('pingTarget').value.trim();
+            if (!target) {
+                addPingResultLine('❌ Please enter an IP address or hostname.', 'result-error');
+                return;
+            }
+            const count = parseInt(document.getElementById('pingCount').value);
+            const timeout = parseInt(document.getElementById('pingTimeout').value) * 1000;
+            const gatewayIp = $('#gatewaySelect').val();
+            await performPingTest(target, count, timeout, gatewayIp);
+        });
+        
+        document.getElementById('startTraceBtn').addEventListener('click', async () => {
+            const target = document.getElementById('traceTarget').value.trim();
+            if (!target) {
+                addTraceResultLine('❌ Please enter an IP address or hostname.', 'result-error');
+                return;
+            }
+            const maxHops = parseInt(document.getElementById('maxHops').value);
+            const timeout = parseInt(document.getElementById('traceTimeout').value) * 1000;
+            const gatewayIp = $('#gatewaySelect').val();
+            await performTraceroute(target, maxHops, timeout, gatewayIp);
+        });
+        
+        document.getElementById('stopPingBtn').addEventListener('click', () => {
+            if (pingAbortController) pingAbortController.abort();
+            isPinging = false;
+            updatePingButtonState(false);
+            addPingResultLine('Ping stopped by user.', 'result-info');
+        });
+        
+        document.getElementById('stopTraceBtn').addEventListener('click', () => {
+            if (traceAbortController) traceAbortController.abort();
+            isTracing = false;
+            updateTraceButtonState(false);
+            addTraceResultLine('Traceroute stopped by user.', 'result-info');
+        });
+        
+        document.getElementById('clearPingResultsBtn').addEventListener('click', () => clearPingResults());
+        document.getElementById('clearTraceResultsBtn').addEventListener('click', () => clearTraceResults());
+        document.getElementById('addManualGatewayBtn').addEventListener('click', () => addManualGateway());
+        
+        // Preset buttons for Ping
+        document.querySelectorAll('#pingTab .preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('pingTarget').value = btn.dataset.target;
+            });
+        });
+        
+        // Preset buttons for Traceroute
+        document.querySelectorAll('#tracerouteTab .preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('traceTarget').value = btn.dataset.traceTarget;
+            });
+        });
+        
+        // Tab switching
+        document.querySelectorAll('.nav-tab-custom').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.nav-tab-custom').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+                document.getElementById(`${tab.dataset.tab}Tab`).classList.add('active');
+            });
+        });
+        
+        // Gateway selection change
+        $('#gatewaySelect').on('change', function() {
+            const selectedGateway = $(this).val();
+            if (selectedGateway) {
+                $('#gatewayStatus').show();
+                $('#gatewayStatusText').html(`<strong>Selected Gateway:</strong> ${escapeHtml(selectedGateway)} - Tests will verify gateway connectivity first`);
+            } else {
+                $('#gatewayStatus').hide();
+            }
+        });
+        
+        // Enter key support
+        document.getElementById('pingTarget').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('startPingBtn').click();
+        });
+        document.getElementById('traceTarget').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('startTraceBtn').click();
+        });
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+        
+        $(document).ready(function() {
+            loadGateways();
+        });
+    </script>
+</body>
+</html>

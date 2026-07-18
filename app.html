@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>NOC Mobile</title>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="NOC Mobile">
+    
+    <!-- Cache Control Meta Tags -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <!-- Bootstrap 5.3 + icons -->
+    <link href="./css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./css/bootstrap-icons.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=Noto+Sans+Malayalam:wght@400;500&display=swap" rel="stylesheet">
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="mobile-manifest.json">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <meta name="theme-color" content="#f8fafc">
+    
+    <style>
+        .mobile-notification-icon-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+        .mobile-notification-icon {
+            font-size: 1.3rem;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            background: transparent;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+        }
+        .mobile-notification-icon:active {
+            background: rgba(0,0,0,0.05);
+            transform: scale(0.95);
+        }
+        .mobile-notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -8px;
+            background-color: #dc2626;
+            color: white;
+            border-radius: 50%;
+            min-width: 18px;
+            height: 18px;
+            font-size: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            animation: pulse-red 1.5s infinite;
+        }
+        .mobile-notification-badge.zero { display: none; }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+        .mobile-cache-info {
+            display:none;
+            position: fixed;
+            bottom: 50px;
+            right: 10px;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 9px;
+            z-index: 9999;
+            font-family: monospace;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+        }
+        .sound-toggle-btn {
+            background: transparent;
+            border: none;
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            padding: 6px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+    </style>
+    
+    <script>
+        const MOBILE_APP_VERSION = "20250113_v5";
+        const MOBILE_LAST_CLEAR_DATE_KEY = "mobileLastCacheClearDate";
+        
+        function clearOldMobileCache() {
+            const today = new Date().toDateString();
+            const lastClear = localStorage.getItem(MOBILE_LAST_CLEAR_DATE_KEY);
+            if (lastClear !== today) {
+                console.log("Daily mobile cache cleanup");
+                if ('caches' in window) {
+                    caches.keys().then(function(names) {
+                        for (let name of names) {
+                            if (name.includes('network') || name.includes('css') || name.includes('js')) {
+                                caches.delete(name);
+                            }
+                        }
+                    });
+                }
+                const keysToKeep = ['currentUser', 'mobileUser', 'theme', 'notificationSoundEnabled', MOBILE_LAST_CLEAR_DATE_KEY, 'mobileLastLoginDate'];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (!keysToKeep.includes(key)) localStorage.removeItem(key);
+                }
+                localStorage.setItem(MOBILE_LAST_CLEAR_DATE_KEY, today);
+                const urlParams = new URLSearchParams(window.location.search);
+                if (!urlParams.has('nocache')) {
+                    window.location.href = window.location.pathname + '?nocache=' + Date.now();
+                }
+            }
+        }
+        
+        function checkMobileDailyRefresh() {
+            const lastLoginDate = localStorage.getItem('mobileLastLoginDate');
+            const today = new Date().toDateString();
+            if (lastLoginDate !== today) {
+                sessionStorage.clear();
+                localStorage.setItem('mobileLastLoginDate', today);
+                return true;
+            }
+            return false;
+        }
+        
+        function displayMobileCacheInfo() {
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'mobile-cache-info';
+            infoDiv.innerHTML = `📦 v${MOBILE_APP_VERSION}`;
+            infoDiv.onclick = function() {
+                if (confirm('Clear all cache and reload?')) {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    if ('caches' in window) {
+                        caches.keys().then(names => names.forEach(name => caches.delete(name)));
+                    }
+                    window.location.reload(true);
+                }
+            };
+            document.body.appendChild(infoDiv);
+        }
+        
+        clearOldMobileCache();
+        checkMobileDailyRefresh();
+        
+        const currentPage = window.location.pathname.split('/').pop() || 'app.html';
+        const isMobile = (window.innerWidth <= 768 || /Mobile|iPhone|iPad|Android/i.test(navigator.userAgent));
+        if (isMobile && currentPage !== 'app.html') {
+            window.location.href = "app.html";
+        } else if (!isMobile && currentPage !== 'index.html') {
+            window.location.href = "index.html";
+        }
+    </script>
+</head>
+<body class="mobile-app light-theme">
+
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-card glass-card">
+        <div class="login-header">
+            <div class="login-logo">
+                <img class="logo-img" src="https://profile.mgovcloud.in/file?fs=thumb&amp;ID=2109903&amp;nps=404&amp;allowCORP=true" alt="NOC">
+            </div>
+            <h2>NOC Mobile</h2>
+            <p>Network Operations Center</p>
+        </div>
+        <div class="login-body">
+            <div class="mb-3">
+                <label class="form-label">Username</label>
+                <input type="text" class="form-control" id="mobileUsername" placeholder="Enter username">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input type="text" class="form-control" id="mobilePassword" placeholder="Enter password">
+            </div>
+            <div class="login-error" id="loginErrorMsg" style="display:none;">
+                <i class="bi bi-exclamation-triangle-fill"></i> <span>Invalid credentials</span>
+            </div>
+            <button class="btn btn-primary w-100" id="mobileLoginBtn">
+                <span class="spinner-border spinner-border-sm d-none" id="loginSpinner"></span>
+                <span id="loginBtnText">Sign in</span>
+            </button>
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="password-manager.html" target="_blank">Forgot Password</a>
+            </div>
+            <div class="text-center mt-2" style="font-size: 10px; color: var(--text-muted);">
+                Version: <span id="mobileAppVersion"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-main" id="dashboardMain" style="display: none;">
+    <div class="mobile-top-bar">
+        <div class="brand-area">
+            <img class="mini-logo" src="https://profile.mgovcloud.in/file?fs=thumb&amp;ID=2109903&amp;nps=404&amp;allowCORP=true" alt="logo">
+            <div class="brand-titles">
+                <h1>NOC Mobile</h1>
+                <span>Operations Hub</span>
+            </div>
+        </div>
+        <div class="top-actions">
+            <div class="mobile-notification-icon-wrapper">
+                <button class="mobile-notification-icon" id="mobileNotificationIconBtn">
+                    <i class="bi bi-chat-square-text"></i>
+                </button>
+                <span class="mobile-notification-badge zero" id="mobileNotificationBadge">0</span>
+            </div>
+            <button class="sound-toggle-btn" id="mobileSoundToggleBtn">
+                <i class="bi bi-volume-up-fill" id="mobileSoundIcon"></i>
+            </button>
+            <div class="user-badge" id="userBadgeMobile">
+                <i class="bi bi-person-circle"></i>
+                <span id="userShortName"></span>
+            </div>
+            <button class="logout-mobile-btn" id="mobileLogoutBtn"><i class="bi bi-box-arrow-right"></i></button>
+        </div>
+    </div>
+    
+    <div id="flashNewsStrip" class="flash-strip hidden">
+        <div class="ticker-wrap"><div class="ticker-content" id="mobileTicker"></div></div>
+    </div>
+    
+    <div class="menu-grid-container">
+        <div class="section-header"><i class="bi bi-grid-3x3-gap-fill"></i> Applications</div>
+        <div class="tiles-grid" id="mobileMenuGrid">
+            <div class="loading-spinner m-auto">Loading menu...</div>
+        </div>
+    </div>
+    
+    <div class="app-footer">NOC Admin · Secure Access</div>
+</div>
+
+<div class="iframe-modal" id="iframeModal" style="display: none;">
+    <div class="modal-header-bar">
+        <button class="back-to-menu-btn" id="closeIframeBtn"><i class="bi bi-arrow-left-short"></i> Menu</button>
+        <div class="modal-title-text" id="modalTitleText">Content</div>
+        <div style="width: 48px;"></div>
+    </div>
+    <iframe id="popupIframe" src="about:blank" frameborder="0" class="modal-iframe"></iframe>
+    <div class="iframe-loading" id="iframeLoading"><div class="spinner-grow text-primary"></div> Loading...</div>
+</div>
+
+<script>
+    // ========== CONFIGURATION (same as index.html) ==========
+    const SPREADSHEET_ID = '1jd1xZe9x2mrZm5KAwGT12vMNYjbrnynsmelNKeK95jc';
+    const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxYAM6iuUmr0Sr72N6s7XClG05gOV8mwINpc5f-Ju5ZrmbBD_CZfjfaQeOy3ZoVUX1_/exec';
+    const MENU_SHEET = 'Menu';
+    const ICON_SHEET = 'icons';
+    const LOGIN_SHEET = 'Login';
+    const FLASH_SHEET = 'scroll texts';
+    
+    const CHAT_SPREADSHEET_ID = "1fkiFo1i60NxA_ujl1GhPmNnSLKI6seb3YiMVhPxZjgM";
+    const CHAT_SHEET_NAME = "Chats";
+    const CHAT_API_KEY = "AIzaSyBAuS3Brpsw5JOJnjNJii1UlFa7ClXf8d4";
+    
+    let currentUserData = null;
+    let menuStructure = [];
+    let iconMap = new Map();
+    
+    let unreadCheckInterval = null;
+    let lastUnreadCount = 0;
+    let notificationSound = null;
+    let soundEnabled = true;
+    let audioContext = null;
+    let userInteracted = false;
+    
+    // ========== TIMESTAMP UPDATE FUNCTION - EXACTLY LIKE INDEX.HTML BUT WITH device PARAMETER ==========
+    // This matches the working format from index.html
+    // The timestamp is sent as ISO string (which the Apps Script can parse correctly)
+    // The device type "M" is sent as a separate parameter to avoid breaking date parsing
+    function updateMobileLoginTimestamp(username) {
+        return new Promise((resolve) => {
+            try {
+                // Use the same ISO timestamp format that works in index.html
+                const timestamp = new Date().toISOString();
+                const device = "M";  // M indicates mobile login
+                const callbackName = 'cb_mobile_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+                
+                const script = document.createElement('script');
+                // Send device as separate parameter so timestamp remains valid
+                const url = `${WEB_APP_URL}?action=updateLoginTime&username=${encodeURIComponent(username)}&timestamp=${encodeURIComponent(timestamp)}&device=${encodeURIComponent(device)}&callback=${callbackName}`;
+                
+                window[callbackName] = function(response) {
+                    delete window[callbackName];
+                    if (document.body.contains(script)) {
+                        document.body.removeChild(script);
+                    }
+                    if (response && response.success) {
+                        console.log('✓ Mobile login timestamp recorded for', username, 'with device=M');
+                    } else {
+                        console.warn('⚠ Mobile timestamp response:', response);
+                    }
+                    resolve(true);
+                };
+                
+                script.onerror = () => {
+                    delete window[callbackName];
+                    if (document.body.contains(script)) {
+                        document.body.removeChild(script);
+                    }
+                    console.warn('⚠ Mobile timestamp update failed');
+                    resolve(false);
+                };
+                
+                script.src = url;
+                document.body.appendChild(script);
+                
+                setTimeout(() => {
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                        if (document.body.contains(script)) {
+                            document.body.removeChild(script);
+                        }
+                        console.warn('⚠ Mobile timestamp update timeout');
+                        resolve(false);
+                    }
+                }, 5000);
+            } catch (error) {
+                console.error('Error updating mobile login timestamp:', error);
+                resolve(false);
+            }
+        });
+    }
+    
+    // ========== NOTIFICATION SOUND FUNCTIONS ==========
+    function initMobileNotificationSound() {
+        try {
+            notificationSound = new Audio('./sweet.mp3');
+            notificationSound.volume = 0.5;
+            notificationSound.load();
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        } catch(e) { console.log("Audio not supported"); }
+    }
+    
+    function enableMobileAudioOnUserInteraction() {
+        if (userInteracted) return;
+        userInteracted = true;
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+        if (notificationSound) {
+            try {
+                notificationSound.volume = 0;
+                notificationSound.play().then(() => {
+                    notificationSound.pause();
+                    notificationSound.currentTime = 0;
+                    notificationSound.volume = 0.5;
+                }).catch(e => {});
+            } catch(e) {}
+        }
+    }
+    
+    function setupMobileUserInteractionListener() {
+        const events = ['click', 'touchstart', 'keydown'];
+        const handler = function() {
+            enableMobileAudioOnUserInteraction();
+            events.forEach(event => document.removeEventListener(event, handler));
+        };
+        events.forEach(event => document.addEventListener(event, handler));
+    }
+    
+    function playMobileNotificationSound() {
+        if (!soundEnabled) return;
+        if (notificationSound) {
+            try {
+                notificationSound.currentTime = 0;
+                notificationSound.play().catch(() => playMobileFallbackBeep());
+            } catch(e) { playMobileFallbackBeep(); }
+        } else { playMobileFallbackBeep(); }
+    }
+    
+    function playMobileFallbackBeep() {
+        if (!userInteracted && (!audioContext || audioContext.state !== 'running')) return;
+        try {
+            let ctx = audioContext;
+            if (!ctx) { ctx = new (window.AudioContext || window.webkitAudioContext)(); audioContext = ctx; }
+            if (ctx.state === 'suspended') { ctx.resume().then(() => playMobileBeepWithContext(ctx)); }
+            else if (ctx.state === 'running') { playMobileBeepWithContext(ctx); }
+        } catch(e) {}
+    }
+    
+    function playMobileBeepWithContext(ctx) {
+        try {
+            const oscillator = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            oscillator.frequency.value = 880;
+            gainNode.gain.value = 0.15;
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.4);
+            oscillator.stop(ctx.currentTime + 0.4);
+        } catch(e) {}
+    }
+    
+    function toggleMobileNotificationSound() {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('notificationSoundEnabled', soundEnabled);
+        const soundIcon = document.getElementById('mobileSoundIcon');
+        if (soundIcon) soundIcon.className = soundEnabled ? 'bi bi-volume-up-fill' : 'bi bi-volume-mute-fill';
+    }
+    
+    // ========== CHAT NOTIFICATION ==========
+    function getMobileCurrentBranchForChat() {
+        if (currentUserData && currentUserData.username) {
+            let username = currentUserData.username.toUpperCase();
+            if (/^BR\d{4}$/i.test(username) || username === "ADMIN") return username;
+        }
+        let branch = localStorage.getItem('branchCode');
+        if (branch && (/^BR\d{4}$/i.test(branch) || branch === "ADMIN")) return branch.toUpperCase();
+        branch = localStorage.getItem('selectedBranch');
+        if (branch && (/^BR\d{4}$/i.test(branch) || branch === "ADMIN")) return branch.toUpperCase();
+        return null;
+    }
+    
+    async function fetchMobileUnreadChatCount() {
+        const branch = getMobileCurrentBranchForChat();
+        if (!branch) { updateMobileNotificationBadge(0); return 0; }
+        try {
+            const range = `${CHAT_SHEET_NAME}!A:K`;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${CHAT_SPREADSHEET_ID}/values/${range}?key=${CHAT_API_KEY}&_=${Date.now()}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            if (!data.values || data.values.length <= 1) { updateMobileNotificationBadge(0); return 0; }
+            const rows = data.values.slice(1);
+            let unreadCount = 0;
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (row.length >= 3) {
+                    const messageBranch = row[1] ? row[1].toString().toUpperCase() : "";
+                    const readStatus = row[8] ? row[8].toString() : "";
+                    const readBy = row[9] ? row[9].toString() : "";
+                    const allMentionReadBy = row[10] ? row[10].toString() : "";
+                    const messageText = row[2] ? row[2].toString().toLowerCase() : "";
+                    const isAllMention = messageText.includes('@all');
+                    if (messageBranch !== branch) {
+                        if (!isAllMention && readStatus !== "TRUE" && !readBy.includes(branch)) unreadCount++;
+                        else if (isAllMention && !allMentionReadBy.includes(branch)) unreadCount++;
+                    }
+                }
+            }
+            if (unreadCount > lastUnreadCount && unreadCount > 0) setTimeout(() => playMobileNotificationSound(), 100);
+            lastUnreadCount = unreadCount;
+            updateMobileNotificationBadge(unreadCount);
+            return unreadCount;
+        } catch (error) { updateMobileNotificationBadge(0); return 0; }
+    }
+    
+    function updateMobileNotificationBadge(count) {
+        const badge = document.getElementById('mobileNotificationBadge');
+        if (!badge) return;
+        if (count > 0) {
+            badge.textContent = count > 99 ? '99+' : count;
+            badge.classList.remove('zero');
+            document.title = `(${count}) NOC Mobile`;
+        } else {
+            badge.textContent = '0';
+            badge.classList.add('zero');
+            document.title = 'NOC Mobile';
+        }
+    }
+    
+    function openMobileChat() {
+        const chatUrl = "./br-chat.html?t=" + Date.now();
+        const iframeModal = document.getElementById('iframeModal');
+        const popupIframe = document.getElementById('popupIframe');
+        const modalTitle = document.getElementById('modalTitleText');
+        const iframeLoading = document.getElementById('iframeLoading');
+        modalTitle.innerText = 'Chat';
+        iframeModal.style.display = 'flex';
+        iframeLoading.style.display = 'flex';
+        popupIframe.style.opacity = '0';
+        popupIframe.src = chatUrl;
+        popupIframe.onload = () => {
+            iframeLoading.style.display = 'none';
+            popupIframe.style.opacity = '1';
+            setTimeout(() => fetchMobileUnreadChatCount(), 3000);
+        };
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function startMobileUnreadCheckInterval() {
+        if (unreadCheckInterval) clearInterval(unreadCheckInterval);
+        fetchMobileUnreadChatCount();
+        unreadCheckInterval = setInterval(() => { if (currentUserData) fetchMobileUnreadChatCount(); }, 10000);
+    }
+    
+    function stopMobileUnreadCheckInterval() {
+        if (unreadCheckInterval) { clearInterval(unreadCheckInterval); unreadCheckInterval = null; }
+    }
+    
+    function initMobileNotificationSystem() {
+        initMobileNotificationSound();
+        setupMobileUserInteractionListener();
+        const notificationBtn = document.getElementById('mobileNotificationIconBtn');
+        if (notificationBtn) {
+            notificationBtn.removeEventListener('click', openMobileChat);
+            notificationBtn.addEventListener('click', openMobileChat);
+        }
+        const soundToggleBtn = document.getElementById('mobileSoundToggleBtn');
+        if (soundToggleBtn) {
+            soundToggleBtn.removeEventListener('click', toggleMobileNotificationSound);
+            soundToggleBtn.addEventListener('click', toggleMobileNotificationSound);
+        }
+        startMobileUnreadCheckInterval();
+    }
+    
+    const savedSoundPref = localStorage.getItem('notificationSoundEnabled');
+    if (savedSoundPref !== null) soundEnabled = savedSoundPref === 'true';
+    
+    // ========== HELPER FUNCTIONS ==========
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+    
+    async function fetchSheetJSON(url) {
+        try { const res = await fetch(url); return await res.json(); } catch(e) { return { error: true }; }
+    }
+    
+    function processIcons(rows) {
+        if(!rows || rows.length<2) return;
+        for(let i=1; i<rows.length; i++) {
+            const row = rows[i];
+            if(row.length<6) continue;
+            const [mainMenu, mainIcon, subMenu, subIcon, linkItem, linkIcon] = row;
+            if(mainMenu && subMenu && linkItem) {
+                const key = `${mainMenu}|${subMenu}|${linkItem}`;
+                iconMap.set(key, { linkIcon: linkIcon || '<i class="bi bi-box-arrow-up-right"></i>' });
+                const mainKey = `${mainMenu}||`;
+                if(!iconMap.has(mainKey)) iconMap.set(mainKey, { mainIcon: mainIcon || '<i class="bi bi-app-indicator"></i>' });
+                const subKey = `${mainMenu}|${subMenu}|`;
+                if(!iconMap.has(subKey)) iconMap.set(subKey, { subIcon: subIcon || '<i class="bi bi-folder"></i>' });
+            }
+        }
+    }
+    
+    function getIconFor(mainMenu, subMenu='', linkItem='', type) {
+        const full = `${mainMenu}|${subMenu}|${linkItem}`;
+        if(iconMap.has(full) && type==='link') return iconMap.get(full).linkIcon;
+        if(type==='main') { const mkey = `${mainMenu}||`; return iconMap.has(mkey) ? iconMap.get(mkey).mainIcon : '<i class="bi bi-grid"></i>'; }
+        if(type==='sub') { const skey = `${mainMenu}|${subMenu}|`; return iconMap.has(skey) ? iconMap.get(skey).subIcon : '<i class="bi bi-folder2"></i>'; }
+        return '<i class="bi bi-link"></i>';
+    }
+    
+    function buildMenuFromRows(rows) {
+        if(!rows || rows.length<2) return [];
+        const menuMap = new Map();
+        for(let i=1; i<rows.length; i++) {
+            const row = rows[i];
+            if(row.length<4) continue;
+            const [mainMenu, subMenu, linkItem, url] = row;
+            if(!mainMenu || !subMenu || !linkItem || !url) continue;
+            if(!menuMap.has(mainMenu)) menuMap.set(mainMenu, new Map());
+            const subMap = menuMap.get(mainMenu);
+            if(!subMap.has(subMenu)) subMap.set(subMenu, []);
+            subMap.get(subMenu).push({ title: linkItem, url: url, icon: getIconFor(mainMenu, subMenu, linkItem, 'link') });
+        }
+        const result = [];
+        for(let [mainTitle, subMap] of menuMap.entries()) {
+            const subArr = [];
+            for(let [subTitle, items] of subMap.entries()) {
+                subArr.push({ title: subTitle, icon: getIconFor(mainTitle, subTitle, '', 'sub'), items: items });
+            }
+            result.push({ title: mainTitle, icon: getIconFor(mainTitle, '', '', 'main'), subMenus: subArr });
+        }
+        return result;
+    }
+    
+    async function loadMenusAndIcons(menuSheetName) {
+        try {
+            const menuUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${menuSheetName}!A:D?key=${API_KEY}&_=${Date.now()}`;
+            const iconUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${ICON_SHEET}!A:F?key=${API_KEY}&_=${Date.now()}`;
+            const [menuRes, iconRes] = await Promise.all([fetchSheetJSON(menuUrl), fetchSheetJSON(iconUrl)]);
+            if(menuRes.error) throw new Error(`Menu sheet error: ${menuSheetName}`);
+            if(iconRes.values) processIcons(iconRes.values);
+            return buildMenuFromRows(menuRes.values);
+        } catch(e) { console.error(e); return []; }
+    }
+    
+    async function loadFlashNews() {
+        const strip = document.getElementById('flashNewsStrip');
+        const tickerDiv = document.getElementById('mobileTicker');
+        if(!strip || !tickerDiv) return;
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${FLASH_SHEET}!A2:A?key=${API_KEY}&_=${Date.now()}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            if(data.error || !data.values || data.values.length===0) { strip.classList.add('hidden'); return; }
+            const texts = data.values.map(row => row[0] ? row[0].toString().trim() : '').filter(t => t!=='');
+            if(texts.length===0) { strip.classList.add('hidden'); return; }
+            let html = '';
+            texts.forEach(t => { html += `<span><i class="bi bi-megaphone-fill"></i> ${escapeHtml(t)}</span>`; });
+            tickerDiv.innerHTML = html;
+            strip.classList.remove('hidden');
+            const tickerWrap = document.querySelector('.ticker-wrap');
+            if(tickerWrap) tickerWrap.style.animation = 'none';
+            setTimeout(()=> { if(tickerWrap) tickerWrap.style.animation = 'tickerScroll 25s linear infinite'; }, 10);
+        } catch(e) { strip.classList.add('hidden'); }
+    }
+    
+    function renderMobileTiles(menuData) {
+        const container = document.getElementById('mobileMenuGrid');
+        if(!container) return;
+        if(!menuData || menuData.length===0) { container.innerHTML = '<div class="empty-state"><i class="bi bi-info-circle"></i> No applications found</div>'; return; }
+        let allLinks = [];
+        for(let main of menuData) {
+            for(let sub of main.subMenus) {
+                for(let link of sub.items) {
+                    allLinks.push({ title: link.title, url: link.url, iconHtml: link.icon || '<i class="bi bi-link-45deg"></i>' });
+                }
+            }
+        }
+        if(allLinks.length === 0) { container.innerHTML = '<div class="empty-state"><i class="bi bi-diagram-3"></i> No links in menu</div>'; return; }
+        let tileHtml = '';
+        allLinks.forEach(link => {
+            tileHtml += `<div class="menu-tile" data-url="${escapeHtml(link.url)}" data-title="${escapeHtml(link.title)}"><div class="tile-icon">${link.iconHtml}</div><div class="tile-label">${escapeHtml(link.title)}</div></div>`;
+        });
+        container.innerHTML = tileHtml;
+        document.querySelectorAll('.menu-tile').forEach(tile => {
+            tile.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openPopupIframe(tile.dataset.url, tile.dataset.title);
+            });
+        });
+    }
+    
+    const iframeModal = document.getElementById('iframeModal');
+    const popupIframe = document.getElementById('popupIframe');
+    const modalTitle = document.getElementById('modalTitleText');
+    const iframeLoading = document.getElementById('iframeLoading');
+    
+    function openPopupIframe(url, title) {
+        if(!url) return;
+        modalTitle.innerText = title || 'Document';
+        iframeModal.style.display = 'flex';
+        iframeLoading.style.display = 'flex';
+        popupIframe.style.opacity = '0';
+        popupIframe.src = url;
+        popupIframe.onload = () => { iframeLoading.style.display = 'none'; popupIframe.style.opacity = '1'; };
+        popupIframe.onerror = () => { iframeLoading.innerHTML = '<div class="alert alert-danger m-3">Failed to load content</div>'; };
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeIframePopup() {
+        iframeModal.style.display = 'none';
+        popupIframe.src = 'about:blank';
+        iframeLoading.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+    
+    // ========== LOGIN MANAGEMENT ==========
+    function storeUserSession(userData) {
+        const sessionData = { username: userData.username, loginTime: new Date().toISOString(), menuSheet: userData.menuSheet };
+        localStorage.setItem('currentUser', JSON.stringify(sessionData));
+        sessionStorage.setItem('currentUser', JSON.stringify(sessionData));
+        localStorage.setItem('mobileUser', JSON.stringify({ username: userData.username, menuSheet: userData.menuSheet, loginTime: Date.now() }));
+    }
+    
+    function clearUserSession() {
+        stopMobileUnreadCheckInterval();
+        localStorage.removeItem('currentUser');
+        sessionStorage.removeItem('currentUser');
+        localStorage.removeItem('mobileUser');
+    }
+    
+    function checkExistingSession() {
+        let storedUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+        if (!storedUser) {
+            const mobileUser = localStorage.getItem('mobileUser');
+            if (mobileUser) {
+                try {
+                    const parsed = JSON.parse(mobileUser);
+                    if (parsed.username && parsed.menuSheet) {
+                        storedUser = JSON.stringify({ username: parsed.username, menuSheet: parsed.menuSheet, loginTime: new Date(parsed.loginTime).toISOString() });
+                    }
+                } catch(e) {}
+            }
+        }
+        if (storedUser) {
+            try {
+                const userData = JSON.parse(storedUser);
+                const loginTime = new Date(userData.loginTime);
+                const hoursSinceLogin = (new Date() - loginTime) / (1000 * 60 * 60);
+                if (hoursSinceLogin <= 24) {
+                    currentUserData = { username: userData.username, menuSheet: userData.menuSheet };
+                    storeUserSession(currentUserData);
+                    return true;
+                } else { clearUserSession(); }
+            } catch(e) { clearUserSession(); }
+        }
+        return false;
+    }
+    
+    async function validateMobileLogin(username, password) {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${LOGIN_SHEET}!B:D?key=${API_KEY}&_=${Date.now()}`;
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            if(data.error) return null;
+            if(data.values) {
+                for(let row of data.values) {
+                    if(row.length >= 2) {
+                        if(username === row[0] && password === row[1]) {
+                            return { username: row[0], menuSheet: (row.length >= 3 && row[2]) ? row[2].trim() : 'Menu' };
+                        }
+                    }
+                }
+            }
+            return null;
+        } catch(e) { return null; }
+    }
+    
+    async function handleMobileLogin() {
+        const username = document.getElementById('mobileUsername').value.trim();
+        const password = document.getElementById('mobilePassword').value.trim();
+        const errDiv = document.getElementById('loginErrorMsg');
+        const loginBtn = document.getElementById('mobileLoginBtn');
+        const spinner = document.getElementById('loginSpinner');
+        const btnText = document.getElementById('loginBtnText');
+        
+        if(!username || !password) { showLoginErr('Enter username & password'); return; }
+        
+        errDiv.style.display = 'none';
+        loginBtn.disabled = true;
+        spinner.classList.remove('d-none');
+        btnText.innerText = 'Verifying...';
+        
+        try {
+            const user = await validateMobileLogin(username, password);
+            if(user) {
+                currentUserData = user;
+                storeUserSession(user);
+                
+                // Update timestamp - using the same format as index.html
+                // The device parameter "M" will identify this as a mobile login
+                await updateMobileLoginTimestamp(username);
+                
+                const loginOverlay = document.getElementById('loginOverlay');
+                loginOverlay.style.opacity = '0';
+                setTimeout(async () => {
+                    loginOverlay.style.display = 'none';
+                    document.getElementById('dashboardMain').style.display = 'block';
+                    const menuData = await loadMenusAndIcons(user.menuSheet);
+                    menuStructure = menuData;
+                    renderMobileTiles(menuData);
+                    displayUserOnTop(user.username);
+                    loadFlashNews();
+                    initMobileNotificationSystem();
+                }, 300);
+            } else {
+                loginBtn.disabled = false;
+                spinner.classList.add('d-none');
+                btnText.innerText = 'Sign in';
+                showLoginErr('Invalid username or password');
+                document.getElementById('mobilePassword').value = '';
+                document.getElementById('mobileUsername').focus();
+            }
+        } catch(error) {
+            loginBtn.disabled = false;
+            spinner.classList.add('d-none');
+            btnText.innerText = 'Sign in';
+            showLoginErr('Unable to verify credentials');
+        }
+    }
+    
+    function showLoginErr(msg) {
+        const errDiv = document.getElementById('loginErrorMsg');
+        errDiv.querySelector('span').innerText = msg;
+        errDiv.style.display = 'flex';
+        setTimeout(()=> errDiv.style.display = 'none', 3000);
+    }
+    
+    function displayUserOnTop(username) {
+        const shortSpan = document.getElementById('userShortName');
+        if(shortSpan) shortSpan.innerText = username.split('@')[0].substring(0, 12);
+    }
+    
+    function logoutMobile() {
+        stopMobileUnreadCheckInterval();
+        clearUserSession();
+        currentUserData = null;
+        document.getElementById('dashboardMain').style.display = 'none';
+        document.getElementById('loginOverlay').style.display = 'flex';
+        document.getElementById('loginOverlay').style.opacity = '1';
+        document.getElementById('mobileUsername').value = '';
+        document.getElementById('mobilePassword').value = '';
+        if(iframeModal) iframeModal.style.display = 'none';
+        document.body.style.overflow = '';
+        updateMobileNotificationBadge(0);
+        lastUnreadCount = 0;
+        document.title = 'NOC Mobile';
+        userInteracted = false;
+    }
+    
+    // ========== INITIALIZATION ==========
+    document.addEventListener('DOMContentLoaded', () => {
+        const versionSpan = document.getElementById('mobileAppVersion');
+        if (versionSpan) versionSpan.textContent = MOBILE_APP_VERSION;
+        displayMobileCacheInfo();
+        
+        document.getElementById('mobileLoginBtn').addEventListener('click', handleMobileLogin);
+        document.getElementById('mobileLogoutBtn').addEventListener('click', logoutMobile);
+        document.getElementById('closeIframeBtn').addEventListener('click', closeIframePopup);
+        
+        document.getElementById('mobilePassword').addEventListener('keypress', (e) => { if(e.key === 'Enter') handleMobileLogin(); });
+        document.getElementById('mobileUsername').addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('mobilePassword').focus(); });
+        
+        if(checkExistingSession() && currentUserData) {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('dashboardMain').style.display = 'block';
+            loadMenusAndIcons(currentUserData.menuSheet).then(menu => {
+                renderMobileTiles(menu);
+                displayUserOnTop(currentUserData.username);
+                loadFlashNews();
+                initMobileNotificationSystem();
+            }).catch(() => logoutMobile());
+        } else {
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('dashboardMain').style.display = 'none';
+            setTimeout(() => document.getElementById('mobileUsername').focus(), 100);
+        }
+    });
+    
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('mobile-sw.js').catch(err => console.log('SW registration failed:', err));
+        });
+    }
+</script>
+
+<style>
+    * { margin:0; padding:0; box-sizing: border-box; }
+    body.mobile-app { font-family: 'Inter', 'Noto Sans Malayalam', sans-serif; background: #f1f5f9; height: 100vh; }
+    .light-theme { --bg-surface: #ffffff; --bg-soft: #f8fafc; --primary: #0f3b6a; --text-primary: #0f172a; --text-secondary: #334155; --border: #e2e8f0; }
+    
+    .login-overlay { position: fixed; inset:0; background: linear-gradient(145deg, #eef2ff 0%, #d9e2ef 100%); display: flex; align-items: center; justify-content: center; z-index: 10000; transition: opacity 0.3s;}
+    .login-card { width: 88%; max-width: 360px; background: white; border-radius: 36px; box-shadow: 0 25px 45px -12px rgba(0,0,0,0.2); overflow: hidden; animation: fadeUp 0.4s ease;}
+    .login-header { text-align: center; padding: 28px 20px 10px; }
+    .login-logo { width: 70px; height: 70px; margin: 0 auto 12px; background: #0f3b6a; border-radius: 22px; display: flex; align-items: center; justify-content: center; }
+    .logo-img { width: 55px; height: 55px; object-fit: contain; border-radius: 16px;}
+    .login-header h2 { font-size: 1.7rem; font-weight: 700; color: #0f3b6a; }
+    .login-body { padding: 20px 24px 32px; }
+    .form-control { border-radius: 44px; border: 1px solid #cbd5e1; padding: 12px 20px; font-size: 1rem;}
+    .btn-primary { background: #0f3b6a; border: none; border-radius: 44px; padding: 12px; font-weight: 600; cursor: pointer; width:100%; color:white;}
+    .btn-primary:disabled { opacity: 0.7; }
+    .login-error { background: #fee2e2; color: #b91c1c; border-radius: 60px; padding: 8px 16px; font-size: 0.85rem; margin-bottom: 16px; display: flex; align-items: center; gap:8px;}
+    
+    .dashboard-main { display: flex; flex-direction: column; height: 100vh; background: #f1f5f9; overflow-y: auto; }
+    .mobile-top-bar { background: white; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; position: sticky; top:0; z-index: 10; }
+    .brand-area { display: flex; align-items: center; gap: 10px; }
+    .mini-logo { width: 38px; height: 38px; border-radius: 12px; background: #0f3b6a; padding: 4px; object-fit: contain;}
+    .brand-titles h1 { font-size: 1.2rem; font-weight: 700; margin:0; color: #0f172a; }
+    .brand-titles span { font-size: 0.6rem; color: #5b6e8c; }
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .user-badge { background: #eef2ff; padding: 5px 10px; border-radius: 40px; display: flex; align-items: center; gap: 6px; font-size:0.8rem; }
+    .logout-mobile-btn { background: none; border: none; font-size: 1.4rem; color: #4b5563; cursor: pointer; padding: 5px; }
+    
+    .flash-strip { background: #0f3b6a; color: white; overflow: hidden; white-space: nowrap; padding: 8px 0; font-size: 0.75rem; }
+    .flash-strip.hidden { display: none; }
+    .ticker-wrap { display: inline-block; white-space: nowrap; padding-left: 100%; animation: tickerScroll 20s linear infinite; }
+    .ticker-content span { display: inline-block; margin-right: 36px; }
+    @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+    
+    .menu-grid-container { flex:1; padding: 16px 14px; }
+    .section-header { font-size: 0.85rem; font-weight: 600; color: #2c3e66; margin: 8px 0 12px 6px; display: flex; align-items: center; gap: 8px;}
+    .tiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 16px 10px; }
+    .menu-tile { background: white; border-radius: 20px; display: flex; flex-direction: column; align-items: center; padding: 16px 6px 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); border: 1px solid #edf2f7; cursor: pointer;}
+    .menu-tile:active { transform: scale(0.97); background: #fef9e6;}
+    .tile-icon { font-size: 2.2rem; color: #0f3b6a; margin-bottom: 10px; }
+    .tile-label { font-size: 0.7rem; font-weight: 500; text-align: center; color: #1e293b; }
+    .app-footer { text-align: center; font-size: 0.65rem; padding: 12px; color: #6c757d; border-top: 1px solid #e2e8f0; }
+    
+    .iframe-modal { position: fixed; top:0; left:0; width:100%; height:100%; background: white; z-index: 20000; display: flex; flex-direction: column; }
+    .modal-header-bar { background: #0f3b6a; color: white; padding: 14px 12px; display: flex; justify-content: space-between; align-items: center; }
+    .back-to-menu-btn { background: rgba(255,255,255,0.2); border: none; border-radius: 40px; padding: 8px 16px; color: white; display: flex; align-items: center; gap: 6px; cursor: pointer;}
+    .modal-iframe { width: 100%; flex: 1; border: none; }
+    .iframe-loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 12px 24px; border-radius: 100px; display: flex; align-items: center; gap: 12px; }
+    .loading-spinner { text-align: center; padding: 20px; color: #6c757d; }
+    
+    @media (max-width: 480px) { .tiles-grid { grid-template-columns: repeat(3, 1fr); } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: translateY(0);} }
+</style>
+</body>
+</html>

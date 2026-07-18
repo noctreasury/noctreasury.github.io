@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>NOC Admin | Network Operations Center</title>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    
+    <!-- Cache Control Meta Tags -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <!-- Local CSS resources (as requested) -->
+    <link rel="stylesheet" href="./css/bootstrap.min.css?v=20250102">
+    <link rel="stylesheet" href="./css/bootstrap-icons.min.css?v=20250102">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css/main-style.css?v=20250102">
+    
+    <!-- PWA Manifest & Favicon -->
+    <link rel="manifest" href="/network/manifest.json">
+    <link rel="icon" type="image/svg+xml" href="./images/favicon.svg">
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+    
+    <style>
+        /* Minimal extra styles - no visible session indicators, just core overrides if needed */
+        .notification-icon-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+        .notification-icon {
+            font-size: 1.4rem;
+            color: var(--text-primary);
+            background: transparent;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -8px;
+            background-color: #dc2626;
+            color: white;
+            border-radius: 50%;
+            min-width: 18px;
+            height: 18px;
+            font-size: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            animation: pulse-red 1.5s infinite;
+        }
+        .notification-badge.zero { display: none; }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+        .flash-news-container.hidden { display: none !important; }
+        .cache-info-badge, .refresh-indicator {
+          /*  display:none;*/
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 10px;
+            z-index: 9999;
+            font-family: monospace;
+            cursor: pointer;
+        }
+        .refresh-indicator { left: auto; right: 10px; display:none; }
+        
+        /* No visible session timer or warnings - fully silent inactivity logout */
+    </style>
+</head>
+<body class="light-theme">
+    <!-- Login Overlay -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <div class="login-logo">
+                        <img class="top_bar_pic" id="headder_thumb_pic" src="https://profile.mgovcloud.in/file?fs=thumb&amp;ID=2109903&amp;nps=404&amp;allowCORP=true" style="width: 100%; height: 100%;">
+                    </div>
+                    <h2>NOC Admin</h2>
+                    <p>Network Operations Center</p>
+                </div>
+                <div class="login-body">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" placeholder="Enter username">
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" placeholder="Enter password">
+                    </div>
+                    <div class="text-center mb-2" style="font-size: 11px; color: var(--text-muted);">
+                        Version: <span id="appVersion">20250102_v3</span>
+                    </div>
+                    <div class="login-error" id="loginError" style="display: none;">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span id="errorMessageText">Invalid username or password</span>
+                    </div>
+                    <button class="btn btn-primary w-100" id="loginBtn">
+                        <span class="spinner-border spinner-border-sm d-none" id="loginSpinner" role="status"></span>
+                        <span id="loginText">Login</span>
+                    </button> 
+                    <div style="text-align: center; margin-top: 15px;">
+                        <a href="password-manager.html" target="_blank"> Forgot Password</a> ● 
+                        <a href="./blog/index.html" target="_blank"> NOC / blog</a> ●
+                        <a href="#" onclick="location.reload(true); return false;" style="color: var(--text-muted);"> Refresh</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard (initially hidden) -->
+    <div class="dashboard-container" id="dashboardContainer" style="display: none;">
+        <div id="flashNewsContainer" class="flash-news-container hidden">
+            <div class="flash-news-ticker" id="flashNewsTicker"></div>
+        </div>
+
+        <nav class="navbar navbar-custom">
+            <div class="container-fluid">
+                <div class="d-flex align-items-center">
+                    <a class="navbar-brand" href="#">
+                        <div class="logo">
+                            <img class="top_bar_pic" src="https://profile.mgovcloud.in/file?fs=thumb&amp;ID=2109903&amp;nps=404&amp;allowCORP=true" style="width: 100%; height: 100%;">
+                        </div>
+                        <div class="brand-text">
+                            <h1>NOC Admin</h1>
+                            <span>Network Operations Center</span>
+                        </div>
+                    </a>
+                    <button class="sidebar-toggle-btn desktop-toggle" id="desktopSidebarToggle" title="Toggle sidebar">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <button class="sidebar-toggle-btn mobile-only-toggle d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenuOffcanvas" aria-label="Menu">
+                        <i class="bi bi-list"></i>
+                    </button>
+                </div>
+                <div class="d-flex align-items-center">
+                    <div class="notification-icon-wrapper" id="notificationIconWrapper">
+                        <button class="notification-icon" id="notificationIconBtn" title="Unread Chats">
+                           <i class="bi bi-chat-square-text"></i>
+                        </button>
+                        <span class="notification-badge zero" id="notificationBadge">0</span>
+                    </div>
+                    <div class="theme-switch-wrapper">
+                        <label class="theme-switch">
+                            <input type="checkbox" id="theme-toggle">
+                            <span class="slider">
+                                <i class="bi bi-sun"></i>
+                                <i class="bi bi-moon"></i>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="wrapper">
+            <div class="sidebar d-none d-lg-block" id="desktopSidebarContainer">
+                <div class="sidebar-menu-container" id="desktopSidebar">
+                    <div class="text-muted p-3"><div class="loading-spinner"></div> Loading menu...</div>
+                </div>
+            </div>
+            <div class="content-area">
+                <iframe id="content-frame" src="about:blank" title="Content"></iframe>
+                <div class="loading" id="loading"><div class="loading-spinner"></div> Loading...</div>
+                <div class="welcome-message" id="welcome-message">
+                    <h2><i class="bi bi-compass"></i> NOC Admin</h2>
+                    <p>Select a menu item to get started</p>
+                    <p class="text-muted mt-3" style="font-size: 0.9rem;">Network Operations Center</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="mobileMenuOffcanvas">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title"><i class="bi bi-compass me-2"></i>NOC Admin</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+            </div>
+            <div class="offcanvas-body" id="mobileSidebar">
+                <div class="text-muted"><div class="loading-spinner"></div> Loading menu...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Local JS resources -->
+    <script src="./js/bootstrap.bundle.min.js?v=20250102"></script>
+    <script src="./js/main-script.js?v=20250102"></script>
+    
+    <script>
+        // ======================== APP VERSION & DAILY CACHE CLEAR (NO VISUAL INDICATORS) ========================
+        const APP_VERSION_ID = "20250102_v3_INACTIVITY";
+        const LAST_CLEAR_DATE_KEY = "lastCacheClearDate";
+        
+        function performDailyCacheClear() {
+            const today = new Date().toDateString();
+            const lastClear = localStorage.getItem(LAST_CLEAR_DATE_KEY);
+            if (lastClear !== today) {
+                console.log("[System] Daily cache cleanup triggered");
+                if ('caches' in window) {
+                    caches.keys().then(names => {
+                        names.forEach(name => {
+                            if (name.includes('network') || name.includes('css') || name.includes('js')) {
+                                caches.delete(name);
+                            }
+                        });
+                    });
+                }
+                // Keep only essential auth keys, clear others silently
+                const keysToKeep = ['currentUser', 'branchCode', 'selectedBranch', 'theme', 'refreshInterval', 'soundEnabled', LAST_CLEAR_DATE_KEY, 'lastActivityTimestamp'];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (!keysToKeep.includes(key)) {
+                        localStorage.removeItem(key);
+                    }
+                }
+                localStorage.setItem(LAST_CLEAR_DATE_KEY, today);
+                // No page reload visual disruption - just clean background
+            }
+        }
+        
+        // ======================== INACTIVITY LOGOUT (15 MINUTES, FULLY SILENT) ========================
+        // No UI indicators, no modals, no warnings - just automatic logout after 15 min idle
+        let inactivityTimer = null;
+        const INACTIVITY_LIMIT_MS = 5 * 60 * 1000; // 15 minutes
+        
+        function resetInactivityTimer() {
+            if (!window.isAuthenticated) return;
+            if (inactivityTimer) clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(() => {
+                // Silent logout if user inactive
+                if (window.isAuthenticated === true) {
+                    console.log("[Security] Inactivity timeout: auto-logout triggered");
+                    performSilentLogout();
+                }
+            }, INACTIVITY_LIMIT_MS);
+        }
+        
+        function performSilentLogout() {
+            // Call existing logout function from main-script.js if available, else fallback
+            if (typeof window.logout === 'function') {
+                window.logout();
+            } else {
+                // Fallback logout logic
+                localStorage.removeItem('currentUser');
+                sessionStorage.removeItem('currentUser');
+                window.isAuthenticated = false;
+                window.currentUser = null;
+                const loginOverlay = document.getElementById('loginOverlay');
+                const dashboardContainer = document.getElementById('dashboardContainer');
+                const flashContainer = document.getElementById('flashNewsContainer');
+                if (flashContainer) flashContainer.classList.add('hidden');
+                if (loginOverlay) loginOverlay.style.display = 'flex';
+                if (dashboardContainer) dashboardContainer.style.display = 'none';
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                const badge = document.getElementById('notificationBadge');
+                if (badge) { badge.textContent = '0'; badge.classList.add('zero'); }
+                document.title = 'NOC Admin';
+            }
+        }
+        
+        // Track user activity events (clicks, keypress, scroll, touch, mousemove)
+        function bindActivityListeners() {
+            const events = ['mousedown', 'keydown', 'touchstart', 'scroll', 'mousemove', 'click'];
+            const activityHandler = () => {
+                if (window.isAuthenticated === true) {
+                    resetInactivityTimer();
+                    // Also store last activity timestamp for session continuity (optional)
+                    localStorage.setItem('lastActivityTimestamp', Date.now().toString());
+                }
+            };
+            events.forEach(event => {
+                window.addEventListener(event, activityHandler, { passive: true });
+            });
+            // Also track iframe content activity (cross-origin limitations handled by focusing document)
+            const iframe = document.getElementById('content-frame');
+            if (iframe) {
+                iframe.addEventListener('load', () => {
+                    try {
+                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        if (iframeDoc) {
+                            const iframeEvents = ['mousedown', 'keydown', 'touchstart', 'click'];
+                            iframeEvents.forEach(ev => {
+                                iframeDoc.addEventListener(ev, activityHandler);
+                            });
+                        }
+                    } catch(e) { /* cross-origin, ignore */ }
+                });
+            }
+        }
+        
+        // Override the original handleLogin success to start inactivity timer after auth
+        const originalHandleLogin = window.handleLogin;
+        if (typeof originalHandleLogin === 'function') {
+            window.handleLogin = async function() {
+                await originalHandleLogin.apply(this, arguments);
+                // After login success (isAuthenticated becomes true), start timer
+                setTimeout(() => {
+                    if (window.isAuthenticated === true) {
+                        resetInactivityTimer();
+                    }
+                }, 500);
+            };
+        }
+        
+        // Also patch the main-script's internal login flow via mutation or intercept the existing session restoration
+        // Since main-script.js already defines handleLogin and checkExistingSession, we need to ensure after any auth we start timer.
+        // We'll also wrap logout to clear inactivity timer properly.
+        if (typeof window.logout === 'function') {
+            const originalLogout = window.logout;
+            window.logout = function() {
+                if (inactivityTimer) clearTimeout(inactivityTimer);
+                originalLogout.apply(this, arguments);
+            };
+        } else {
+            window.logout = function() {
+                if (inactivityTimer) clearTimeout(inactivityTimer);
+                localStorage.removeItem('currentUser');
+                sessionStorage.removeItem('currentUser');
+                window.isAuthenticated = false;
+                window.currentUser = null;
+                const loginOverlay = document.getElementById('loginOverlay');
+                const dashboardContainer = document.getElementById('dashboardContainer');
+                if (loginOverlay) loginOverlay.style.display = 'flex';
+                if (dashboardContainer) dashboardContainer.style.display = 'none';
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                const badge = document.getElementById('notificationBadge');
+                if (badge) { badge.textContent = '0'; badge.classList.add('zero'); }
+                document.title = 'NOC Admin';
+                if (inactivityTimer) clearTimeout(inactivityTimer);
+            };
+        }
+        
+        // Monitor authentication state changes (since main-script sets window.isAuthenticated)
+        function watchAuthState() {
+            let lastAuthState = window.isAuthenticated;
+            setInterval(() => {
+                if (window.isAuthenticated !== lastAuthState) {
+                    lastAuthState = window.isAuthenticated;
+                    if (window.isAuthenticated === true) {
+                        resetInactivityTimer();
+                    } else if (window.isAuthenticated === false) {
+                        if (inactivityTimer) clearTimeout(inactivityTimer);
+                    }
+                }
+            }, 500);
+        }
+        
+        // After main-script loads, also override its checkExistingSession to ensure timer starts
+        document.addEventListener('DOMContentLoaded', function() {
+            performDailyCacheClear();
+            
+            // Display version in login screen
+            const versionSpan = document.getElementById('appVersion');
+            if (versionSpan) versionSpan.textContent = APP_VERSION_ID;
+            
+            // Small cache info badges (admin-only debug, but keep non-intrusive - optional but for daily cache visibility, but no session indicators)
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'cache-info-badge';
+           // infoDiv.innerHTML = `📦 v${APP_VERSION_ID}`;
+            infoDiv.innerHTML = `<i class="bi bi-arrow-repeat"></i>  `;
+            infoDiv.onclick = function() {
+                if (confirm('Clear all cache and reload?')) {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    if ('caches' in window) {
+                        caches.keys().then(names => names.forEach(name => caches.delete(name)));
+                    }
+                    window.location.reload(true);
+                }
+            };
+            document.body.appendChild(infoDiv);
+            
+            const refreshDiv = document.createElement('div');
+            refreshDiv.className = 'refresh-indicator';
+            refreshDiv.innerHTML = `🔄 v${APP_VERSION_ID}`;
+            refreshDiv.onclick = () => window.location.reload(true);
+            document.body.appendChild(refreshDiv);
+            
+            // Bind activity listeners for silent inactivity logout
+            bindActivityListeners();
+            watchAuthState();
+            
+            // If already authenticated from session restore, start timer
+            setTimeout(() => {
+                if (window.isAuthenticated === true) {
+                    resetInactivityTimer();
+                }
+            }, 800);
+        });
+        
+        // Also listen to manual login attempts from the original login button (in case main-script handles differently)
+        const loginBtnElement = document.getElementById('loginBtn');
+        if (loginBtnElement) {
+            const originalClickHandler = loginBtnElement.onclick;
+            loginBtnElement.addEventListener('click', function() {
+                setTimeout(() => {
+                    if (window.isAuthenticated === true) {
+                        resetInactivityTimer();
+                    }
+                }, 1000);
+            });
+        }
+        
+        // For Chat notification system (preserve original functionality) - minimal integration
+        window.fetchUnreadChatCount = window.fetchUnreadChatCount || function() {};
+        window.openChatInIframe = window.openChatInIframe || function() {};
+        
+        // Expose necessary globals to match original expectations
+        window.APP_VERSION = APP_VERSION_ID;
+        
+        // Ensure no extra UI warnings or session timers are shown - we have zero modals or countdown displays.
+        console.log("[Security] 15-min inactivity logout active | Daily cache reset enabled");
+    </script>
+</body>
+</html>

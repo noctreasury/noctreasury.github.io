@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SDWAN Treasury Status Dashboard</title>
+      <!-- LOCAL CSS - Using resources from parent folder -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
+    
+    <!-- LOCAL JS - Using resources from parent folder -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/jquery.dataTables.min.js"></script>
+    <script src="../js/dataTables.bootstrap5.min.js"></script>
+    <script src="../js/select2.min.js"></script>
+    <style>
+        body {
+             background: #fff0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .main-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .card {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 24px;
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+            color: white;
+            border-radius: 12px 12px 0 0 !important;
+            padding: 16px 24px;
+            font-weight: 600;
+        }
+        
+        .nav-tabs-custom {
+            display: flex;
+            gap: 10px;
+            background: white;
+            padding: 8px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .nav-tab-custom {
+            flex: 1;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            color: #495057;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+            border: none;
+            background: transparent;
+        }
+        
+        .nav-tab-custom.active {
+            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(15, 91, 156, 0.3);
+        }
+        
+        .filter-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #e9ecef;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 30px;
+        }
+        
+        .radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid #dee2e6;
+            gap: 10px;
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+        
+        .radio-option.active {
+            background: #0f5b9c;
+            color: white;
+            border-color: #0f5b9c;
+            box-shadow: 0 2px 8px rgba(15, 91, 156, 0.2);
+        }
+        
+        .radio-option.active label {
+            color: white;
+        }
+        
+        .radio-option input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+            border: none;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(15, 91, 156, 0.3);
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+        }
+        
+        .table th {
+            background-color: #f8f9fa;
+            color: #1a4b7a;
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            padding: 16px;
+        }
+        
+        .table td {
+            padding: 14px 16px;
+            vertical-align: middle;
+            font-size: 0.9rem;
+        }
+        
+        .status-badge-working {
+            background: #d4edda;
+            color: #155724;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-badge-notworking {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status-badge-linkdown {
+            background: #fff3cd;
+            color: #856404;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+            border: 1px solid #ffeeba;
+        }
+        
+        .status-badge-other {
+            background: #e2e3e5;
+            color: #383d41;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+            border: 1px solid #d6d8db;
+        }
+        
+        .status-badge-blank {
+            background: #cce5ff;
+            color: #004085;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+            border: 1px solid #b8daff;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(15, 91, 156, 0.2);
+            border-radius: 50%;
+            border-top-color: #0f5b9c;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 15px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+        
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 32px 0 16px 0;
+            color: #1a4b7a;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        .select2-container--bootstrap-5 .select2-selection {
+            min-height: 46px;
+            padding: 8px;
+        }
+        
+        .info-footer {
+            background: #e8f4fd;
+            border-left: 4px solid #0f5b9c;
+            padding: 16px 24px;
+            border-radius: 8px;
+            margin-top: 16px;
+            font-size: 0.9rem;
+            color: #1a4b7a;
+        }
+        
+        .data-summary {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .filter-stats {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+        
+        .mpls-badge {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
+            border: 1px solid #bae6fd;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 style="color: #1a4b7a; font-weight: 700;">
+                <i class="bi bi-hdd-stack-fill me-2" style="color: #0f5b9c;"></i>
+                SDWAN Device & MPLS Details 
+            </h2>
+            
+        </div>
+        
+        <!-- Custom Navigation Tabs -->
+        <div class="nav-tabs-custom">
+            <button class="nav-tab-custom active" data-tab="tab1">
+                <i class="bi bi-funnel-fill"></i> Treasury Remark wise Status
+            </button>
+            <button class="nav-tab-custom" data-tab="tab2">
+                <i class="bi bi-building"></i> Treasury Device & MPLS Configuration
+            </button>
+        </div>
+        
+        <!-- TAB 1: WORKING STATUS FILTER -->
+        <div id="tab1" class="tab-panel-custom" style="display: block;">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-funnel me-2"></i>
+                     Treasury Remark wise Details
+                </div>
+                <div class="card-body">
+                    <div class="filter-card">
+                        <div style="display: flex; align-items: center; gap: 16px;">
+                            <i class="bi bi-radioactive fs-5" style="color: #0f5b9c;"></i>
+                            <span style="font-weight: 700; color: #1a4b7a;">Status :</span>
+                        </div>
+                        <div class="radio-group" id="statusRadioGroup">
+                            <!-- Radio buttons will be dynamically populated -->
+                        </div>
+                        <div style="margin-left: auto;">
+                            <button class="btn btn-primary" onclick="filterWorkingStatus()">
+                                <i class="bi bi-search"></i> Apply
+                            </button>
+                            <button class="btn btn-outline-secondary ms-2" onclick="resetWorkingStatusFilter()">
+                                <i class="bi bi-arrow-counterclockwise"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Filter Statistics -->
+                    <div id="filterStats" class="filter-stats" style="display: none;"></div>
+                    
+                    <!-- Loading Spinner -->
+                    <div id="loadingTab1" class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>Loading...</p>
+                    </div>
+                    
+                    <!-- Table Container -->
+                    <div id="tab1TableContainer">
+                        <!-- Data will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- TAB 2: TREASURY DETAILS -->
+        <div id="tab2" class="tab-panel-custom" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-building me-2"></i>
+                    Treasury Details
+                </div>
+                <div class="card-body">
+                    <div class="filter-card">
+                        <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
+                            <i class="bi bi-geo-alt-fill fs-5" style="color: #0f5b9c;"></i>
+                            <span style="font-weight: 700; color: #1a4b7a;">Select Treasury:</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 16px; flex: 2;">
+                            <select id="treasurySelect" class="form-select" style="width: 100%;">
+                                <option value="">Loading treasuries...</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="viewTreasuryDetails()">
+                                 View
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Installation Status Section -->
+                    <div class="section-title">
+                        <i class="bi bi-tools"></i>
+                        Installation Status
+                    </div>
+                    <div id="installationTableContainer" class="table-container mb-4">
+                        <div class="empty-state">
+                            <i class="bi bi-arrow-up-circle"></i>
+                            <h6>Select a treasury and click "View"</h6>
+                        </div>
+                    </div>
+                    
+                    <!-- MPLS Configuration Section -->
+                    <div class="section-title">
+                        <i class="bi bi-diagram-3-fill"></i>
+                        MPLS Configuration
+                    </div>
+                    <div id="mplsConfigTableContainer" class="table-container mb-4">
+                        <div class="empty-state">
+                            <i class="bi bi-arrow-up-circle"></i>
+                            <h6>Select a treasury to view MPLS configuration</h6>
+                        </div>
+                    </div>
+                    
+                    <!-- Working Status Section -->
+                    <div class="section-title">
+                        <i class="bi bi-speedometer2"></i>
+                        Working Status
+                    </div>
+                    <div id="treasuryWorkingTableContainer" class="table-container mb-4">
+                        <div class="empty-state">
+                            <i class="bi bi-arrow-up-circle"></i>
+                            <h6>Select a treasury to view working status</h6>
+                        </div>
+                    </div>
+                    
+                    <!-- Admin Contact Section -->
+                    <div class="section-title">
+                        <i class="bi bi-person-lines-fill"></i>
+                        Admin Contact Details
+                    </div>
+                    <div id="adminTableContainer" class="table-container">
+                        <div class="empty-state">
+                            <i class="bi bi-arrow-up-circle"></i>
+                            <h6>Select a treasury to view admin contacts</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =============================================
+        // CONFIGURATION
+        // =============================================
+        const API_KEY = "AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0";
+        const SPREADSHEET_ID = "1HvCqLHC8IyllKskBXX1MtMfjQMGUyhMP7KuTuJxDhmU";
+        
+        const SHEET_INSTALLATION = "Installation Status";
+        const SHEET_WORKING = "Working Status";
+        const SHEET_ADMIN = "Admin Contact Details";
+        const SHEET_MPLS = "MPLS Devices";
+        
+        // Global data storage
+        let installationData = [];
+        let workingData = [];
+        let adminData = [];
+        let mplsData = [];
+        let treasuryList = [];
+        let workingHeaders = [];
+        let adminHeaders = [];
+        let mplsHeaders = [];
+        
+        // Dynamic status categories
+        let statusCategories = {};
+        
+        // =============================================
+        // INITIALIZATION
+        // =============================================
+        $(document).ready(function() {
+            console.log("Dashboard initialized");
+            
+            // Initialize tab switching
+            $('.nav-tab-custom').click(function() {
+                $('.nav-tab-custom').removeClass('active');
+                $(this).addClass('active');
+                
+                $('.tab-panel-custom').hide();
+                $('#' + $(this).data('tab')).show();
+            });
+            
+            // Load all sheet data
+            loadAllSheets();
+        });
+        
+        // =============================================
+        // LOAD ALL SHEETS DATA
+        // =============================================
+        async function loadAllSheets() {
+            try {
+                $('#loadingTab1').show();
+                
+                await Promise.all([
+                    loadInstallationSheet(),
+                    loadWorkingSheet(),
+                    loadAdminSheet(),
+                    loadMplsSheet()
+                ]);
+                
+                console.log("=== DATA LOAD SUMMARY ===");
+                console.log("Installation Status:", installationData.length, "rows");
+                console.log("Working Status:", workingData.length, "rows");
+                console.log("Admin Contact:", adminData.length, "rows");
+                console.log("MPLS Devices:", mplsData.length, "rows");
+                
+                $('#loadingTab1').hide();
+                
+                // Analyze status categories dynamically and populate radio buttons
+                analyzeStatusCategoriesDynamic();
+                populateTreasurySelect();
+                displayAllWorkingData();
+                
+            } catch (error) {
+                console.error("Error loading sheets:", error);
+                showError("Failed to load data. Please check your API key and sheet permissions.");
+            }
+        }
+        
+        function loadInstallationSheet() {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_INSTALLATION)}?key=${API_KEY}`;
+            
+            return fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.values && data.values.length > 0) {
+                        installationData = data.values;
+                        if (installationData.length > 1) {
+                            treasuryList = [];
+                            for (let i = 1; i < installationData.length; i++) {
+                                if (installationData[i][0] && installationData[i][0].trim()) {
+                                    treasuryList.push(installationData[i][0].trim());
+                                }
+                            }
+                            treasuryList = [...new Set(treasuryList)].sort();
+                            console.log("Treasury List Count:", treasuryList.length);
+                        }
+                    }
+                });
+        }
+        
+        function loadWorkingSheet() {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_WORKING)}?key=${API_KEY}`;
+            
+            return fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.values && data.values.length > 0) {
+                        workingData = data.values;
+                        workingHeaders = workingData[0] || [];
+                        console.log("Working Data Headers:", workingHeaders);
+                    }
+                });
+        }
+        
+        function loadAdminSheet() {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_ADMIN)}!A2:H?key=${API_KEY}`;
+            
+            return fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.values && data.values.length > 0) {
+                        adminData = data.values;
+                        console.log("Admin Data Loaded - Rows:", adminData.length);
+                    } else {
+                        console.log("No admin data found in A2:H range");
+                        adminData = [];
+                    }
+                })
+                .catch(error => {
+                    console.error("Error loading admin sheet:", error);
+                    adminData = [];
+                });
+        }
+        
+        function loadMplsSheet() {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_MPLS)}?key=${API_KEY}`;
+            
+            return fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.values && data.values.length > 0) {
+                        mplsData = data.values;
+                        mplsHeaders = mplsData[0] || [];
+                        console.log("MPLS Data Loaded - Rows:", mplsData.length);
+                        console.log("MPLS Headers:", mplsHeaders);
+                    } else {
+                        console.log("No MPLS data found");
+                        mplsData = [];
+                    }
+                })
+                .catch(error => {
+                    console.error("Error loading MPLS sheet:", error);
+                    mplsData = [];
+                });
+        }
+        
+        // =============================================
+        // DYNAMIC STATUS CATEGORY ANALYSIS
+        // =============================================
+        function analyzeStatusCategoriesDynamic() {
+            if (!workingData || workingData.length < 2) return;
+            
+            // Initialize categories
+            statusCategories = {
+                'all': { label: 'All Records', count: workingData.length - 1, pattern: /.*/i, icon: 'bi-table', color: 'primary' }
+            };
+            
+            const rows = workingData.slice(1);
+            const remarkCounts = {};
+            
+            rows.forEach(row => {
+                const treasuryRemarks = (row[13] || '').trim();
+                
+                let category = '';
+                const remarksLower = treasuryRemarks.toLowerCase();
+                
+                if (treasuryRemarks === '' || treasuryRemarks === '—') {
+                    category = 'blank';
+                } else if (remarksLower.includes('link down')) {
+                    category = 'link_down';
+                } else if (remarksLower.includes('working fine') || remarksLower.includes('works fine')) {
+                    category = 'working_fine';
+                } else if (remarksLower.includes('not working') || remarksLower.includes('notwork')) {
+                    category = 'not_working';
+                } else {
+                    const words = remarksLower.split(/[-–—,;]/).map(w => w.trim());
+                    const mainPhrase = words[0] || remarksLower;
+                    
+                    let cleanPhrase = mainPhrase.replace(/tested on\s+\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\s*[-–—]?\s*/i, '').trim();
+                    cleanPhrase = cleanPhrase.substring(0, 30);
+                    
+                    if (cleanPhrase && !cleanPhrase.match(/^(working|not|link|blank|other)/i)) {
+                        category = `custom_${cleanPhrase}`;
+                    } else {
+                        category = 'other';
+                    }
+                }
+                
+                if (!remarkCounts[category]) {
+                    remarkCounts[category] = 0;
+                }
+                remarkCounts[category]++;
+            });
+            
+            const categoryConfig = {
+                'working_fine': { label: 'Working Fine', pattern: /working.*fine|works.*fine|fine/i, icon: 'bi-check-circle-fill', color: 'success' },
+                'not_working': { label: 'Not Working', pattern: /not.*work|not.*working|notworking/i, icon: 'bi-exclamation-triangle-fill', color: 'danger' },
+                'link_down': { label: 'Link Down Issues', pattern: /link.*down|down link/i, icon: 'bi-wifi-off', color: 'warning' },
+                'blank': { label: 'No Remarks (Blank)', pattern: /^$|^—$/, icon: 'bi-dash-circle', color: 'info' },
+                'other': { label: 'Other Remarks', pattern: /.*/i, icon: 'bi-question-circle-fill', color: 'secondary' }
+            };
+            
+            Object.keys(remarkCounts).forEach(category => {
+                if (category.startsWith('custom_')) {
+                    const customLabel = category.replace('custom_', '');
+                    const properLabel = customLabel.split(' ').map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ');
+                    
+                    categoryConfig[category] = {
+                        label: properLabel,
+                        pattern: new RegExp(customLabel, 'i'),
+                        icon: 'bi-tag-fill',
+                        color: 'primary'
+                    };
+                }
+            });
+            
+            Object.keys(categoryConfig).forEach(key => {
+                if (remarkCounts[key] || key === 'other' || key === 'all') {
+                    statusCategories[key] = {
+                        label: categoryConfig[key].label,
+                        count: remarkCounts[key] || 0,
+                        pattern: categoryConfig[key].pattern,
+                        icon: categoryConfig[key].icon,
+                        color: categoryConfig[key].color
+                    };
+                }
+            });
+            
+            if (statusCategories['other']) {
+                const classifiedTotal = Object.keys(statusCategories)
+                    .filter(k => !['all', 'other'].includes(k))
+                    .reduce((sum, k) => sum + (statusCategories[k]?.count || 0), 0);
+                
+                statusCategories['other'].count = (workingData.length - 1) - classifiedTotal;
+            }
+            
+            populateRadioButtons();
+            
+            console.log("Dynamic Status Categories:", statusCategories);
+        }
+        
+        // =============================================
+        // POPULATE RADIO BUTTONS DYNAMICALLY
+        // =============================================
+        function populateRadioButtons() {
+            let radioHtml = '';
+            
+            const sortedCategories = Object.keys(statusCategories).sort((a, b) => {
+                if (a === 'all') return -1;
+                if (b === 'all') return 1;
+                return (statusCategories[b]?.count || 0) - (statusCategories[a]?.count || 0);
+            });
+            
+            sortedCategories.forEach((key, index) => {
+                const category = statusCategories[key];
+                if (!category) return;
+                
+                const isActive = index === 0 ? 'active' : '';
+                const checked = index === 0 ? 'checked' : '';
+                const iconColor = category.color || 'primary';
+                
+                radioHtml += `<div class="radio-option ${isActive}" data-value="${key}">
+                    <input type="radio" id="radio${key}" name="statusFilter" value="${key}" ${checked}>
+                    <label for="radio${key}">
+                        <i class="bi ${category.icon} text-${iconColor}"></i> 
+                        ${category.label} (${category.count})
+                    </label>
+                </div>`;
+            });
+            
+            $('#statusRadioGroup').html(radioHtml);
+            
+            $('.radio-option').click(function(e) {
+                if (e.target.type !== 'radio') {
+                    $(this).find('input[type="radio"]').prop('checked', true);
+                    $('.radio-option').removeClass('active');
+                    $(this).addClass('active');
+                }
+            });
+        }
+        
+        // =============================================
+        // POPULATE TREASURY SELECT
+        // =============================================
+        function populateTreasurySelect() {
+            const select = $('#treasurySelect');
+            select.empty();
+            select.append('<option value="">Select Treasury</option>');
+            
+            treasuryList.forEach(treasury => {
+                select.append(`<option value="${escapeHtml(treasury)}">${escapeHtml(treasury)}</option>`);
+            });
+            
+            select.select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: 'Search or select treasury...',
+                allowClear: true
+            });
+        }
+        
+        // =============================================
+        // TAB 1: DISPLAY ALL WORKING DATA
+        // =============================================
+        function displayAllWorkingData() {
+            if (!workingData || workingData.length < 2) {
+                $('#tab1TableContainer').html('<div class="empty-state">No data available</div>');
+                return;
+            }
+            
+            filterWorkingStatus();
+        }
+        
+        // =============================================
+        // TAB 1: FILTER WORKING STATUS - DYNAMIC
+        // =============================================
+        function filterWorkingStatus() {
+            const filterValue = $('input[name="statusFilter"]:checked').val();
+            
+            if (!workingData || workingData.length < 2) {
+                $('#tab1TableContainer').html('<div class="empty-state">No data available</div>');
+                return;
+            }
+            
+            const rows = workingData.slice(1);
+            
+            let filteredRows = [];
+            
+            if (filterValue === 'all') {
+                filteredRows = rows;
+            } else {
+                const category = statusCategories[filterValue];
+                if (!category) return;
+                
+                filteredRows = rows.filter(row => {
+                    const treasuryRemarks = (row[13] || '').trim();
+                    
+                    if (filterValue === 'blank') {
+                        return treasuryRemarks === '' || treasuryRemarks === '—';
+                    } else {
+                        return category.pattern.test(treasuryRemarks.toLowerCase());
+                    }
+                });
+            }
+            
+            console.log(`Filter: ${filterValue}, Total rows: ${filteredRows.length}`);
+            
+            let filterLabel = statusCategories[filterValue]?.label || filterValue;
+            
+            $('#filterStats').html(`
+                <i class="bi bi-info-circle"></i> 
+                <strong>Current Filter:</strong> ${filterLabel} | 
+                <strong>Showing:</strong> ${filteredRows.length} of ${rows.length} records
+            `).show();
+            
+            let html = `
+                <div class="data-summary">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong><i class="bi bi-filter-circle"></i> Filter:</strong> 
+                            ${filterLabel}
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <strong><i class="bi bi-file-text"></i> Records Found:</strong> ${filteredRows.length}
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped" id="workingStatusTable">
+                        <thead>
+                            <tr>
+                                <th>Name of Treasury</th>
+                                <th>CONTACT DETAILS OF BSNL OFFIERS</th>
+                                <th>Treasury Remarks</th>
+                                <th>BBM REMARKS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            if (filteredRows.length === 0) {
+                html += `<tr><td colspan="4" class="text-center py-5">No matching records found</tr>`;
+            } else {
+                filteredRows.forEach(row => {
+                    const treasury = row[0] || '—';
+                    const bsnlContact = row[12] || '—';
+                    let treasuryRemarks = row[13] || '—';
+                    const bbmRemarks = row[14] || '—';
+                    
+                    const remarksLower = treasuryRemarks.toLowerCase();
+                    
+                    let badgeClass = 'status-badge-other';
+                    let icon = 'bi-question-circle';
+                    
+                    if (treasuryRemarks === '' || treasuryRemarks === '—') {
+                        badgeClass = 'status-badge-blank';
+                        icon = 'bi-dash-circle';
+                    } else if (remarksLower.includes('link down')) {
+                        badgeClass = 'status-badge-linkdown';
+                        icon = 'bi-wifi-off';
+                    } else if (remarksLower.includes('working fine') || remarksLower.includes('works fine')) {
+                        badgeClass = 'status-badge-working';
+                        icon = 'bi-check-circle';
+                    } else if (remarksLower.includes('not working') || remarksLower.includes('notwork')) {
+                        badgeClass = 'status-badge-notworking';
+                        icon = 'bi-exclamation-circle';
+                    }
+                    
+                    treasuryRemarks = `<span class="${badgeClass}"><i class="bi ${icon}"></i> ${escapeHtml(treasuryRemarks)}</span>`;
+                    
+                    html += `<tr>
+                        <td><strong>${escapeHtml(treasury)}</strong></td>
+                        <td>${escapeHtml(bsnlContact)}</td>
+                        <td>${treasuryRemarks}</td>
+                        <td>${escapeHtml(bbmRemarks)}</td>
+                    </tr>`;
+                });
+            }
+            
+            html += `</tbody></table></div>`;
+            $('#tab1TableContainer').html(html);
+            
+            if (filteredRows.length > 0) {
+                if ($.fn.DataTable.isDataTable('#workingStatusTable')) {
+                    $('#workingStatusTable').DataTable().destroy();
+                }
+                $('#workingStatusTable').DataTable({
+                    paging: true,
+                    pageLength: 25,
+                    lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                    ordering: true,
+                    destroy: true,
+                    responsive: false,
+                    scrollX: false,
+                    columnDefs: [
+                        { targets: 0, width: '250px' },
+                        { targets: 1, width: '200px' },
+                        { targets: 2, width: '200px' },
+                        { targets: 3, width: '200px' }
+                    ]
+                });
+            }
+        }
+        
+        function resetWorkingStatusFilter() {
+            $('input[name="statusFilter"][value="all"]').prop('checked', true);
+            $('.radio-option').removeClass('active');
+            $('.radio-option[data-value="all"]').addClass('active');
+            filterWorkingStatus();
+        }
+        
+        // =============================================
+        // TAB 2: VIEW TREASURY DETAILS
+        // =============================================
+        function viewTreasuryDetails() {
+            const selectedTreasury = $('#treasurySelect').val();
+            
+            if (!selectedTreasury) {
+                alert('Please select a treasury');
+                return;
+            }
+            
+            console.log("=================================");
+            console.log("VIEWING TREASURY:", selectedTreasury);
+            console.log("=================================");
+            
+            $('#installationTableContainer').html('<div class="loading" style="display: block;"><div class="loading-spinner"></div><p>Loading installation data...</p></div>');
+            $('#mplsConfigTableContainer').html('<div class="loading" style="display: block;"><div class="loading-spinner"></div><p>Loading MPLS configuration...</p></div>');
+            $('#treasuryWorkingTableContainer').html('<div class="loading" style="display: block;"><div class="loading-spinner"></div><p>Loading working status...</p></div>');
+            $('#adminTableContainer').html('<div class="loading" style="display: block;"><div class="loading-spinner"></div><p>Loading admin contacts...</p></div>');
+            
+            displayInstallationTable(selectedTreasury);
+            displayMplsConfigTable(selectedTreasury);
+            displayWorkingTableForTreasury(selectedTreasury);
+            displayAdminTable(selectedTreasury);
+        }
+        
+        // Display Installation Status Table
+        function displayInstallationTable(treasury) {
+            if (!installationData || installationData.length < 2) {
+                $('#installationTableContainer').html('<div class="empty-state">No installation data</div>');
+                return;
+            }
+            
+            const headers = installationData[0];
+            const rows = installationData.slice(1).filter(row => row[0] && row[0].toString().trim() === treasury.trim());
+            
+            let html = `<div class="table-responsive"><table class="table table-hover table-bordered">`;
+            html += '<thead><tr>';
+            for (let i = 0; i < Math.min(12, headers.length); i++) {
+                html += `<th>${escapeHtml(headers[i] || `Col ${i+1}`)}</th>`;
+            }
+            html += '</tr></thead><tbody>';
+            
+            if (rows.length === 0) {
+                html += `<tr><td colspan="12" class="text-center py-4">No installation record for this treasury</tr>`;
+            } else {
+                rows.forEach(row => {
+                    html += '<tr>';
+                    for (let i = 0; i < 12; i++) {
+                        html += `<td>${escapeHtml(row[i] || '—')}</td>`;
+                    }
+                    html += '</tr>';
+                });
+            }
+            
+            html += '</tbody></table></div>';
+            $('#installationTableContainer').html(html);
+        }
+        
+        // =============================================
+        // MPLS CONFIGURATION TABLE - LC ID AS LAST COLUMN
+        // LC ID fetched from column S (index 18)
+        // =============================================
+        function displayMplsConfigTable(treasury) {
+            if (!mplsData || mplsData.length < 2) {
+                $('#mplsConfigTableContainer').html('<div class="empty-state">No MPLS configuration data available</div>');
+                return;
+            }
+            
+            const headers = mplsData[0] || [];
+            
+            let searchTreasury = treasury;
+            if (treasury.includes('-')) {
+                searchTreasury = treasury.substring(treasury.indexOf('-') + 1).trim();
+            }
+            
+            let searchTreasuryClean = searchTreasury.replace(/treasury/i, '').trim();
+            
+            console.log("MPLS Config - Searching for base name:", searchTreasury);
+            console.log("MPLS Config - Clean name:", searchTreasuryClean);
+            
+            const rows = mplsData.slice(1).filter(row => {
+                if (!row || !row[0]) return false;
+                
+                const mplsTreasury = row[0].toString().trim();
+                const mplsTreasuryLower = mplsTreasury.toLowerCase();
+                const searchTreasuryLower = searchTreasury.toLowerCase();
+                const searchTreasuryCleanLower = searchTreasuryClean.toLowerCase();
+                
+                const exactMatch = mplsTreasury === treasury;
+                const baseMatch = mplsTreasury.includes(searchTreasury) || searchTreasury.includes(mplsTreasury);
+                const cleanMatch = mplsTreasuryLower.includes(searchTreasuryCleanLower) || 
+                                 searchTreasuryCleanLower.includes(mplsTreasuryLower);
+                const partialMatch = mplsTreasuryLower.includes(searchTreasuryLower) || 
+                                   searchTreasuryLower.includes(mplsTreasuryLower);
+                
+                return exactMatch || baseMatch || cleanMatch || partialMatch;
+            });
+            
+            console.log(`MPLS Config - Found ${rows.length} records for treasury:`, treasury);
+            
+            // Column display names - LC ID as LAST column
+            const columnDisplayNames = [
+                'Name of Treasury',
+                'BSNL TXN / TIP',
+                'LCO CODE',
+                'OLT IP',
+                'OUTER VLAN',
+                'WAN IP',
+                'VLAN',
+                'GATEWAY (BSNL)',
+                'GATEWAY (TREASURY)',
+                'Clarity order status',
+                'Status of work',
+                'LC ID'
+            ];
+            
+            let html = `<div class="table-responsive"><table class="table table-hover table-bordered">`;
+            
+            html += '<thead><tr>';
+            columnDisplayNames.forEach(header => {
+                html += `<th>${escapeHtml(header)}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            if (rows.length === 0) {
+                html += `
+                    <tr>
+                        <td colspan="${columnDisplayNames.length}" class="text-center py-4">
+                            <i class="bi bi-diagram-3 fs-1 text-muted"></i>
+                            <p class="mt-2">No MPLS configuration found for this treasury</p>
+                            <small class="text-muted">Treasury: ${escapeHtml(treasury)}</small>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                rows.forEach(row => {
+                    html += '<tr>';
+                    
+                    // Display columns 0-10 (A through K) - 11 columns
+                    for (let i = 0; i <= 10; i++) {
+                        let cellValue = row[i] || '—';
+                        
+                        if (i === 10) {
+                            const statusLower = cellValue.toLowerCase();
+                            let badgeClass = 'mpls-badge';
+                            
+                            if (statusLower.includes('completed')) {
+                                badgeClass = 'status-badge-working mpls-badge';
+                            } else if (statusLower.includes('pending')) {
+                                badgeClass = 'status-badge-other mpls-badge';
+                            } else if (statusLower.includes('wip')) {
+                                badgeClass = 'status-badge-linkdown mpls-badge';
+                            }
+                            
+                            cellValue = `<span class="${badgeClass}">${escapeHtml(cellValue)}</span>`;
+                        } else {
+                            cellValue = escapeHtml(cellValue);
+                        }
+                        
+                        html += `<td>${cellValue}</td>`;
+                    }
+                    
+                    // Display LC ID - Column S (index 18) as LAST column
+                    let lcIdValue = row[18] || '—';
+                    lcIdValue = escapeHtml(lcIdValue);
+                    html += `<td>${lcIdValue}</td>`;
+                    
+                    html += '</tr>';
+                });
+            }
+            
+            html += '</tbody></table></div>';
+            
+            html += `<div class="small text-muted mt-2">
+                <i class="bi bi-info-circle"></i> MPLS configuration records found: ${rows.length}
+            </div>`;
+            
+            $('#mplsConfigTableContainer').html(html);
+        }
+        
+        // Display Working Table For Treasury
+        function displayWorkingTableForTreasury(treasury) {
+            if (!workingData || workingData.length < 2) {
+                $('#treasuryWorkingTableContainer').html('<div class="empty-state">No working data available</div>');
+                return;
+            }
+            
+            let searchTreasury = treasury;
+            if (treasury.includes('-')) {
+                searchTreasury = treasury.substring(treasury.indexOf('-') + 1).trim();
+            }
+            
+            const searchTreasuryLower = searchTreasury.toLowerCase();
+            
+            const rows = workingData.slice(1).filter(row => {
+                if (!row[0]) return false;
+                const workingTreasury = row[0].toString().trim();
+                const workingTreasuryLower = workingTreasury.toLowerCase();
+                
+                return workingTreasury === treasury || 
+                       workingTreasury.includes(searchTreasury) || 
+                       searchTreasury.includes(workingTreasury) ||
+                       workingTreasuryLower.includes(searchTreasuryLower);
+            });
+            
+            let html = `<div class="table-responsive"><table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>Name of Treasury</th>
+                        <th>CONTACT DETAILS OF BSNL OFFIERS</th>
+                        <th>Treasury Remarks</th>
+                        <th>BBM REMARKS</th>
+                        <th>Issue Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            if (rows.length === 0) {
+                html += `<tr><td colspan="5" class="text-center py-4">No working status found for this treasury</td></tr>`;
+            } else {
+                rows.forEach(row => {
+                    const treasuryName = row[0] || '—';
+                    const bsnlContact = row[12] || '—';
+                    let treasuryRemarks = row[13] || '—';
+                    const bbmRemarks = row[14] || '—';
+                    const issueRemarks = row[15] || '—';
+                    
+                    const remarksLower = treasuryRemarks.toLowerCase();
+                    
+                    let badgeClass = 'status-badge-other';
+                    let icon = 'bi-question-circle';
+                    
+                    if (treasuryRemarks === '' || treasuryRemarks === '—') {
+                        badgeClass = 'status-badge-blank';
+                        icon = 'bi-dash-circle';
+                    } else if (remarksLower.includes('link down')) {
+                        badgeClass = 'status-badge-linkdown';
+                        icon = 'bi-wifi-off';
+                    } else if (remarksLower.includes('working fine') || remarksLower.includes('works fine')) {
+                        badgeClass = 'status-badge-working';
+                        icon = 'bi-check-circle';
+                    } else if (remarksLower.includes('not working') || remarksLower.includes('notwork')) {
+                        badgeClass = 'status-badge-notworking';
+                        icon = 'bi-exclamation-circle';
+                    }
+                    
+                    treasuryRemarks = `<span class="${badgeClass}"><i class="bi ${icon}"></i> ${escapeHtml(treasuryRemarks)}</span>`;
+                    
+                    html += `<tr>
+                        <td><strong>${escapeHtml(treasuryName)}</strong></td>
+                        <td>${escapeHtml(bsnlContact)}</td>
+                        <td>${treasuryRemarks}</td>
+                        <td>${escapeHtml(bbmRemarks)}</td>
+                        <td>${escapeHtml(issueRemarks)}</td>
+                    </tr>`;
+                });
+            }
+            
+            html += '</tbody></div>';
+            $('#treasuryWorkingTableContainer').html(html);
+        }
+        
+        // Display Admin Table
+        function displayAdminTable(treasury) {
+            console.log("Admin Contact - Loading for treasury:", treasury);
+            
+            if (!adminData || adminData.length === 0) {
+                console.log("No admin data available");
+                $('#adminTableContainer').html('<div class="empty-state">No admin contact data available</div>');
+                return;
+            }
+            
+            const adminColumns = [
+                'Treasury/Location',
+                'Network Admin Name',
+                'Network Admin Contact',
+                'Treasury Admin Name',
+                'Treasury Admin Contact',
+                'Office Mail ID',
+                'Office Contact',
+                'Office Mobile'
+            ];
+            
+            let searchTreasury = treasury;
+            if (treasury.includes('-')) {
+                searchTreasury = treasury.substring(treasury.indexOf('-') + 1).trim();
+            }
+            
+            let searchTreasuryClean = searchTreasury.replace(/treasury/i, '').trim();
+            
+            console.log("Admin Contact - Searching for base name:", searchTreasury);
+            console.log("Admin Contact - Clean name:", searchTreasuryClean);
+            
+            const rows = adminData.filter(row => {
+                if (!row || !row[0]) return false;
+                
+                const adminTreasury = row[0].toString().trim();
+                const adminTreasuryLower = adminTreasury.toLowerCase();
+                const searchTreasuryLower = searchTreasury.toLowerCase();
+                const searchTreasuryCleanLower = searchTreasuryClean.toLowerCase();
+                
+                const exactMatch = adminTreasury === treasury;
+                const baseMatch = adminTreasury.includes(searchTreasury) || searchTreasury.includes(adminTreasury);
+                const cleanMatch = adminTreasuryLower.includes(searchTreasuryCleanLower) || 
+                                 searchTreasuryCleanLower.includes(adminTreasuryLower);
+                const partialMatch = adminTreasuryLower.includes(searchTreasuryLower) || 
+                                   searchTreasuryLower.includes(adminTreasuryLower);
+                
+                return exactMatch || baseMatch || cleanMatch || partialMatch;
+            });
+            
+            console.log(`Admin Contact - Found ${rows.length} records for treasury:`, treasury);
+            
+            let html = `<div class="table-responsive"><table class="table table-hover table-bordered">`;
+            
+            html += '<thead><tr>';
+            adminColumns.forEach(header => {
+                html += `<th>${escapeHtml(header)}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            if (rows.length === 0) {
+                html += `
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <i class="bi bi-person-x fs-1 text-muted"></i>
+                            <p class="mt-2">No admin contact details found for this treasury</p>
+                            <small class="text-muted">Treasury: ${escapeHtml(treasury)}</small>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                rows.forEach(row => {
+                    html += '<tr>';
+                    for (let i = 0; i < 8; i++) {
+                        let cellValue = row[i] || '—';
+                        
+                        if (i === 5 && cellValue !== '—' && cellValue.includes('@')) {
+                            cellValue = `<a href="mailto:${escapeHtml(cellValue)}">${escapeHtml(cellValue)}</a>`;
+                        } else if ((i === 2 || i === 4 || i === 6 || i === 7) && cellValue !== '—') {
+                            const cleanNumber = cellValue.replace(/[^0-9+]/g, '');
+                            if (cleanNumber) {
+                                cellValue = `<a href="tel:${escapeHtml(cleanNumber)}">${escapeHtml(cellValue)}</a>`;
+                            }
+                        } else {
+                            cellValue = escapeHtml(cellValue);
+                        }
+                        
+                        html += `<td>${cellValue}</td>`;
+                    }
+                    html += '</tr>';
+                });
+            }
+            
+            html += '</tbody></table></div>';
+            
+            html += `<div class="small text-muted mt-2">
+                <i class="bi bi-info-circle"></i> Admin contact records found: ${rows.length}
+            </div>`;
+            
+            $('#adminTableContainer').html(html);
+        }
+        
+        // =============================================
+        // UTILITY FUNCTIONS
+        // =============================================
+        function escapeHtml(text) {
+            if (!text) return '—';
+            if (typeof text !== 'string') text = String(text);
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+        
+        function showError(message) {
+            const errorHtml = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    ${message}
+                </div>
+            `;
+            $('#tab1TableContainer').html(errorHtml);
+        }
+    </script>
+</body>
+</html>

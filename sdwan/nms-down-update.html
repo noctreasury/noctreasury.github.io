@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report WAN Issue - TRY Remarks with Sorted Unique Options</title>
+
+    <!-- LOCAL CSS -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
+    
+    <!-- LOCAL Flatpickr Resources -->
+    <link rel="stylesheet" href="../css/flatpickr.min.css">
+    <script src="../js/flatpickr.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #0f5b9c;
+            --primary-dark: #1a4b7a;
+            --primary-light: #e8f0fe;
+            --success: #10b981;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --border: #e9ecef;
+        }
+
+        body {
+             background: #fff0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding: 20px;
+            color: var(--dark);
+        }
+
+        .form-container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .form-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 15px 25px;
+        }
+
+        .form-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-header h2 i {
+            font-size: 1.8rem;
+            background: rgba(255,255,255,0.2);
+            padding: 8px;
+            border-radius: 10px;
+        }
+
+        .form-body {
+            padding: 20px;
+        }
+
+        .form-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 3px;
+            color: var(--dark);
+        }
+
+        .form-label i {
+            color: var(--primary);
+            margin-right: 4px;
+            font-size: 0.8rem;
+        }
+
+        .required:after {
+            content: " *";
+            color: #dc3545;
+            font-size: 0.8rem;
+        }
+
+        .form-control, .form-select {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.9rem;
+            height: 38px;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(15, 91, 156, 0.1);
+        }
+
+        .form-control[readonly] {
+            background-color: var(--light);
+            cursor: not-allowed;
+        }
+
+        .input-group-text {
+            background: var(--primary-light);
+            color: var(--primary);
+            border: 1px solid var(--border);
+            border-radius: 8px 0 0 8px;
+            padding: 6px 12px;
+            font-size: 0.9rem;
+        }
+
+        .generated-caseid {
+            background: #e8f7ed;
+            color: #0b5e42;
+            font-family: monospace;
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 8px 15px;
+            border-radius: 8px;
+            border-left: 3px solid #10b981;
+            margin-bottom: 15px;
+        }
+
+        .lco-info-badge {
+            background: #eef2ff;
+            border-left: 3px solid var(--primary);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            margin-top: 8px;
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection {
+            border-radius: 8px !important;
+            border: 1px solid var(--border) !important;
+            min-height: 38px !important;
+            padding: 3px 10px !important;
+            font-size: 0.9rem !important;
+        }
+
+        .row {
+            margin-bottom: 12px;
+        }
+
+        .btn-reset, .btn-submit {
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-reset {
+            background: white;
+            border: 1px solid var(--border);
+            color: var(--dark);
+        }
+
+        .btn-reset:hover {
+            background: var(--light);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border: none;
+            color: white;
+            box-shadow: 0 3px 10px rgba(15, 91, 156, 0.2);
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(15, 91, 156, 0.3);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        textarea.form-control {
+            height: auto;
+            min-height: 60px;
+            resize: vertical;
+        }
+
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 9999;
+            animation: slideIn 0.3s ease-out;
+            border-left: 4px solid;
+            max-width: 400px;
+        }
+
+        .alert-success {
+            border-left-color: #10b981;
+        }
+
+        .alert-error {
+            border-left-color: #ef4444;
+        }
+
+        .alert i {
+            font-size: 1.2rem;
+            margin-right: 10px;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid var(--primary-light);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 5px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .try-remarks-wrapper {
+            position: relative;
+        }
+        
+        .try-remarks-display {
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: #0f5b9c;
+            background: #eef2ff;
+            padding: 6px 12px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        /* Custom modal for "Not Listed Here" */
+        .custom-value-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .custom-value-modal .modal-card {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            padding: 20px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.2);
+        }
+
+        .custom-value-modal .modal-card h5 {
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .custom-value-modal .modal-card input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .custom-value-modal .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .custom-value-modal button {
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: none;
+            font-weight: 500;
+        }
+
+        .btn-custom-confirm {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-custom-cancel {
+            background: #e2e8f0;
+            color: var(--dark);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .badge-count {
+            font-size: 0.7rem;
+            background: #10b981;
+            color: white;
+            border-radius: 20px;
+            padding: 2px 8px;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <!-- Header -->
+        <div class="form-header">
+            <h2>
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                Report WAN Issue
+            </h2>
+        </div>
+
+        <!-- Form Body -->
+        <div class="form-body">
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Case ID - Full width -->
+            <div class="generated-caseid" id="caseIdDisplay">
+                <i class="bi bi-qr-code me-2"></i>
+                <span id="caseIdValue">Loading...</span>
+            </div>
+
+            <!-- Row 1: 2 Columns - Branch and Treasury -->
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <label class="form-label required"><i class="bi bi-diagram-3"></i> Branch</label>
+                    <select id="branchSelect" class="form-select" style="width: 100%;">
+                        <option value="">Loading branches...</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label required"><i class="bi bi-wifi"></i> Issue Reported WAN</label>
+                    <select id="wanSelect" class="form-select" style="width: 100%;">
+                        <option value="">Select WAN...</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Row 2: 3 Columns - Date, Time, Status -->
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <label class="form-label required"><i class="bi bi-calendar"></i> Date</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-calendar"></i></span>
+                        <input type="text" id="datePicker" class="form-control" placeholder="DD/MM/YYYY">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label required"><i class="bi bi-clock"></i> Time</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                        <input type="text" id="timeInput" class="form-control" placeholder="HH:MM:SS">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label required"><i class="bi bi-activity"></i> Status</label>
+                    <input type="text" id="statusInput" class="form-control" readonly value="Down">
+                </div>
+            </div>
+
+            <!-- Row 3: 2 Columns - Treasury and Service Provider -->
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <label class="form-label"><i class="bi bi-building"></i> Treasury</label>
+                    <input type="text" id="treasuryInput" class="form-control" readonly placeholder="Auto-filled">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label"><i class="bi bi-broadcast"></i> Service Provider</label>
+                    <input type="text" id="providerInput" class="form-control" readonly placeholder="Auto-filled">
+                </div>
+            </div>
+
+            <!-- Row 4: Remarks Section with LCO/Circle Code integration -->
+            <div class="remark-section">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <label class="form-label"><i class="bi bi-chat"></i> Circuit-ID</label>
+                        <textarea id="dotRemarks" class="form-control" rows="2" placeholder=""></textarea>
+                        <!-- LCO/Circle Code Info Badge -->
+                        <div id="lcoInfoContainer" class="lco-info-badge" style="display: none;">
+                            <i class="bi bi-tag"></i>
+                            <span id="lcoCodeValue">Circle Code: </span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label"><i class="bi bi-chat"></i> TRY Remarks <span id="optionsCountBadge" class="badge-count" style="display: none;"></span></label>
+                        <!-- Enhanced: Select2 dropdown for TRY Remarks with sorted unique values from "Issue reported" sheet J2:J -->
+                        <select id="tryRemarksSelect" class="form-select" style="width: 100%;">
+                            <option value="">Loading TRY options...</option>
+                        </select>
+                        <!-- Hidden input to store final value for submission -->
+                        <input type="hidden" id="tryRemarksValue" name="tryRemarks">
+                        <div id="selectedTryRemarkDisplay" class="try-remarks-display">
+                            <i class="bi bi-check-circle-fill"></i> Selected: <span id="selectedRemarkText"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div>
+                    <button type="button" id="submitBtn" class="btn-submit" disabled>
+                        <i class="bi bi-send"></i> Submit
+                    </button>
+                    <button type="button" id="resetBtn" class="btn-reset ms-2">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOCAL SCRIPTS -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/select2.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // ==================== CONFIG ====================
+            const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+            const SPREADSHEET_ID = '1q70H2WSERyz_agwb0ZirYzs2MhAO1sIB7GKlAGxvtUo';
+            const WAN_SHEET = 'WAN Details';
+            const CIRCUIT_SHEET = 'Circute-ID';  
+            const ISSUE_REPORTED_SHEET = 'Issue reported';  // Sheet name for TRY Remarks options
+            const TRY_COLUMN_RANGE = 'J2:J';                 // Column J2:J for options
+            
+            // APPS SCRIPT URL
+            const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyv6E-EcvWPz6NZneuOzgs1jPohaXs94Z_Ql-PqhWjcvNirOqMKeWoMV2J2X6dvjLQe6g/exec';
+
+            // ==================== GLOBAL DATA ====================
+            let wanData = [];
+            let branchMap = new Map();
+            let lcoMap = new Map();
+            let tryRemarksOptions = [];      // Store UNIQUE & SORTED options from Issue reported sheet
+            let flatpickrInstance = null;
+            let customValueModalActive = false;
+            let currentTryRemarks = '';       // Store currently selected TRY remark
+
+            // ==================== INITIALIZE ====================
+            initForm();
+
+            async function initForm() {
+                showLoading(true);
+                await Promise.all([loadWanDetails(), loadLCOCodesFromCircuitSheet(), loadTryRemarksFromIssueReported()]);
+                initSelect2();
+                initDatePicker();
+                setDefaultTime();
+                showLoading(false);
+                updateCaseId();
+                setInterval(updateCaseId, 60000);
+            }
+
+            function showLoading(show) {
+                if (show) {
+                    $('#branchSelect').html('<option value="">Loading branches...</option>');
+                }
+            }
+
+            function setDefaultTime() {
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+                $('#timeInput').val(`${hours}:${minutes}:${seconds}`);
+            }
+
+            // ==================== LOAD TRY REMARKS FROM "Issue reported" SHEET (Column J2:J) with SORTING and UNIQUE values ====================
+            async function loadTryRemarksFromIssueReported() {
+                try {
+                    // Fetch column J starting from row 2 (J2:J) from sheet "Issue reported"
+                    const sheetName = encodeURIComponent(ISSUE_REPORTED_SHEET);
+                    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!${TRY_COLUMN_RANGE}?key=${API_KEY}`;
+                    console.log('Fetching TRY Remarks from Issue reported sheet:', url);
+                    
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`HTTP ${response.status} - Failed to load TRY Remarks`);
+                    
+                    const data = await response.json();
+                    console.log('Raw data from Issue reported sheet:', data);
+                    
+                    let rawValues = [];
+                    if (data.values && data.values.length > 0) {
+                        // Extract values from column J, trim whitespace, filter out empty strings
+                        rawValues = data.values
+                            .map(row => row[0] ? row[0].toString().trim() : '')
+                            .filter(val => val !== '');
+                        console.log(`Raw values fetched: ${rawValues.length} entries`);
+                    } else {
+                        console.warn('No data found in Issue reported sheet J2:J');
+                        rawValues = [];
+                    }
+                    
+                    // STEP 1: Get UNIQUE values using Set
+                    const uniqueSet = new Set(rawValues);
+                    // STEP 2: Convert to array and SORT alphabetically (case-insensitive for better UX)
+                    let uniqueSorted = Array.from(uniqueSet);
+                    uniqueSorted.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+                    
+                    tryRemarksOptions = uniqueSorted;
+                    
+                    console.log(`Processed ${tryRemarksOptions.length} unique & sorted TRY Remarks options:`, tryRemarksOptions);
+                    
+                    // Update badge showing count
+                    if (tryRemarksOptions.length > 0) {
+                        $('#optionsCountBadge').text(`${tryRemarksOptions.length} options`).show();
+                    } else {
+                        $('#optionsCountBadge').hide();
+                    }
+                    
+                    populateTryRemarksDropdown();
+                    
+                    // If no options found, show a friendly message
+                    if (tryRemarksOptions.length === 0) {
+                        showAlert('error', 'No TRY Remarks found in "Issue reported" sheet J2:J. Please add some values or use "Not Listed here" option.');
+                    }
+                } catch (error) {
+                    console.error('Error loading TRY Remarks from Issue reported sheet:', error);
+                    // Fallback default values (also sorted and unique)
+                    tryRemarksOptions = ['DNS Issue', 'Fiber Cut', 'Hardware Failure', 'High Latency', 'Link Flapping', 'Network Congestion', 'Power Outage', 'Routing Issue'];
+                    tryRemarksOptions.sort((a, b) => a.localeCompare(b));
+                    $('#optionsCountBadge').text(`${tryRemarksOptions.length} options (default)`).show();
+                    populateTryRemarksDropdown();
+                    showAlert('error', 'Could not load TRY Remarks from "Issue reported" sheet. Using default sorted options.');
+                }
+            }
+
+            function populateTryRemarksDropdown() {
+                const $select = $('#tryRemarksSelect');
+                $select.empty();
+                // Add default placeholder
+                $select.append('<option value="">-- Select TRY Remark --</option>');
+                
+                // Add fetched options (already unique and sorted)
+                tryRemarksOptions.forEach(option => {
+                    $select.append(`<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`);
+                });
+                
+                // Add special "Not Listed here" option with distinct styling
+                $select.append('<option value="__NOT_LISTED__" style="font-weight: bold; color: #0f5b9c; background-color: #e8f0fe; border-top: 1px solid #dee2e6;">➕ Not Listed here (Add custom)</option>');
+                
+                // Reinitialize Select2 if already initialized
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    $select.select2('destroy');
+                }
+                
+                $select.select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    placeholder: 'Select or add custom TRY remark...',
+                    allowClear: true,
+                    tags: false,
+                    dropdownAutoWidth: true,
+                    matcher: function(params, data) {
+                        // Custom matcher for better search experience
+                        if ($.trim(params.term) === '') {
+                            return data;
+                        }
+                        const term = params.term.toLowerCase();
+                        const text = data.text.toLowerCase();
+                        if (text.indexOf(term) > -1) {
+                            return data;
+                        }
+                        return null;
+                    }
+                });
+                
+                // Bind change event
+                $select.off('change').on('change', handleTryRemarksChange);
+            }
+            
+            // Handler for TRY Remarks dropdown change
+            function handleTryRemarksChange(e) {
+                const selectedVal = $(e.target).val();
+                if (selectedVal === '__NOT_LISTED__') {
+                    // Show modal to get custom value
+                    showCustomValueModal();
+                    // Reset the select to previous valid value or empty
+                    $(e.target).val('').trigger('change.select2');
+                } else if (selectedVal && selectedVal !== '') {
+                    // Normal selection: update the hidden field and display
+                    currentTryRemarks = selectedVal;
+                    $('#tryRemarksValue').val(selectedVal);
+                    $('#selectedRemarkText').text(selectedVal);
+                    $('#selectedTryRemarkDisplay').fadeIn(200);
+                    console.log('TRY Remark selected:', selectedVal);
+                } else {
+                    // Clear selection
+                    currentTryRemarks = '';
+                    $('#tryRemarksValue').val('');
+                    $('#selectedTryRemarkDisplay').fadeOut(200);
+                }
+                validateForm(); // TRY is optional, but call anyway
+            }
+            
+            // Modal to get custom remark value from user
+            function showCustomValueModal() {
+                if (customValueModalActive) return;
+                customValueModalActive = true;
+                
+                const modalHtml = `
+                    <div class="custom-value-modal" id="customRemarkModal">
+                        <div class="modal-card">
+                            <h5><i class="bi bi-plus-circle"></i> Add Custom TRY Remark</h5>
+                            <p style="font-size: 0.85rem; color: #555;">Enter a new remark value (not listed in the dropdown):</p>
+                            <input type="text" id="customRemarkInput" class="form-control" placeholder="e.g., BGP Issue, Packet Drop, Authentication Failure" autofocus>
+                            <div class="modal-actions" style="margin-top: 15px;">
+                                <button class="btn-custom-cancel" id="cancelCustomBtn">Cancel</button>
+                                <button class="btn-custom-confirm" id="confirmCustomBtn">Add & Select</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                $('body').append(modalHtml);
+                
+                // Focus input
+                $('#customRemarkInput').focus();
+                
+                // Handle confirm
+                $('#confirmCustomBtn').on('click', function() {
+                    const newValue = $('#customRemarkInput').val().trim();
+                    if (newValue === '') {
+                        showAlert('error', 'Please enter a valid remark.');
+                        return;
+                    }
+                    
+                    // Check if value already exists (case-insensitive)
+                    const exists = tryRemarksOptions.some(opt => opt.toLowerCase() === newValue.toLowerCase());
+                    if (!exists) {
+                        // Add to options array, then sort and keep unique
+                        tryRemarksOptions.push(newValue);
+                        // Re-sort the options
+                        tryRemarksOptions.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+                        console.log(`Added new TRY remark option: ${newValue}. Total unique options: ${tryRemarksOptions.length}`);
+                        // Update badge count
+                        $('#optionsCountBadge').text(`${tryRemarksOptions.length} options`).show();
+                        // Re-populate dropdown to include the new option (preserving sorted order)
+                        const currentSelect = $('#tryRemarksSelect');
+                        populateTryRemarksDropdown(); // This rebuilds the select2 with all options + new one
+                    } else {
+                        console.log(`Value "${newValue}" already exists in options`);
+                    }
+                    
+                    // Set the value to this new custom remark
+                    currentTryRemarks = newValue;
+                    $('#tryRemarksValue').val(newValue);
+                    $('#selectedRemarkText').text(newValue);
+                    $('#selectedTryRemarkDisplay').fadeIn(200);
+                    
+                    // Set the select to this option
+                    const $sel = $('#tryRemarksSelect');
+                    if ($sel.find(`option[value="${escapeHtml(newValue)}"]`).length) {
+                        $sel.val(newValue).trigger('change.select2');
+                    } else {
+                        $sel.val('').trigger('change.select2');
+                    }
+                    
+                    closeModal();
+                    showAlert('success', `Custom remark "${newValue}" added and selected.`);
+                    validateForm();
+                });
+                
+                // Cancel button
+                $('#cancelCustomBtn').on('click', function() {
+                    closeModal();
+                });
+                
+                // Close on background click
+                $(document).on('click', '#customRemarkModal', function(e) {
+                    if ($(e.target).is('#customRemarkModal')) {
+                        closeModal();
+                    }
+                });
+                
+                // Close on Escape key
+                $(document).on('keydown', function(e) {
+                    if (e.key === 'Escape' && $('#customRemarkModal').length) {
+                        closeModal();
+                    }
+                });
+                
+                function closeModal() {
+                    $('#customRemarkModal').remove();
+                    customValueModalActive = false;
+                    $(document).off('keydown');
+                }
+            }
+
+            // ==================== LOAD LCO CODES FROM "Circute-ID" SHEET ====================
+            async function loadLCOCodesFromCircuitSheet() {
+                try {
+                    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(CIRCUIT_SHEET)}!B2:C?key=${API_KEY}`;
+                    console.log('Fetching LCO codes from Circute-ID sheet:', url);
+                    
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    
+                    const data = await response.json();
+                    if (data.values && data.values.length > 0) {
+                        processLCOData(data.values);
+                        console.log(`Loaded ${lcoMap.size} LCO/Circle Code mappings`);
+                    }
+                } catch (error) {
+                    console.error('Error loading LCO codes:', error);
+                }
+            }
+
+            function processLCOData(rows) {
+                lcoMap.clear();
+                rows.forEach((row) => {
+                    let branchName = row[0] ? row[0].toString().trim() : '';
+                    let lcoCode = row[1] ? row[1].toString().trim() : '';
+                    if (branchName && lcoCode) {
+                        lcoMap.set(branchName, lcoCode);
+                    }
+                });
+            }
+
+            // ==================== LOAD WAN DETAILS ====================
+            async function loadWanDetails() {
+                try {
+                    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(WAN_SHEET)}!A2:E?key=${API_KEY}`;
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const data = await response.json();
+                    if (data.values && data.values.length > 0) {
+                        processWanData(data.values);
+                        populateBranchDropdown();
+                    } else {
+                        $('#branchSelect').html('<option value="">No branches found</option>');
+                    }
+                } catch (error) {
+                    console.error('Error loading WAN details:', error);
+                    $('#branchSelect').html('<option value="">Error loading data</option>');
+                    showAlert('error', 'Failed to load branch data.');
+                }
+            }
+
+            function processWanData(rows) {
+                wanData = [];
+                branchMap.clear();
+                rows.forEach((row) => {
+                    const branch = row[0] ? row[0].toString().trim() : '';
+                    if (branch) {
+                        const treasury = row[1] ? row[1].toString().trim() : '';
+                        const wan1Provider = row[2] ? row[2].toString().trim() : '';
+                        const wan2Provider = row[3] ? row[3].toString().trim() : '';
+                        wanData.push({ branch, treasury, wan1: wan1Provider, wan2: wan2Provider });
+                        branchMap.set(branch, { treasury, wan1: wan1Provider, wan2: wan2Provider });
+                    }
+                });
+            }
+
+            function populateBranchDropdown() {
+                const $select = $('#branchSelect');
+                $select.empty().append('<option value="">Select Branch...</option>');
+                if (wanData.length === 0) {
+                    $select.append('<option value="">No branches available</option>');
+                    return;
+                }
+                wanData.sort((a, b) => a.branch.localeCompare(b.branch)).forEach(item => {
+                    $select.append(`<option value="${escapeHtml(item.branch)}">${escapeHtml(item.branch)}</option>`);
+                });
+            }
+
+            // ==================== SERVICE PROVIDER CHECK & LCO LOGIC ====================
+            function isServiceProviderBSNLMPLS() {
+                const provider = $('#providerInput').val();
+                return provider && (provider.toLowerCase().includes('bsnl') || provider.toLowerCase().includes('bsnl'));
+            }
+
+            function updateLCOCodeForBranch() {
+                const branchName = $('#branchSelect').val();
+                const isBSNL = isServiceProviderBSNLMPLS();
+                $('#lcoInfoContainer').hide();
+                if (!branchName || !isBSNL) {
+                    const currentRemarks = $('#dotRemarks').val();
+                    if (currentRemarks && currentRemarks.includes('[Circuit ID:')) {
+                        const cleaned = currentRemarks.replace(/\[Circuit ID:.*?\]\s*/g, '');
+                        $('#dotRemarks').val(cleaned.trim());
+                    }
+                    return;
+                }
+                const lcoCode = lcoMap.get(branchName);
+                if (lcoCode && lcoCode.trim() !== '') {
+                    $('#lcoCodeValue').html(`<strong>LCD/Circle Code:</strong> ${escapeHtml(lcoCode)}`);
+                    $('#lcoInfoContainer').show();
+                    const currentRemarks = $('#dotRemarks').val();
+                    const lcoPrefix = `[Circuit ID: ${lcoCode}] `;
+                    if (!currentRemarks.includes(`[Circuit ID: ${lcoCode}]`)) {
+                        let cleaned = currentRemarks || '';
+                        cleaned = cleaned.replace(/\[Circuit ID:.*?\]\s*/g, '');
+                        $('#dotRemarks').val(cleaned.trim() ? lcoPrefix + cleaned.trim() : lcoPrefix);
+                    }
+                } else {
+                    $('#lcoCodeValue').html(`<strong>LCD/Circuit Code:</strong> Not found`);
+                    $('#lcoInfoContainer').show();
+                }
+            }
+
+            // ==================== INIT COMPONENTS ====================
+            function initSelect2() {
+                $('#branchSelect').select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    placeholder: 'Search or select branch...',
+                    allowClear: true
+                });
+                $('#wanSelect').select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    placeholder: 'Select WAN...',
+                    allowClear: true,
+                    data: [{ id: 'WAN 1', text: 'WAN 1 (Primary)' }, { id: 'WAN 2', text: 'WAN 2 (Secondary)' }]
+                });
+            }
+
+            function initDatePicker() {
+                flatpickrInstance = flatpickr("#datePicker", {
+                    dateFormat: "d/m/Y",
+                    defaultDate: "today",
+                    allowInput: true,
+                    onChange: () => validateForm()
+                });
+            }
+
+            // ==================== CASE ID GENERATION ====================
+            function generateCaseId() {
+                const branch = $('#branchSelect').val();
+                if (!branch) return 'Select a branch';
+                const now = new Date();
+                const year = now.getFullYear().toString().slice(-2);
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                return `${branch}${year}${month}${day}${hours}${minutes}`;
+            }
+            function updateCaseId() { $('#caseIdValue').text(generateCaseId()); }
+
+            // ==================== EVENT HANDLERS ====================
+            $('#branchSelect').on('change', function() {
+                const branch = $(this).val();
+                if (branch && branchMap.has(branch)) {
+                    const data = branchMap.get(branch);
+                    $('#treasuryInput').val(data.treasury || '');
+                    updateLCOCodeForBranch();
+                } else {
+                    $('#treasuryInput').val('');
+                    $('#providerInput').val('');
+                    $('#lcoInfoContainer').hide();
+                }
+                $('#wanSelect').val(null).trigger('change');
+                updateCaseId();
+                validateForm();
+            });
+
+            $('#wanSelect').on('change', function() {
+                const wan = $(this).val();
+                const branch = $('#branchSelect').val();
+                if (wan && branch && branchMap.has(branch)) {
+                    const data = branchMap.get(branch);
+                    let newProvider = (wan === 'WAN 1') ? data.wan1 : data.wan2;
+                    $('#providerInput').val(newProvider || '');
+                    updateLCOCodeForBranch();
+                } else {
+                    $('#providerInput').val('');
+                    $('#lcoInfoContainer').hide();
+                }
+                validateForm();
+            });
+
+            $('#datePicker, #timeInput').on('change input', validateForm);
+
+            function validateForm() {
+                const branch = $('#branchSelect').val();
+                const date = $('#datePicker').val();
+                const time = $('#timeInput').val();
+                const wan = $('#wanSelect').val();
+                const timeRegex = /^([0-1][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$/;
+                const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+                const isValid = branch && dateRegex.test(date) && wan && timeRegex.test(time);
+                $('#submitBtn').prop('disabled', !isValid);
+                if (time && !timeRegex.test(time)) $('#timeInput').addClass('is-invalid');
+                else $('#timeInput').removeClass('is-invalid');
+                if (date && !dateRegex.test(date)) $('#datePicker').addClass('is-invalid');
+                else $('#datePicker').removeClass('is-invalid');
+                return isValid;
+            }
+
+            function resetForm() {
+                $('#branchSelect').val(null).trigger('change');
+                $('#wanSelect').val(null).trigger('change');
+                $('#treasuryInput').val('');
+                $('#providerInput').val('');
+                $('#dotRemarks').val('');
+                $('#tryRemarksSelect').val('').trigger('change');
+                $('#tryRemarksValue').val('');
+                currentTryRemarks = '';
+                $('#selectedTryRemarkDisplay').fadeOut(200);
+                $('#lcoInfoContainer').hide();
+                if (flatpickrInstance) flatpickrInstance.setDate(new Date());
+                setDefaultTime();
+                updateCaseId();
+                $('#submitBtn').prop('disabled', true);
+                $('.is-invalid').removeClass('is-invalid');
+            }
+            $('#resetBtn').on('click', resetForm);
+
+            function showAlert(type, message) {
+                const alertHtml = `<div class="alert alert-${type}" id="alertMessage"><i class="bi ${type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'}"></i><span>${message}</span></div>`;
+                $('#alertContainer').html(alertHtml);
+                setTimeout(() => $('#alertMessage').fadeOut(300, function() { $(this).remove(); }), 5000);
+            }
+
+            // ==================== SUBMIT HANDLER ====================
+            $('#submitBtn').on('click', async function() {
+                if (!validateForm()) { showAlert('error', 'Please fill all required fields correctly'); return; }
+                const $btn = $(this);
+                const originalText = $btn.html();
+                $btn.prop('disabled', true).html('<span class="loading-spinner"></span> Submitting...');
+                
+                const dotRemarksValue = $('#dotRemarks').val() || '';
+                const tryRemarksValue = $('#tryRemarksValue').val() || '';
+                
+                const formData = {
+                    caseId: $('#caseIdValue').text(),
+                    date: $('#datePicker').val(),
+                    time: $('#timeInput').val(),
+                    branch: $('#branchSelect').val(),
+                    treasury: $('#treasuryInput').val(),
+                    issueWAN: $('#wanSelect').val(),
+                    serviceProvider: $('#providerInput').val(),
+                    status: $('#statusInput').val(),
+                    dotRemarks: dotRemarksValue,
+                    tryRemarks: tryRemarksValue
+                };
+                
+                console.log('Submitting with TRY Remarks:', tryRemarksValue);
+                
+                try {
+                    const formBody = new URLSearchParams();
+                    Object.keys(formData).forEach(k => formBody.append(k, formData[k]));
+                    await fetch(APPS_SCRIPT_URL, { 
+                        method: 'POST', 
+                        mode: 'no-cors', 
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, 
+                        body: formBody 
+                    });
+                    showAlert('success', 'Issue reported successfully!');
+                    resetForm();
+                } catch (error) {
+                    console.error('Submission error:', error);
+                    showAlert('error', 'Failed to submit. Please try again.');
+                } finally {
+                    $btn.prop('disabled', false).html(originalText);
+                }
+            });
+
+            function escapeHtml(text) {
+                if (!text) return '';
+                return text.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+            }
+        });
+    </script>
+</body>
+</html>

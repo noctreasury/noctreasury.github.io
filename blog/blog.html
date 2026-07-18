@@ -1,0 +1,336 @@
+<!-- index.html - Updated with category navigation -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Blog Home - Modern Articles</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/swiper-bundle.min.css">
+     <!-- Custom Blog CSS  -->
+    <link rel="stylesheet" href="css/blog.css">
+</head>
+<body>
+
+<header id="main-header"></header>
+
+<main class="container py-4 py-lg-5">
+    <div id="heroPostContainer" class="mb-5"></div>
+    <div id="relatedSection" style="display: none;" class="mb-5">
+        <h3 class="fw-semibold mb-3"><i class="bi bi-tag"></i> More in <span id="relatedCategoryName"></span></h3>
+        <div class="row g-4" id="relatedGrid"></div>
+    </div>
+    <div id="sliderSection" class="mb-5" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="fw-semibold"><i class="bi bi-clock-history"></i> Recent articles</h3>
+            <div>
+                <button class="btn btn-sm btn-outline-secondary me-2" id="prevSlide"><i class="bi bi-chevron-left"></i></button>
+                <button class="btn btn-sm btn-outline-secondary" id="nextSlide"><i class="bi bi-chevron-right"></i></button>
+            </div>
+        </div>
+        <div class="swiper mySwiper">
+            <div class="swiper-wrapper" id="swiperWrapper"></div>
+        </div>
+    </div>
+    <div id="remainingPostsSection">
+        <h3 class="fw-semibold mb-3"><i class="bi bi-grid-3x3-gap"></i> All articles</h3>
+        <div class="row g-4" id="allPostsGrid"></div>
+        <div id="loadMoreTrigger" class="load-more-trigger">
+            <button class="btn btn-outline-primary rounded-pill px-4" id="loadMoreBtn"><i class="bi bi-arrow-down"></i> Load more</button>
+        </div>
+        <div id="noMoreMsg" class="text-center text-muted small d-none">✨ You've reached the end</div>
+    </div>
+</main>
+
+<footer class="py-4 mt-5">
+    <div class="container text-center text-muted small">
+        <i class="bi bi-dot"></i> Powered by Google Sheets · Blog Studio
+    </div>
+</footer>
+
+<script src="js/bootstrap.bundle.min.js"></script>
+<script src="js/swiper-bundle.min.js"></script>
+<script src="config.js"></script>
+<script>
+    let allPosts = [];
+    let allComments = [];
+    let renderLimit = 6;
+    let swiperInstance = null;
+
+    function extractFirstImage(html) {
+        if (!html) return 'https://placehold.co/600x400/e2e8f0/64748b?text=Blog+Image';
+        const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+        return match ? match[1] : 'https://placehold.co/600x400/e2e8f0/64748b?text=Blog+Image';
+    }
+    
+    function stripHtml(html) {
+        let temp = document.createElement("div");
+        temp.innerHTML = html;
+        return temp.textContent || temp.innerText || "";
+    }
+
+    // Navigate to category page
+    function navigateToCategory(category) {
+        localStorage.setItem('selectedCategory', category);
+        window.location.href = 'category.html';
+    }
+
+    // Navigate to post page
+    function navigateToPost(postId) {
+        localStorage.setItem('blogPostId', postId);
+        window.location.href = 'post.html';
+    }
+
+    async function loadHeaderConfig() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/configure!A:F?key=${CONFIG.API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            if(rows.length < 2) return;
+            let blogTitle = "Blog Studio", logoUrl = "";
+            let menuItems = [];
+            for(let i=1; i<rows.length; i++) {
+                let row = rows[i];
+                let item = row[0]?.trim(), configVal = row[1]?.trim(), menu = row[2]?.trim(), sub = row[3]?.trim(), linkItem = row[4]?.trim(), link = row[5]?.trim();
+                if(item === "Blog Title" && configVal) blogTitle = configVal;
+                if(item === "Blog logo(url)" && configVal) logoUrl = configVal;
+                if(menu && menu !== "Menu") {
+                    let existing = menuItems.find(m => m.name === menu);
+                    if(!existing) {
+                        existing = { name: menu, subItems: [] };
+                        menuItems.push(existing);
+                    }
+                    if(sub && sub !== "Sub Menu" && linkItem && link) {
+                        existing.subItems.push({ label: sub, url: link });
+                    } else if (linkItem && link && (!sub || sub === "Sub Menu")) {
+                        existing.subItems.push({ label: linkItem, url: link });
+                    }
+                }
+            }
+            renderHeader(blogTitle, logoUrl, menuItems);
+        } catch(e) { console.warn(e); renderHeader("Blog Studio", "", []); }
+    }
+    
+    function renderHeader(title, logoUrl, menus) {
+        let logoHtml = logoUrl ? `<img src="${logoUrl}" height="35" alt="logo">` : `<i class="bi bi-journal-bookmark-fill fs-3" style="color:#4f46e5"></i>`;
+        let navHtml = `<nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top px-3 px-md-5 py-2 shadow-sm">
+            <div class="container-fluid">
+                <a class="navbar-brand fw-bold" href="./index.html">${logoHtml} ${title}</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#blogNavbar">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="blogNavbar">
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0 gap-2">`;
+        menus.forEach(menu => {
+            if(menu.subItems.length) {
+                navHtml += `<li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">${menu.name}</a>
+                    <ul class="dropdown-menu">`;
+                menu.subItems.forEach(sub => { navHtml += `<li><a class="dropdown-item" href="${sub.url}">${sub.label}</a></li>`; });
+                navHtml += `</ul></li>`;
+            } else {
+                navHtml += `<li class="nav-item"><a class="nav-link" href="#">${menu.name}</a></li>`;
+            }
+        });
+        navHtml += `</ul></div></div></nav>`;
+        document.getElementById('main-header').innerHTML = navHtml;
+    }
+
+    async function fetchBlogData() {
+        const blogUrl = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/blog%20data!A:I?key=${CONFIG.API_KEY}`;
+        const commentsUrl = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/Comments%20data!A:D?key=${CONFIG.API_KEY}`;
+        const [blogRes, commRes] = await Promise.all([fetch(blogUrl), fetch(commentsUrl)]);
+        const blogJson = await blogRes.json();
+        const commJson = await commRes.json();
+        const rows = blogJson.values || [];
+        if(rows.length < 2) throw new Error("No blog data found");
+        const posts = [];
+        for(let i=1; i<rows.length; i++) {
+            let row = rows[i];
+            let post = {
+                id: row[0],
+                category: row[1] || "General",
+                tags: row[2] || "",
+                author: row[3] || "Admin",
+                publishedTime: row[4] || new Date().toISOString(),
+                title: row[5] || "Untitled",
+                content: row[6] || "",
+                likeCount: parseInt(row[7]) || 0,
+                shareCount: parseInt(row[8]) || 0,
+                image: extractFirstImage(row[6] || "")
+            };
+            if(post.id) posts.push(post);
+        }
+        posts.sort((a,b) => parseInt(b.id) - parseInt(a.id));
+        const commentRows = commJson.values || [];
+        let comments = [];
+        for(let i=1; i<commentRows.length; i++) {
+            let r = commentRows[i];
+            comments.push({ postId: r[0], user: r[1] || "Anonymous", date: r[2] || "", text: r[3] || "" });
+        }
+        return { posts, comments };
+    }
+
+    function renderHero(post) {
+        if(!post) return;
+        let excerpt = stripHtml(post.content).substring(0,150);
+        document.getElementById("heroPostContainer").innerHTML = `
+            <div class="hero-card row g-0 align-items-stretch shadow-sm border rounded-4 overflow-hidden bg-white">
+                <div class="col-md-6 p-3 p-md-4 d-flex flex-column justify-content-center order-2 order-md-1">
+                    <span class="category-badge w-auto mb-2" data-category="${escapeHtml(post.category)}">${escapeHtml(post.category)}</span>
+                    <h2 class="fw-bold">${escapeHtml(post.title)}</h2>
+                    <div class="text-muted small mb-2"><i class="bi bi-person-circle"></i> ${escapeHtml(post.author)} · <i class="bi bi-calendar"></i> ${escapeHtml(post.publishedTime)}</div>
+                    <p class="text-secondary">${escapeHtml(excerpt)}...</p>
+                    <button class="btn btn-primary-custom hero-read-btn" data-id="${post.id}">Read full article →</button>
+                </div>
+                <div class="col-md-6 order-1 order-md-2">
+                    <img src="${post.image}" class="img-fluid w-100 h-100 object-fit-cover" style="min-height:240px; object-fit:cover;" alt="hero">
+                </div>
+            </div>`;
+        
+        document.querySelector('.hero-read-btn')?.addEventListener('click', (e) => {
+            navigateToPost(e.currentTarget.getAttribute('data-id'));
+        });
+        document.querySelector('.category-badge')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            navigateToCategory(e.currentTarget.getAttribute('data-category'));
+        });
+    }
+
+    function renderRelatedPosts(category, excludeId) {
+        let related = allPosts.filter(p => p.category === category && String(p.id) !== String(excludeId)).slice(0,3);
+        let container = document.getElementById("relatedGrid");
+        if(related.length === 0) { document.getElementById("relatedSection").style.display = "none"; return; }
+        document.getElementById("relatedSection").style.display = "block";
+        document.getElementById("relatedCategoryName").innerText = category;
+        container.innerHTML = related.map(p => `
+            <div class="col-md-4">
+                <div class="card-blog h-100 p-3">
+                    <img src="${p.image}" class="card-img-top rounded-3" style="height:160px; object-fit:cover;" alt="...">
+                    <div class="card-body px-0">
+                        <span class="category-badge" data-category="${escapeHtml(p.category)}">${escapeHtml(p.category)}</span>
+                        <h5 class="card-title mt-2">${escapeHtml(p.title)}</h5>
+                        <div class="small text-muted">${escapeHtml(p.author)} · ${escapeHtml(p.publishedTime)}</div>
+                        <button class="btn btn-sm btn-outline-primary rounded-pill mt-2 related-read-btn" data-id="${p.id}">Read more</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        document.querySelectorAll(".related-read-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => navigateToPost(btn.getAttribute("data-id")));
+        });
+        document.querySelectorAll(".category-badge").forEach(badge => {
+            badge.addEventListener("click", (e) => {
+                e.stopPropagation();
+                navigateToCategory(badge.getAttribute("data-category"));
+            });
+        });
+    }
+
+    function initSwiperSlider(postsToSlide) {
+        if(postsToSlide.length === 0) { document.getElementById("sliderSection").style.display = "none"; return; }
+        document.getElementById("sliderSection").style.display = "block";
+        let wrapper = document.getElementById("swiperWrapper");
+        wrapper.innerHTML = postsToSlide.map(p => `
+            <div class="swiper-slide h-auto">
+                <div class="card-blog h-100 p-3">
+                    <img src="${p.image}" class="card-img-top rounded-3" style="height:150px; object-fit:cover;">
+                    <div class="card-body px-0">
+                        <span class="category-badge" data-category="${escapeHtml(p.category)}">${escapeHtml(p.category)}</span>
+                        <h6 class="fw-bold mt-2">${escapeHtml(p.title.substring(0,55))}</h6>
+                        <button class="btn btn-sm btn-link text-decoration-none slide-read-btn p-0 mt-2" data-id="${p.id}">Read more →</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        if(swiperInstance) swiperInstance.destroy(true,true);
+        swiperInstance = new Swiper(".mySwiper", { slidesPerView: 1.2, spaceBetween: 16, breakpoints: { 640: { slidesPerView: 2 }, 1024: { slidesPerView: 3.5 } } });
+        
+        document.querySelectorAll(".slide-read-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => navigateToPost(btn.getAttribute("data-id")));
+        });
+        document.querySelectorAll(".category-badge").forEach(badge => {
+            badge.addEventListener("click", (e) => {
+                e.stopPropagation();
+                navigateToCategory(badge.getAttribute("data-category"));
+            });
+        });
+        
+        document.getElementById("prevSlide").onclick = () => swiperInstance.slidePrev();
+        document.getElementById("nextSlide").onclick = () => swiperInstance.slideNext();
+    }
+
+    function renderAllPostsTiles(limit) {
+        let container = document.getElementById("allPostsGrid");
+        let postsToShow = allPosts.slice(0, limit);
+        container.innerHTML = postsToShow.map(p => `
+            <div class="col-md-4 col-lg-3">
+                <div class="card-blog h-100 p-3 d-flex flex-column">
+                    <img src="${p.image}" class="card-img-top rounded-3" style="height:160px; object-fit:cover;">
+                    <div class="card-body px-0 flex-grow-1">
+                        <span class="category-badge" data-category="${escapeHtml(p.category)}">${escapeHtml(p.category)}</span>
+                        <h6 class="fw-bold mt-2">${escapeHtml(p.title)}</h6>
+                        <div class="small text-muted"><i class="bi bi-chat"></i> ${allComments.filter(c=>String(c.postId)===String(p.id)).length} comments</div>
+                    </div>
+                    <div><button class="btn btn-sm btn-primary-custom tile-read-btn" data-id="${p.id}">Read more →</button></div>
+                </div>
+            </div>
+        `).join('');
+        
+        document.querySelectorAll(".tile-read-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => navigateToPost(btn.getAttribute("data-id")));
+        });
+        document.querySelectorAll(".category-badge").forEach(badge => {
+            badge.addEventListener("click", (e) => {
+                e.stopPropagation();
+                navigateToCategory(badge.getAttribute("data-category"));
+            });
+        });
+        
+        let loadBtn = document.getElementById("loadMoreBtn");
+        if(limit >= allPosts.length) { loadBtn.style.display = "none"; document.getElementById("noMoreMsg").classList.remove("d-none"); }
+        else loadBtn.style.display = "inline-block";
+    }
+
+    let currentLimit = 6;
+    function loadMorePosts() {
+        currentLimit += 6;
+        renderAllPostsTiles(currentLimit);
+    }
+
+    async function initHome() {
+        document.getElementById("heroPostContainer").innerHTML = `<div class="text-center p-5"><div class="spinner-border text-primary"></div></div>`;
+        await loadHeaderConfig();
+        const { posts, comments } = await fetchBlogData();
+        allPosts = posts; 
+        allComments = comments;
+        if(allPosts.length === 0) return;
+        const heroPost = allPosts[0];
+        renderHero(heroPost);
+        renderRelatedPosts(heroPost.category, heroPost.id);
+        const sliderPosts = allPosts.slice(1, 11);
+        initSwiperSlider(sliderPosts);
+        const remainingPosts = allPosts.slice(1);
+        allPosts = remainingPosts;
+        renderAllPostsTiles(currentLimit);
+        document.getElementById("loadMoreBtn").onclick = loadMorePosts;
+    }
+    
+    function escapeHtml(str) { 
+        if(!str) return ''; 
+        return str.replace(/[&<>]/g, function(m){ 
+            if(m==='&') return '&amp;'; 
+            if(m==='<') return '&lt;'; 
+            if(m==='>') return '&gt;'; 
+            return m;
+        });
+    }
+    
+    initHome();
+</script>
+</body>
+</html>

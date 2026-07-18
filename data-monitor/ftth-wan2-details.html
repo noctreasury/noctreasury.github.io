@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>BSNL (FTTH) BB | Fiber Broadband Network Details</title>
+    
+    <!-- Local CSS Resources (same as referenced in original) -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
+    <link rel="stylesheet" href="../css/flatpickr.min.css">
+    <link rel="stylesheet" href="../css/sweetalert2.min.css">
+    
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background: #fff0;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 20px 16px;
+            margin: 0;
+        }
+        .app-card {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+   
+   .page-header {
+    padding: 15px 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+   
+}
+.page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-header-left i {
+    font-size: 1.8rem !important;
+    background: rgb(56 143 251 / 15%) !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    color: #184f83 !important;
+}
+
+
+.page-header-left h1 {
+    margin: 0 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    color: #184f83!important;
+}
+ .page-header-left p {
+            margin: 2px 0 0;
+            opacity: 0.7;
+            font-size: 0.75rem;
+ }
+
+        .form-label {
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+        .btn-primary-custom {
+            background: #0f3b5f;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-primary-custom:hover {
+            background: #0a2c46;
+            transform: translateY(-1px);
+        }
+        .btn-success-custom {
+            background: #10b981;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-success-custom:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+        .btn-secondary-custom {
+            background: #64748b;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-secondary-custom:hover {
+            background: #475569;
+        }
+        .filter-row {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+        }
+        .filter-group {
+            flex: 1;
+            min-width: 180px;
+        }
+        .filter-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex: 1;
+            min-width: 280px;
+            flex-wrap: wrap;
+        }
+        .checkbox-group .form-check {
+            margin-bottom: 0;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .stats-badge {
+            background: #e6f0fa;
+            padding: 8px 15px;
+            border-radius: 40px;
+            color: #0f5b9c;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        #global-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+              background: #fff0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            /*backdrop-filter: blur(3px);*/
+        }
+        .table-responsive {
+            margin-top: 20px;
+        }
+        .table thead th {
+            background: linear-gradient(135deg, #1a4b7a 0%, #1a4b7a 100%);
+            color: white;
+            font-weight: 500;
+            font-size: 0.8rem;
+            vertical-align: middle;
+            white-space: nowrap;
+            padding: 10px 8px;
+        }
+        .table td {
+            padding: 8px;
+            vertical-align: middle;
+            font-size: 0.8rem;
+            word-break: break-word;
+        }
+        .service-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .service-mpls { background-color: #0d6efd; color: white; }
+        .service-bsnl-vpn { background-color: #f59e0b; color: white; }
+        .service-bsnl-ftth { background-color: #10b981; color: white; }
+        .service-unknown { background-color: #6c757d; color: white; }
+        .subnet-highlight {
+            font-family: monospace;
+            background-color: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+        .placeholder-message {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+        .content-pane {
+            padding: 25px;
+        }
+        .type-filter-label {
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+      <i class="bi bi-hdd-network-fill"></i>
+                    <div>
+                        <h1>BSNL (FTTH) BB | Treasury Fiber Broadband Monitoring</h1>
+                        <p>BSNL FTTH Connections - Network Subnets, Gateway Info & IP Pool Details</p>
+                    </div>
+                </div>
+            </div>
+<div class="app-card">
+    
+    
+    <div class="content-pane">
+        <!-- Filter Section: Service Type Checkboxes (FTTH pre-selected) + Treasury Filter -->
+        <div class="filter-row">
+            <div class="filter-group">
+                <label><i class="bi bi-building"></i> Filter by Treasury</label>
+                <select id="treasurySelect" class="form-select">
+                    <option value="">-- All Treasuries --</option>
+                </select>
+            </div>
+            <div class="checkbox-group">
+                <span class="type-filter-label"><i class="bi bi-funnel"></i> Service Type:</span>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="chkRailtelMpls" value="Railtel MPLS">
+                    <label class="form-check-label" for="chkRailtelMpls">Railtel MPLS</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="chkBsnlVpn" value="BSNL_VPNoBB">
+                    <label class="form-check-label" for="chkBsnlVpn">BSNL VPNoBB</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="chkBsnlFtth" value="BSNL(FTTH) BB" checked>
+                    <label class="form-check-label" for="chkBsnlFtth">BSNL (FTTH) BB</label>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button id="refreshBtn" class="btn btn-primary-custom"><i class="bi bi-arrow-repeat"></i> Refresh Data</button>
+                <button id="exportCsvBtn" class="btn btn-success-custom" disabled><i class="bi bi-filetype-csv"></i> Export CSV</button>
+            </div>
+        </div>
+        
+        <!-- Stats Dashboard -->
+        <div id="statsContainer" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                <div class="status-count-bar">
+                    <span class="stats-badge" id="recordCount">0 Records</span>
+                    <span class="stats-badge" id="railMplsCount" style="background:#dbeafe;color:#1e40af;">Railtel MPLS:0</span>
+                    <span class="stats-badge" id="bsnlVpnCount" style="background:#fef3c7;color:#b45309;">BSNL VPNoBB:0</span>
+                    <span class="stats-badge" id="bsnlFtthCount" style="background:#d1fae5;color:#059669;">BSNL(FTTH) BB:0</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Table: Columns as per requirement (skip Type of Service column) -->
+        <!-- Headings: Treasury, WAN Subnet, Gateway(PPoE Username/Password), Fat-Pipe Interface IP, Subnet, Fatpipe device IP, LAN IP Pool Existing -->
+        <div class="table-responsive">
+            <table id="wanTable" class="table table-striped table-hover" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Treasury</th>
+                        <th>Service Type</th>
+                        <th>WAN Subnet</th>
+                        <th>Gateway (PPoE Username/Password)</th>
+                        <th>Fat-Pipe Interface IP</th>
+                        <th>Subnet Mask</th>
+                        <th>Fatpipe Device IP</th>
+                        <th>LAN IP Pool Existing</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="placeholder-row">
+                        <td colspan="9" class="placeholder-message">
+                            <i class="bi bi-cloud-arrow-down"></i>
+                            <h5>Loading BSNL FTTH Data from Google Sheet</h5>
+                            <p>Fetching fiber broadband network details from RailTel WAN2 sheet...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Local JS Resources (same as original) -->
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script src="../js/jquery.dataTables.min.js"></script>
+<script src="../js/dataTables.bootstrap5.min.js"></script>
+<script src="../js/select2.min.js"></script>
+<script src="../js/sweetalert2.min.js"></script>
+
+<script>
+    // ================= CONFIGURATION =================
+    // Google Sheet ID and GID for "WAN2 Details" sheet (gid=1616639323 from URL)
+    // Using provided API key for Google Sheets API v4
+    const SPREADSHEET_ID = "1q70H2WSERyz_agwb0ZirYzs2MhAO1sIB7GKlAGxvtUo";
+    const API_KEY = "AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0";
+    
+    let allRecords = [];
+    let filteredRecords = [];
+    let dataTable = null;
+    let isDataLoaded = false;
+    let treasuriesList = [];
+    
+    // Fetch sheet data via Google Sheets API v4
+    async function fetchWan2DataViaAPI() {
+        try {
+            // First, get the sheet metadata to find the correct sheet ID by name
+            const metadataUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}?key=${API_KEY}`;
+            const metadataResp = await fetch(metadataUrl);
+            if (!metadataResp.ok) throw new Error(`Metadata fetch failed: ${metadataResp.status}`);
+            const metadata = await metadataResp.json();
+            
+            // Find sheet with title "WAN2 Details" or fallback to first sheet
+            let sheetTitle = "WAN2 Details";
+            let foundSheet = metadata.sheets.find(s => s.properties.title === "WAN2 Details");
+            if (!foundSheet && metadata.sheets.length > 0) {
+                sheetTitle = metadata.sheets[0].properties.title;
+            } else if (foundSheet) {
+                sheetTitle = foundSheet.properties.title;
+            }
+            
+            // Now fetch data from the sheet using range A:J
+            const range = encodeURIComponent(`${sheetTitle}!A:J`);
+            const dataUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${API_KEY}`;
+            const dataResp = await fetch(dataUrl);
+            if (!dataResp.ok) throw new Error(`Data fetch failed: ${dataResp.status}`);
+            const dataJson = await dataResp.json();
+            const rows = dataJson.values || [];
+            
+            if (rows.length < 2) return [];
+            
+            // Parse rows - first row is header
+            const records = [];
+            
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+                
+                const treasury = row[0] ? String(row[0]).trim() : "";
+                const serviceType = row[1] ? String(row[1]).trim() : "";
+                const wanSubnet = row[2] ? String(row[2]).trim() : "";
+                const gateway = row[3] ? String(row[3]).trim() : "";
+                const fatPipeInterfaceIp = row[4] ? String(row[4]).trim() : "";
+                const subnetMask = row[5] ? String(row[5]).trim() : "";
+                const fatpipeDeviceIp = row[6] ? String(row[6]).trim() : "";
+                const lanIpPool = row[7] ? String(row[7]).trim() : "";
+                
+                // Skip empty or header-like rows
+                if (!treasury || treasury === "" || treasury === "Treasury") continue;
+                if (treasury.toLowerCase().includes("treasury") && treasury.length < 15 && !wanSubnet) continue;
+                
+                records.push({
+                    id: i,
+                    treasury: treasury,
+                    serviceType: serviceType,
+                    wanSubnet: wanSubnet,
+                    gateway: gateway,
+                    fatPipeInterfaceIp: fatPipeInterfaceIp,
+                    subnetMask: subnetMask,
+                    fatpipeDeviceIp: fatpipeDeviceIp,
+                    lanIpPool: lanIpPool
+                });
+            }
+            
+            console.log(`API fetched ${records.length} records`);
+            return records;
+        } catch (err) {
+            console.error("API fetch error:", err);
+            throw err;
+        }
+    }
+    
+    async function fetchWan2Data() {
+        try {
+            const records = await fetchWan2DataViaAPI();
+            if (records && records.length > 0) {
+                return records;
+            }
+            return [];
+        } catch (err) {
+            console.error("Error fetching WAN2 data:", err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Data Fetch Failed',
+                text: 'Could not load WAN2 sheet. Please check API key and sheet permissions.',
+                footer: 'Make sure the spreadsheet is shared with "Anyone with link can view"'
+            });
+            return [];
+        }
+    }
+    
+    function getUniqueTreasuries(records) {
+        const treasuries = [...new Set(records.map(r => r.treasury).filter(t => t && t.trim() !== ""))];
+        return treasuries.sort((a,b) => a.localeCompare(b));
+    }
+    
+    function populateTreasuryDropdown(treasuries) {
+        const $sel = $('#treasurySelect');
+        $sel.empty().append('<option value="">-- All Treasuries --</option>');
+        treasuries.forEach(t => {
+            $sel.append(`<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`);
+        });
+        if (typeof $sel.select2 === 'function') {
+            $sel.select2({ theme: 'bootstrap-5', width: '100%', placeholder: 'Select treasury', allowClear: true });
+        }
+    }
+    
+    function getSelectedServiceTypes() {
+        const selected = [];
+        if ($('#chkRailtelMpls').is(':checked')) selected.push('Railtel MPLS');
+        if ($('#chkBsnlVpn').is(':checked')) selected.push('BSNL_VPNoBB');
+        if ($('#chkBsnlFtth').is(':checked')) selected.push('BSNL(FTTH) BB');
+        return selected;
+    }
+    
+    function applyFilters() {
+        const selectedTreasury = $('#treasurySelect').val();
+        const selectedServices = getSelectedServiceTypes();
+        
+        filteredRecords = allRecords.filter(record => {
+            // Service type filter
+            if (selectedServices.length > 0) {
+                let serviceMatch = false;
+                for (let svc of selectedServices) {
+                    if (record.serviceType === svc) {
+                        serviceMatch = true;
+                        break;
+                    }
+                }
+                if (!serviceMatch) return false;
+            }
+            
+            // Treasury filter
+            if (selectedTreasury && selectedTreasury !== "") {
+                if (record.treasury !== selectedTreasury) return false;
+            }
+            
+            return true;
+        });
+        
+        // Update stats
+        const railCount = filteredRecords.filter(r => r.serviceType === 'Railtel MPLS').length;
+        const vpnCount = filteredRecords.filter(r => r.serviceType === 'BSNL_VPNoBB').length;
+        const ftthCount = filteredRecords.filter(r => r.serviceType === 'BSNL(FTTH) BB').length;
+        
+        $('#recordCount').text(`${filteredRecords.length} Records`);
+        $('#railMplsCount').text(`Railtel MPLS:${railCount}`);
+        $('#bsnlVpnCount').text(`BSNL VPNoBB:${vpnCount}`);
+        $('#bsnlFtthCount').text(`BSNL(FTTH) BB:${ftthCount}`);
+        
+        return filteredRecords;
+    }
+    
+    function renderTable() {
+        const data = applyFilters();
+        if (dataTable) {
+            dataTable.destroy();
+            $('#wanTable tbody').empty();
+        }
+        
+        if (data.length === 0) {
+            $('#wanTable tbody').html(`<tr class="placeholder-row"><td colspan="9" class="placeholder-message"><i class="bi bi-database-slash"></i><h5>No matching records</h5><p>Try changing service type filters or treasury selection</p></tr>`);
+            dataTable = null;
+            $('#exportCsvBtn').prop('disabled', true);
+            $('#statsContainer').hide();
+            return;
+        }
+        
+        dataTable = $('#wanTable').DataTable({
+            data: data,
+            columns: [
+                { data: null, render: function(data, type, row, meta) { return meta.row + 1; } },
+                { data: "treasury", render: v => v ? escapeHtml(v) : '—' },
+                { data: "serviceType", render: function(v) {
+                    if (!v) return '<span class="service-badge service-unknown">Unknown</span>';
+                    if (v === 'Railtel MPLS') return `<span class="service-badge service-mpls"><i class="bi bi-hdd-stack"></i> Railtel MPLS</span>`;
+                    if (v === 'BSNL_VPNoBB') return `<span class="service-badge service-bsnl-vpn"><i class="bi bi-shield-lock"></i> BSNL VPNoBB</span>`;
+                    if (v === 'BSNL(FTTH) BB') return `<span class="service-badge service-bsnl-ftth"><i class="bi bi-wifi"></i> BSNL (FTTH) BB</span>`;
+                    return `<span class="service-badge service-unknown">${escapeHtml(v)}</span>`;
+                } },
+                { data: "wanSubnet", render: v => v ? `<span class="subnet-highlight">${escapeHtml(v)}</span>` : '—' },
+                { data: "gateway", render: v => {
+                    if (!v || v === "") return '—';
+                    let display = v.length > 40 ? v.substring(0, 40) + '...' : v;
+                    return `<span title="${escapeHtml(v)}">${escapeHtml(display)}</span>`;
+                } },
+                { data: "fatPipeInterfaceIp", render: v => v ? `<span class="subnet-highlight">${escapeHtml(v)}</span>` : '—' },
+                { data: "subnetMask", render: v => v ? escapeHtml(v) : '—' },
+                { data: "fatpipeDeviceIp", render: v => v ? `<span class="subnet-highlight">${escapeHtml(v)}</span>` : '—' },
+                { data: "lanIpPool", render: v => v ? escapeHtml(v) : '—' }
+            ],
+            order: [[0, 'asc']],
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'All']],
+            scrollX: true,
+            autoWidth: false,
+            drawCallback: function() {
+                $('#exportCsvBtn').prop('disabled', false);
+            }
+        });
+        $('#exportCsvBtn').prop('disabled', false);
+        $('#statsContainer').show();
+    }
+    
+    async function loadDataAndRender() {
+        showGlobalLoading("Fetching BSNL FTTH data from Google Sheet via API...");
+        try {
+            allRecords = await fetchWan2Data();
+            hideGlobalLoading();
+            
+            if (allRecords.length === 0) {
+                $('#wanTable tbody').html(`<tr class="placeholder-row"><td colspan="9" class="placeholder-message"><i class="bi bi-exclamation-triangle"></i><h5>No data retrieved</h5><p>Check API key, sheet ID, and sharing permissions.</p><button id="retryBtn" class="btn btn-primary mt-3"><i class="bi bi-arrow-repeat"></i> Retry</button></tr>`);
+                $('#retryBtn').off('click').on('click', () => loadDataAndRender());
+                $('#exportCsvBtn').prop('disabled', true);
+                $('#statsContainer').hide();
+                isDataLoaded = false;
+                return;
+            }
+            
+            const treasuries = getUniqueTreasuries(allRecords);
+            populateTreasuryDropdown(treasuries);
+            
+            isDataLoaded = true;
+            renderTable();
+            
+            const ftthCount = allRecords.filter(r => r.serviceType === 'BSNL(FTTH) BB').length;
+            Swal.fire({ 
+                icon: 'success', 
+                title: 'FTTH Data Loaded', 
+                text: `${ftthCount} BSNL FTTH connections found. Total records: ${allRecords.length}`,
+                timer: 2000, 
+                showConfirmButton: false 
+            });
+        } catch (err) {
+            hideGlobalLoading();
+            console.error(err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Failed to Load Data',
+                text: 'Unable to fetch data. Please verify API key and sheet access.'
+            });
+            $('#wanTable tbody').html(`<tr class="placeholder-row"><td colspan="9" class="placeholder-message"><i class="bi bi-plug"></i><h5>Connection Error</h5><p>Unable to reach Google Sheets API</p><button id="retryBtn" class="btn btn-primary mt-3">Retry</button></tr>`);
+            $('#retryBtn').off('click').on('click', () => loadDataAndRender());
+            isDataLoaded = false;
+        }
+    }
+    
+    function exportToCSV() {
+        if (!isDataLoaded || filteredRecords.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'No Data', text: 'Please load data first or adjust filters to show records.' });
+            return;
+        }
+        
+        let exportData = filteredRecords;
+        if (dataTable && dataTable.search() !== "") {
+            exportData = dataTable.rows({ search: 'applied' }).data().toArray();
+        }
+        
+        const headers = ['Sl No', 'Treasury', 'Service Type', 'WAN Subnet', 'Gateway(PPoE Username/Password)', 
+                         'Fat-Pipe Interface IP', 'Subnet', 'Fatpipe Device IP', 'LAN IP Pool Existing'];
+        const rows = [];
+        exportData.forEach((rec, idx) => {
+            rows.push([
+                idx+1,
+                rec.treasury || '',
+                rec.serviceType || '',
+                rec.wanSubnet || '',
+                rec.gateway || '',
+                rec.fatPipeInterfaceIp || '',
+                rec.subnetMask || '',
+                rec.fatpipeDeviceIp || '',
+                rec.lanIpPool || ''
+            ]);
+        });
+        
+        const csvStr = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob(["\uFEFF" + csvStr], {type: 'text/csv;charset=utf-8;'});
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = `bsnl_ftth_wan2_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        Swal.fire({ icon: 'success', title: 'Export Complete', text: `${exportData.length} records exported.`, timer: 1500, showConfirmButton: false });
+    }
+    
+    function resetToDefault() {
+        $('#treasurySelect').val('').trigger('change');
+        $('#chkRailtelMpls').prop('checked', false);
+        $('#chkBsnlVpn').prop('checked', false);
+        $('#chkBsnlFtth').prop('checked', true);
+        if (isDataLoaded) {
+            renderTable();
+        }
+        Swal.fire({ icon: 'info', title: 'Filters Reset', text: 'BSNL (FTTH) BB selected by default.', timer: 1500, showConfirmButton: false });
+    }
+    
+    function showGlobalLoading(msg) {
+        if ($('#global-loading-overlay').length) return;
+        $('body').append(`<div id="global-loading-overlay"><div style="background:white;padding:30px;border-radius:24px;text-align:center;"><i class="bi bi-arrow-repeat" style="font-size:48px;color:#0f3b5f;animation:spin 1s linear infinite;"></i><p>${msg}</p></div></div>`);
+    }
+    
+    function hideGlobalLoading() { 
+        $('#global-loading-overlay').remove(); 
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    $(document).ready(function() {
+        // Set FTTH checkbox checked by default, others unchecked
+        $('#chkRailtelMpls').prop('checked', false);
+        $('#chkBsnlVpn').prop('checked', false);
+        $('#chkBsnlFtth').prop('checked', true);
+        
+        $('#refreshBtn').on('click', loadDataAndRender);
+        $('#exportCsvBtn').on('click', exportToCSV);
+        $('#treasurySelect').on('change', function() { if (isDataLoaded) renderTable(); });
+        $('#chkRailtelMpls, #chkBsnlVpn, #chkBsnlFtth').on('change', function() { if (isDataLoaded) renderTable(); });
+        
+        // Add reset button if not exists
+        if ($('.action-buttons').find('#resetFiltersBtn').length === 0) {
+            $('.action-buttons').prepend('<button id="resetFiltersBtn" class="btn btn-secondary-custom me-2"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>');
+            $('#resetFiltersBtn').on('click', resetToDefault);
+        }
+        
+        loadDataAndRender();
+    });
+</script>
+</body>
+</html>

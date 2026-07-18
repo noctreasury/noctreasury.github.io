@@ -1,0 +1,234 @@
+<!-- post.html - Updated with TTS Widget -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+ 
+<!-- Open Graph Meta Tags for Social Sharing -->
+<meta property="og:title" content="Blog Post | NOC / blog">
+<meta property="og:description" content="Read this article on NOC Blog">
+<meta property="og:image" content="">
+<meta property="og:url" content="">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NOC Blog">
+
+<!-- Twitter Card Meta Tags -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Blog Post | NOC / blog">
+<meta name="twitter:description" content="Read this article on NOC Blog">
+<meta name="twitter:image" content="">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="../images/favicon.svg">
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet">
+    <!-- Swiper CSS (required for slider) -->
+    <link rel="stylesheet" href="css/swiper-bundle.min.css">
+    <!-- Custom Blog CSS -->
+    <link rel="stylesheet" href="css/blog.css">
+    <style>
+        /* Additional style for author image */
+        .author-avatar-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .author-avatar-img:hover {
+            transform: scale(1.05);
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #1a73e8;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .avatar:hover {
+            transform: scale(1.05);
+        }
+        .category-link {
+            cursor: pointer;
+            color: #1a73e8;
+            text-decoration: none;
+        }
+        .category-link:hover {
+            text-decoration: underline;
+        }
+        .author-link {
+            cursor: pointer;
+        }
+        .author-link:hover {
+            text-decoration: underline;
+        }
+        /* Related posts slider section styling (matches index recent articles) */
+        .related-slider-section {
+            background: transparent;
+            margin: 2rem 0 1.5rem;
+        }
+        .related-slider-section .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.2rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .related-slider-section .section-header h3 {
+            font-weight: 600;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+        }
+        .related-slider-section .swiper-nav-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .related-slider-section .swiper-nav-buttons button {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--white);
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+        .related-slider-section .swiper-nav-buttons button:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .related-slider-section .swiper-slide {
+            height: auto;
+        }
+        .related-slider-section .card-blog {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .related-slider-section .card-blog:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+        }
+        .related-slider-section .card-img-top {
+            border-radius: var(--radius-lg);
+            object-fit: cover;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+        }
+        .related-slider-section .category-badge {
+            background: #eef2ff;
+            color: var(--primary);
+            font-size: 0.7rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--radius-full);
+            display: inline-block;
+            cursor: pointer;
+        }
+        .related-slider-section .category-badge:hover {
+            background: var(--primary);
+            color: white;
+        }
+        .slide-read-link {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--primary);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .slide-read-link:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+        /* Back to Home Button Styles */
+        .back-to-home-wrapper {
+            text-align: center;
+            margin: 2rem auto 1rem;
+            padding: 1rem 0;
+        }
+        .btn-back-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            border-radius: var(--radius-full);
+            padding: 0.7rem 2rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn-back-home:hover {
+            background: var(--primary);
+            color: var(--white);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        
+    </style>
+</head>
+<body>
+
+<header id="main-header"></header>
+
+<main>
+    <div class="blog-header" id="postHeader">
+        <div class="text-center p-5" id="loadingSpinner">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2"></p>
+        </div>
+        <div id="postContentWrapper" style="display: none;"></div>
+        <!-- Container for related posts slider (will be injected after comments) -->
+        <div id="relatedPostsSliderContainer" class="container py-3" style="display: none;">
+            <div class="related-slider-section">
+                <div class="section-header">
+                    <h3><i class="bi bi-tag-fill me-2" style="color: var(--primary);"></i> More like this</h3>
+                    <div class="swiper-nav-buttons">
+                        <button id="relatedPrevBtn" class="btn-icon rounded-circle"><i class="bi bi-chevron-left"></i></button>
+                        <button id="relatedNextBtn" class="btn-icon rounded-circle"><i class="bi bi-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div class="swiper relatedSwiper">
+                    <div class="swiper-wrapper" id="relatedSliderWrapper"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Back to All Articles Button Container - only visible when slider shows -->
+        <div id="backToHomeContainer" class="container" style="display: none;">
+            <div class="back-to-home-wrapper">
+                <button class="btn-back-home" id="backToHomeBtn">
+                    <i class="bi bi-grid-3x3-gap-fill"></i> Back to All Articles
+                </button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="py-4 mt-5">
+    <div class="container text-center text-muted small">
+        <i class="bi bi-c-circle"></i> NOC / blog 
+    </div>
+</footer>
+
+<div id="liveToast" class="toast-custom"><i class="bi bi-check-lg me-2"></i><span id="toastMsg"></span></div>
+
+<!-- Scripts -->
+<script src="js/bootstrap.bundle.min.js"></script>
+<script src="js/swiper-bundle.min.js"></script>
+<script src="config.js"></script>
+<script src="js/post.js"></script>
+</body>
+</html>

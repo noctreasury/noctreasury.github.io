@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Treasury NOC · Compact KPI Dashboard</title>
+    
+    <!-- LOCAL CSS & JS (using ./css and ./js paths with fallbacks) -->
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <link rel="stylesheet" href="./css/bootstrap-icons.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #fff0;
+            font-family: 'Segoe UI', system-ui, 'Helvetica Neue', sans-serif;
+            padding: 20px 16px;
+            color: #1e293b;
+        }
+
+        .page-header {
+    padding: 15px 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+ 
+}
+.page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-header-left i {
+    font-size: 1.8rem !important;
+    background: rgb(56 143 251 / 15%) !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    color: #184f83 !important;
+}
+
+
+.page-header-left h1 {
+    margin: 0 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    color: #184f83!important;
+}
+ .page-header-left p {
+            margin: 2px 0 0;
+            opacity: 0.7;
+            font-size: 0.75rem;
+ }
+
+        .hide-zero-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            border: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .hide-zero-toggle:hover {
+            background: #e8f0fe;
+            border-color: #0f5b9c;
+        }
+
+        .hide-zero-toggle input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #0f5b9c;
+        }
+
+        .hide-zero-toggle label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #1e293b;
+        }
+
+        .dashboard-grid {
+            max-width: 100%;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 18px;
+        }
+
+        /* Hidden card class */
+        .stat-card-compact.hidden-card {
+            display: none;
+        }
+
+        .stat-card-compact {
+            border-radius: 22px;
+            padding: 0;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        .stat-card-compact:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 16px 28px -10px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-body-compact {
+            padding: 18px 20px 14px 20px;
+            flex: 1;
+        }
+
+        .count-icon-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .count-number {
+            font-size: 2.5rem;
+            font-weight: 400;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            font-feature-settings: "tnum";
+            font-variant-numeric: tabular-nums;
+            word-break: break-word;
+        }
+
+        .icon-compact {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .icon-compact i {
+            font-size: 2rem;
+            opacity: 0.7;
+            transition: 0.2s;
+        }
+
+        .stat-card-compact:hover .icon-compact i {
+            opacity: 0.95;
+            transform: scale(1.02);
+        }
+
+        .count-item-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            opacity: 0.85;
+            line-height: 1.3;
+            margin-top: 4px;
+            word-break: break-word;
+        }
+
+        .card-footer-link {
+            background: rgba(0, 0, 0, 0.02);
+            padding: 10px 18px;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .footer-link-btn {
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 14px;
+            border-radius: 40px;
+            background: rgba(0, 0, 0, 0.05);
+            transition: 0.2s;
+            color: #1e293b;
+            font-weight: 500;
+            font-size: 0.8rem;
+        }
+
+        .footer-link-btn i {
+            font-size: 0.85rem;
+        }
+
+        .footer-link-btn:hover {
+            background: rgba(0, 0, 0, 0.12);
+            transform: translateX(2px);
+        }
+
+        .error-banner {
+            background: #fff1f0;
+            border-left: 5px solid #e53e3e;
+            padding: 16px 22px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            grid-column: 1 / -1;
+        }
+
+        .empty-state {
+            text-align: center;
+            background: white;
+            padding: 40px 20px;
+            border-radius: 32px;
+            color: #5b6f8c;
+            grid-column: 1 / -1;
+        }
+
+        .loader-overlay {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 320px;
+            grid-column: 1 / -1;
+        }
+
+        .spinner-small {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #0f5b9c;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Zero count badge on card */
+        .zero-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ef4444;
+            color: white;
+            font-size: 0.6rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .stat-card-compact {
+            position: relative;
+        }
+
+        @media (max-width: 640px) {
+            body { padding: 16px; }
+            .dashboard-grid { gap: 14px; grid-template-columns: 1fr; }
+            .count-number { font-size: 2rem; }
+            .icon-compact i { font-size: 1.7rem; }
+            .card-body-compact { padding: 14px 16px 10px; }
+            .dashboard-header { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                  <i class="bi bi-speedometer2"></i>
+                    <div>
+                        <h1> NOC Admin Dashboard</h1>
+                        <p>Treasury NOC Admin Dashboard </p>
+                    </div>
+                </div>
+ <div class="hide-zero-toggle" id="hideZeroToggle">
+        <input type="checkbox" id="hideZeroCheckbox" checked>
+        <label for="hideZeroCheckbox"><i class="bi bi-eye-slash"></i> Hide cards with zero </label>
+    </div>
+            </div>
+
+
+<div id="cardsContainer" class="dashboard-grid">
+    <div class="loader-overlay">
+        <div class="spinner-small"></div>
+        <span style="margin-left: 14px; color:#2c3e66;">Loading...</span>
+    </div>
+</div>
+
+<script src="./js/jquery.min.js"></script>
+<script src="./js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const SPREADSHEET_ID = '1jd1xZe9x2mrZm5KAwGT12vMNYjbrnynsmelNKeK95jc';
+    const SHEET_NAME = 'Dashboard';
+    const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+    
+    let dashboardItems = [];
+    let isLoading = false;
+    let activeCounters = [];
+    let hideZeroEnabled = true; // Default: enabled
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // Convert icon name to actual HTML element
+    function renderIcon(iconName, textColor) {
+        if (!iconName) return '<i class="bi bi-grid"></i>';
+        
+        let iconClass = iconName.trim();
+        // Ensure it starts with 'bi'
+        if (!iconClass.startsWith('bi ')) {
+            iconClass = 'bi ' + iconClass;
+        }
+        
+        return `<i class="${escapeHtml(iconClass)}" style="color:${textColor};"></i>`;
+    }
+    
+    function isValidBgColor(value) {
+        if (!value) return '#ffffff';
+        const str = value.toString().trim();
+        if (str.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/) || 
+            str.match(/^rgba?\(/i) || 
+            str.match(/^hsla?\(/i) ||
+            str === 'transparent') {
+            return str;
+        }
+        return '#ffffff';
+    }
+    
+    function isValidTextColor(value) {
+        if (!value) return '#1e293b';
+        const str = value.toString().trim();
+        if (str.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/) || 
+            str.match(/^rgba?\(/i) || 
+            str.match(/^hsla?\(/i)) {
+            return str;
+        }
+        return '#1e293b';
+    }
+    
+    function getNumericCount(value) {
+        if (value === undefined || value === null || value === '') return 0;
+        const str = String(value).trim();
+        const num = parseFloat(str);
+        if (!isNaN(num) && isFinite(num)) return num;
+        return 0;
+    }
+    
+    function formatDisplayValue(originalValue, numericValue) {
+        if (originalValue === undefined || originalValue === null || originalValue === '') return '0';
+        const str = String(originalValue).trim();
+        if (!isNaN(parseFloat(str)) && isFinite(parseFloat(str)) && /^-?\d+(\.\d+)?$/.test(str)) {
+            return numericValue.toLocaleString();
+        }
+        return str;
+    }
+    
+    function animateCounter(element, targetValue, duration = 700) {
+        if (!element) return;
+        if (element._raf) cancelAnimationFrame(element._raf);
+        
+        const startValue = 0;
+        const startTime = performance.now();
+        
+        function updateCounter(currentTime) {
+            const elapsed = currentTime - startTime;
+            let progress = Math.min(1, elapsed / duration);
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
+            let currentValue = startValue + (targetValue - startValue) * easeProgress;
+            if (Number.isInteger(targetValue)) {
+                currentValue = Math.floor(currentValue);
+            } else {
+                currentValue = currentValue.toFixed(1);
+            }
+            element.textContent = currentValue;
+            if (progress < 1) {
+                element._raf = requestAnimationFrame(updateCounter);
+            } else {
+                element.textContent = targetValue.toLocaleString();
+                delete element._raf;
+            }
+        }
+        
+        element._raf = requestAnimationFrame(updateCounter);
+    }
+    
+    function renderCompactCards(items) {
+        const container = document.getElementById('cardsContainer');
+        
+        // Filter items if hide zero is enabled for rendering
+        let itemsToRender = items;
+        if (hideZeroEnabled) {
+            itemsToRender = items.filter(item => {
+                const numValue = getNumericCount(item.rawCount);
+                return numValue !== 0 && !isNaN(numValue);
+            });
+        }
+        
+        if (itemsToRender.length === 0) {
+            if (hideZeroEnabled && items.length > 0) {
+                container.innerHTML = `<div class="empty-state"><i class="bi bi-eye-slash" style="font-size:3rem;"></i><h4 class="mt-3">All cards hidden</h4><p>All dashboard cards have zero value. Uncheck "Hide zero cards" to view them.</p></div>`;
+            } else {
+                container.innerHTML = `<div class="empty-state"><i class="bi bi-inbox" style="font-size:3rem;"></i><h4 class="mt-3">No dashboard cards</h4><p>Add rows to your "Dashboard" sheet to see metrics here.</p></div>`;
+            }
+            return;
+        }
+        
+        if (activeCounters.length) {
+            activeCounters.forEach(ref => {
+                if (ref && ref._raf) cancelAnimationFrame(ref._raf);
+            });
+            activeCounters = [];
+        }
+        
+        let cardsHtml = '';
+        const cardAnimations = [];
+        
+        for (let idx = 0; idx < itemsToRender.length; idx++) {
+            const card = itemsToRender[idx];
+            const bgStyle = `background: ${card.bgColor};`;
+            const textColorStyle = `color: ${card.textColor};`;
+            const iconHtml = renderIcon(card.icon, card.textColor);
+            const hasLink = card.link && card.link.trim() !== '';
+            const linkTarget = hasLink ? `href="${escapeHtml(card.link)}" rel="noopener noreferrer"` : '';
+            
+            const rawCountValue = card.rawCount;
+            const numericTarget = getNumericCount(rawCountValue);
+            const isPureNumber = /^-?\d+(\.\d+)?$/.test(String(rawCountValue).trim());
+            const isZero = numericTarget === 0;
+            
+            cardsHtml += `
+                <div class="stat-card-compact" style="${bgStyle}" data-card-idx="${idx}" data-numeric-value="${numericTarget}" data-is-zero="${isZero}">
+                    ${isZero ? '<span class="zero-badge">ZERO</span>' : ''}
+                    <div class="card-body-compact">
+                        <div class="count-icon-row">
+                            <div class="count-number" style="${textColorStyle} font-weight:400;" data-count-raw="${escapeHtml(rawCountValue)}" data-target="${numericTarget}" data-is-num="${isPureNumber}">0</div>
+                            <div class="icon-compact">
+                                ${iconHtml}
+                            </div>
+                        </div>
+                        <div class="count-item-label" style="${textColorStyle} opacity:0.85;">${escapeHtml(card.countItem)}</div>
+                    </div>
+                    ${hasLink ? `
+                    <div class="card-footer-link">
+                        <a ${linkTarget} class="footer-link-btn" style="color:${card.textColor}; background: rgba(0,0,0,0.05);">
+                            <i class="bi bi-eye"></i> View
+                        </a>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            cardAnimations.push({
+                idx: idx,
+                targetNum: numericTarget,
+                isPureNumber: isPureNumber,
+                rawValue: rawCountValue
+            });
+        }
+        
+        container.innerHTML = cardsHtml;
+        
+        cardAnimations.forEach(anim => {
+            const cardEl = container.querySelector(`.stat-card-compact[data-card-idx="${anim.idx}"]`);
+            if (cardEl) {
+                const countDiv = cardEl.querySelector('.count-number');
+                if (countDiv) {
+                    if (anim.isPureNumber) {
+                        animateCounter(countDiv, anim.targetNum, 650);
+                    } else {
+                        countDiv.textContent = (anim.rawValue !== undefined && anim.rawValue !== '') ? anim.rawValue : '—';
+                    }
+                    if (countDiv._raf) activeCounters.push(countDiv);
+                }
+            }
+        });
+    }
+    
+    async function fetchDashboardData() {
+        if (isLoading) return;
+        isLoading = true;
+        
+        const container = document.getElementById('cardsContainer');
+        container.innerHTML = `<div class="loader-overlay"><div class="spinner-small"></div><span style="margin-left: 14px;">Loading dashboard...</span></div>`;
+        
+        try {
+            const range = encodeURIComponent(`${SHEET_NAME}!A:F`);
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${API_KEY}`;
+            
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`API responded with ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            if (!data.values || data.values.length < 2) {
+                throw new Error('No data rows found in Dashboard sheet');
+            }
+            
+            const headers = data.values[0];
+            const rows = data.values.slice(1);
+            
+            let colIdx = { bg: 0, text: 1, icon: 2, count: 3, item: 4, link: 5 };
+            if (headers && headers.length) {
+                headers.forEach((h, idx) => {
+                    const colName = h ? h.toString().trim().toLowerCase() : '';
+                    if (colName.includes('bg color') || colName === 'bgcolor') colIdx.bg = idx;
+                    else if (colName.includes('text & icon') || colName === 'textcolor' || colName.includes('text color')) colIdx.text = idx;
+                    else if (colName.includes('bi bi') || colName === 'icon') colIdx.icon = idx;
+                    else if (colName === 'count') colIdx.count = idx;
+                    else if (colName.includes('count item') || colName === 'item') colIdx.item = idx;
+                    else if (colName.includes('link') || colName === 'url') colIdx.link = idx;
+                });
+            }
+            
+            const parsedItems = [];
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const countRaw = row[colIdx.count] ? row[colIdx.count].toString().trim() : '';
+                const itemRaw = row[colIdx.item] ? row[colIdx.item].toString().trim() : '';
+                if (countRaw === '' && itemRaw === '') continue;
+                
+                const bgRaw = row[colIdx.bg] ? row[colIdx.bg].toString().trim() : '#ffffff';
+                const textRaw = row[colIdx.text] ? row[colIdx.text].toString().trim() : '#1e293b';
+                let iconRaw = row[colIdx.icon] ? row[colIdx.icon].toString().trim() : 'bi bi-grid';
+                const linkRaw = row[colIdx.link] ? row[colIdx.link].toString().trim() : '';
+                
+                parsedItems.push({
+                    bgColor: isValidBgColor(bgRaw),
+                    textColor: isValidTextColor(textRaw),
+                    icon: iconRaw,
+                    rawCount: countRaw,
+                    countItem: itemRaw !== '' ? itemRaw : '—',
+                    link: linkRaw
+                });
+            }
+            
+            if (parsedItems.length === 0) {
+                throw new Error('No valid cards found. Ensure "Dashboard" sheet has count or item data.');
+            }
+            
+            dashboardItems = parsedItems;
+            renderCompactCards(dashboardItems);
+            
+        } catch (err) {
+            console.error('Dashboard fetch error:', err);
+            container.innerHTML = `
+                <div class="error-banner">
+                    <i class="bi bi-exclamation-triangle-fill" style="font-size: 2rem; color:#e53e3e;"></i>
+                    <div>
+                        <strong>Unable to load dashboard data</strong><br>
+                        ${escapeHtml(err.message)}<br>
+                        <small>Check Sheet ID, sheet name "Dashboard", API key and public access.</small>
+                        <div class="mt-2">
+                            <button class="footer-link-btn" id="retryBtn" style="background:#eef2ff; border:none;"><i class="bi bi-arrow-repeat"></i> Retry</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const retryBtn = document.getElementById('retryBtn');
+            if (retryBtn) retryBtn.addEventListener('click', () => fetchDashboardData());
+        } finally {
+            isLoading = false;
+        }
+    }
+    
+    // Toggle hide zero feature
+    function setupHideZeroToggle() {
+        const checkbox = document.getElementById('hideZeroCheckbox');
+        if (checkbox) {
+            // Set initial state to checked (true)
+            checkbox.checked = hideZeroEnabled;
+            
+            checkbox.addEventListener('change', function(e) {
+                hideZeroEnabled = e.target.checked;
+                if (dashboardItems.length > 0) {
+                    renderCompactCards(dashboardItems);
+                }
+            });
+        }
+    }
+    
+    let autoInterval = null;
+    function startAutoRefresh() {
+        if (autoInterval) clearInterval(autoInterval);
+        autoInterval = setInterval(() => {
+            if (!isLoading) {
+                fetchDashboardData();
+            }
+        }, 90000);
+    }
+    
+    window.addEventListener('DOMContentLoaded', async () => {
+        await fetchDashboardData();
+        startAutoRefresh();
+        setupHideZeroToggle();
+    });
+    
+    window.addEventListener('beforeunload', () => {
+        if (autoInterval) clearInterval(autoInterval);
+        if (activeCounters.length) {
+            activeCounters.forEach(el => {
+                if (el && el._raf) cancelAnimationFrame(el._raf);
+            });
+        }
+    });
+    
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            if (autoInterval) clearInterval(autoInterval);
+        } else {
+            if (autoInterval) clearInterval(autoInterval);
+            startAutoRefresh();
+            if (!isLoading) fetchDashboardData();
+        }
+    });
+</script>
+
+</body>
+</html>

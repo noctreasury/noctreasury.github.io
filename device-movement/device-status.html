@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>SDWAN Device | Installation Status Report - with Duplicate Check</title>
+    
+    <!-- Local CSS Resources -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
+    <link rel="stylesheet" href="../css/flatpickr.min.css">
+    <link rel="stylesheet" href="../css/sweetalert2.min.css">
+    
+    <style>
+        * { box-sizing: border-box; }
+        body {
+             background: #fff0;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 20px 16px;
+            margin: 0;
+        }
+        .app-card {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+     .page-header {
+    padding: 15px 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+   
+}
+.page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-header-left i {
+    font-size: 1.8rem !important;
+    background: rgb(56 143 251 / 15%) !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    color: #184f83 !important;
+}
+
+
+.page-header-left h1 {
+    margin: 0 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    color: #184f83!important;
+}
+ .page-header-left p {
+            margin: 2px 0 0;
+            opacity: 0.7;
+            font-size: 0.75rem;
+ }
+
+
+        .form-label {
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+        .btn-primary-custom {
+            background: #0f3b5f;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-primary-custom:hover {
+            background: #0a2c46;
+            transform: translateY(-1px);
+        }
+        .btn-success-custom {
+            background: #10b981;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-success-custom:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+        .btn-secondary-custom {
+            background: #64748b;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-secondary-custom:hover {
+            background: #475569;
+        }
+        .btn-warning-custom {
+            background: #d97706;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-warning-custom:hover {
+            background: #b45309;
+            transform: translateY(-1px);
+        }
+        .btn-danger-custom {
+            background: #dc2626;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-danger-custom:hover {
+            background: #b91c1c;
+            transform: translateY(-1px);
+        }
+        .form-control, .form-select {
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            padding: 8px 12px;
+        }
+        .filter-row {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: flex-end;
+        }
+        .filter-group {
+            flex: 1;
+            min-width: 160px;
+        }
+        .filter-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .filter-group select {
+            width: 100%;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .stats-badge {
+            background: #e6f0fa;
+            padding: 8px 15px;
+            border-radius: 40px;
+            color: #0f5b9c;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .duplicate-warning {
+            background: #fef3c7;
+            color: #d97706;
+            border-left: 4px solid #d97706;
+        }
+   #global-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+              background: #fff0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            /*backdrop-filter: blur(3px);*/
+        }
+        .table-responsive {
+            margin-top: 20px;
+        }
+        .table thead th {
+            background: linear-gradient(135deg, #1a4b7a 0%, #1a4b7a 100%);
+            color: white;
+            font-weight: 500;
+            font-size: 0.75rem;
+            vertical-align: middle;
+            white-space: nowrap;
+            padding: 10px 6px;
+        }
+        .table td {
+            padding: 8px 6px;
+            vertical-align: middle;
+            font-size: 0.8rem;
+        }
+        .badge-installed { background-color: #10b981; color: white; padding: 3px 8px; border-radius: 30px; font-size: 0.7rem; }
+        .badge-pending { background-color: #f59e0b; color: white; padding: 3px 8px; border-radius: 30px; font-size: 0.7rem; }
+        .badge-not { background-color: #ef4444; color: white; padding: 3px 8px; border-radius: 30px; font-size: 0.7rem; }
+        .badge-yes { background-color: #10b981; color: white; padding: 3px 8px; border-radius: 30px; font-size: 0.7rem; display: inline-block; text-align: center; min-width: 45px; }
+        .badge-no { background-color: #ef4444; color: white; padding: 3px 8px; border-radius: 30px; font-size: 0.7rem; display: inline-block; text-align: center; min-width: 45px; }
+        .duplicate-row {
+            background-color: #fef2f2 !important;
+            border-left: 3px solid #dc2626;
+        }
+        .duplicate-highlight {
+            background-color: #fee2e2;
+            font-weight: bold;
+            color: #dc2626;
+        }
+        .placeholder-message {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+        .placeholder-message i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #cbd5e1;
+        }
+        @media (max-width: 768px) {
+            .filter-row { flex-direction: column; }
+            .action-buttons { width: 100%; }
+            .action-buttons button { flex: 1; }
+        }
+        .content-pane {
+            padding: 25px;
+        }
+        
+        /* Modal Styles */
+        .duplicate-modal .modal-dialog {
+            max-width: 800px;
+        }
+        .duplicate-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .duplicate-group {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #dc2626;
+        }
+        .duplicate-serial {
+            font-weight: 800;
+            color: #dc2626;
+            font-size: 1rem;
+        }
+        .duplicate-count {
+            background: #dc2626;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+        }
+    </style>
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                         <i class="bi bi-hdd-stack-fill"></i>
+                    <div>
+                        <h1>SDWAN Device - Installation Status Report</h1>
+                        <p>SDWAN Device - Installation Status Report</p>
+                    </div>
+                </div>
+            </div>
+<div class="app-card">
+    
+    <div class="content-pane">
+        <!-- Filter Section -->
+        <div class="filter-row">
+            <div class="filter-group">
+                <label><i class="bi bi-building"></i> Filter by Branch:</label>
+                <select id="branchFilterSelect" class="form-select">
+                    <option value="">-- All Branches --</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label><i class="bi bi-check-circle"></i> Filter by Status:</label>
+                <select id="statusFilterSelect" class="form-select">
+                    <option value="">-- All Status --</option>
+                    <option value="Installed">Installed</option>
+                    <option value="Pending">Pending</option>
+                </select>
+            </div>
+            <div class="action-buttons">
+                <button id="viewRecordsBtn" class="btn btn-primary-custom"><i class="bi bi-search"></i> View Records</button>
+                <button id="findDuplicatesBtn" class="btn btn-warning-custom"><i class="bi bi-exclamation-triangle"></i> Find Duplicates</button>
+                <button id="resetBtn" class="btn btn-secondary-custom"><i class="bi bi-arrow-repeat"></i> Reset</button>
+                <button id="exportCsvBtn" class="btn btn-success-custom" disabled><i class="bi bi-filetype-csv"></i> Export to CSV</button>
+            </div>
+        </div>
+        
+        <!-- Stats Row -->
+        <div id="statsContainer" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                <div>
+                    <span class="stats-badge" id="recordCount">0 Records</span>
+                    <span class="stats-badge ms-2" id="duplicateCount" style="background:#fef3c7;color:#d97706;">Duplicates: 0</span>
+                </div>
+                <div>
+                    <span class="stats-badge" id="installedCount">Installed: 0</span>
+                    <span class="stats-badge ms-2" id="pendingCount">Pending: 0</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Table -->
+        <div class="table-responsive">
+            <table id="deviceTable" class="table table-striped table-hover" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Treasury</th>
+                        <th>Location</th>
+                        <th>Device TYPE</th>
+                        <th>Branch ID</th>
+                        <th>Device Serial No.</th>
+                        <th>Device Label</th>
+                        <th>Status</th>
+                        <th>Main UPS Backup</th>
+                        <th>CCTV UPS Access</th>
+                        <th>MPLS Connection</th>
+                        <th>Installation Date</th>
+                        <th>Migration Date</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="placeholder-row">
+                        <td colspan="14" class="placeholder-message">
+                            <i class="bi bi-search-heart"></i>
+                            <h5>No Report Generated</h5>
+                            <p>Click "View Records" button to load data</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Duplicate Report Modal -->
+<div class="modal fade" id="duplicateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg duplicate-modal">
+        <div class="modal-content">
+            <div class="modal-header" style="background: #dc2626; color: white;">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill"></i> Duplicate Device Serial Numbers</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="duplicateModalContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" id="exportDuplicatesBtn" class="btn btn-danger">Export Duplicates Report</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script src="../js/jquery.dataTables.min.js"></script>
+<script src="../js/dataTables.bootstrap5.min.js"></script>
+<script src="../js/select2.min.js"></script>
+<script src="../js/flatpickr.min.js"></script>
+<script src="../js/sweetalert2.all.min.js"></script>
+
+<script>
+    // ================= CONFIGURATION =================
+    const SPREADSHEET_ID = "1HvCqLHC8IyllKskBXX1MtMfjQMGUyhMP7KuTuJxDhmU";
+    const SHEET_NAME = "Installation Status";
+    const API_KEY = "AIzaSyDc8tegwi2rgHyDFYm7uWBqVqQ7Fwb3uWM";
+    
+    let allRecords = [];
+    let filteredRecords = [];
+    let branchesList = [];
+    let dataTable = null;
+    let isReportGenerated = false;
+    let duplicateSerialNumbers = new Map(); // Stores serial -> array of record indices
+    
+    function showGlobalLoading(msg) {
+        if($('#global-loading-overlay').length) return;
+        $('body').append(`<div id="global-loading-overlay"><div style="background:white;padding:30px;border-radius:24px;text-align:center;"><i class="bi bi-arrow-repeat" style="font-size:48px;color:#0f3b5f;animation:spin 1s linear infinite;"></i><p>${msg}</p></div></div>`);
+    }
+    function hideGlobalLoading() { $('#global-loading-overlay').remove(); }
+    
+    function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
+    
+    function parseDate(dateStr) {
+        if(!dateStr) return null;
+        let parts = dateStr.split('-');
+        if(parts.length === 3 && parts[0].length === 4) {
+            return new Date(parts[0], parts[1]-1, parts[2]);
+        }
+        parts = dateStr.split('/');
+        if(parts.length === 3 && parts[2].length === 4) {
+            return new Date(parts[2], parts[1]-1, parts[0]);
+        }
+        return null;
+    }
+    
+    function formatDateForDisplay(dateStr) {
+        if(!dateStr) return '—';
+        const date = parseDate(dateStr);
+        if(date && !isNaN(date)) {
+            let d = date.getDate().toString().padStart(2,'0');
+            let m = (date.getMonth()+1).toString().padStart(2,'0');
+            let y = date.getFullYear();
+            return `${d}/${m}/${y}`;
+        }
+        return dateStr;
+    }
+    
+    // Find duplicate device serial numbers across all records
+    function findDuplicateSerials() {
+        const serialMap = new Map();
+        duplicateSerialNumbers.clear();
+        
+        allRecords.forEach((record, index) => {
+            const serial = (record.deviceSerialNo || "").trim();
+            if(serial && serial !== "" && serial !== "NaN" && serial !== "null") {
+                if(!serialMap.has(serial)) {
+                    serialMap.set(serial, []);
+                }
+                serialMap.get(serial).push(index);
+            }
+        });
+        
+        // Filter to only those with more than 1 occurrence
+        for(const [serial, indices] of serialMap.entries()) {
+            if(indices.length > 1) {
+                duplicateSerialNumbers.set(serial, indices);
+            }
+        }
+        
+        return duplicateSerialNumbers;
+    }
+    
+    // Check if a specific record's serial number is duplicate
+    function isDuplicateSerial(serialNo) {
+        if(!serialNo) return false;
+        const indices = duplicateSerialNumbers.get(serialNo);
+        return indices && indices.length > 1;
+    }
+    
+    // Get duplicate count
+    function getDuplicateCount() {
+        let totalDuplicateRecords = 0;
+        for(const indices of duplicateSerialNumbers.values()) {
+            totalDuplicateRecords += indices.length;
+        }
+        return totalDuplicateRecords;
+    }
+    
+    // Show duplicate report modal
+    function showDuplicateReport() {
+        if(allRecords.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'No Data',
+                text: 'Please load records first by clicking "View Records".',
+                confirmButtonColor: '#0f5b9c'
+            });
+            return;
+        }
+        
+        findDuplicateSerials();
+        
+        if(duplicateSerialNumbers.size === 0) {
+            Swal.fire({
+                icon: 'success',
+                title: 'No Duplicates Found',
+                text: 'All device serial numbers are unique!',
+                confirmButtonColor: '#10b981'
+            });
+            return;
+        }
+        
+        let totalDuplicates = 0;
+        let modalHtml = `<div class="duplicate-list">`;
+        modalHtml += `<div class="alert alert-warning mb-3"><i class="bi bi-info-circle"></i> Found <strong>${duplicateSerialNumbers.size}</strong> serial number(s) with duplicates. Total duplicate records: <strong>${getDuplicateCount()}</strong></div>`;
+        
+        for(const [serial, indices] of duplicateSerialNumbers.entries()) {
+            totalDuplicates += indices.length;
+            modalHtml += `
+                <div class="duplicate-group">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="duplicate-serial"><i class="bi bi-upc-scan"></i> ${escapeHtml(serial)}</span>
+                        <span class="duplicate-count">${indices.length} occurrences</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr><th>#</th><th>Treasury</th><th>Location</th><th>Branch ID</th><th>Status</th><th>Installation Date</th></tr>
+                            </thead>
+                            <tbody>
+            `;
+            
+            indices.forEach((idx, pos) => {
+                const record = allRecords[idx];
+                modalHtml += `
+                    <tr class="${pos > 0 ? 'table-danger' : ''}">
+                        <td>${pos + 1}</td>
+                        <td>${escapeHtml(record.treasury || '—')}</td>
+                        <td>${escapeHtml(record.location || '—')}</td>
+                        <td>${escapeHtml(record.branchId || '—')}</td>
+                        <td>${escapeHtml(record.status || '—')}</td>
+                        <td>${formatDateForDisplay(record.installationDate)}</td>
+                    </tr>
+                `;
+            });
+            
+            modalHtml += `</tbody></table></div></div>`;
+        }
+        
+        modalHtml += `</div>`;
+        $('#duplicateModalContent').html(modalHtml);
+        $('#duplicateModal').modal('show');
+    }
+    
+    // Export duplicates to CSV
+    function exportDuplicatesReport() {
+        if(duplicateSerialNumbers.size === 0) {
+            Swal.fire({ icon: 'warning', title: 'No Duplicates', text: 'No duplicate serial numbers found to export.' });
+            return;
+        }
+        
+        const headers = ['Duplicate Group', 'Occurrence #', 'Treasury', 'Location', 'Device TYPE', 'Branch ID', 'Device Serial No.', 'Device Label', 'Status', 'Installation Date', 'Migration Date', 'Remarks'];
+        const rows = [];
+        
+        for(const [serial, indices] of duplicateSerialNumbers.entries()) {
+            indices.forEach((idx, pos) => {
+                const record = allRecords[idx];
+                rows.push([
+                    `Group ${serial}`,
+                    pos + 1,
+                    record.treasury || '',
+                    record.location || '',
+                    record.deviceType || '',
+                    record.branchId || '',
+                    record.deviceSerialNo || '',
+                    record.deviceLabel || '',
+                    record.status || '',
+                    formatDateForDisplay(record.installationDate),
+                    formatDateForDisplay(record.migrationDate),
+                    record.remarks || ''
+                ]);
+            });
+        }
+        
+        const csvContent = [headers, ...rows];
+        const csvString = csvContent.map(row => 
+            row.map(cell => {
+                const cellStr = String(cell);
+                if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                    return `"${cellStr.replace(/"/g, '""')}"`;
+                }
+                return cellStr;
+            }).join(',')
+        ).join('\n');
+        
+        const blob = new Blob(['\uFEFF' + csvString], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `duplicate_serial_numbers_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        Swal.fire({ icon: 'success', title: 'Exported', text: 'Duplicate report exported successfully.', timer: 1500, showConfirmButton: false });
+    }
+    
+    async function fetchBranchesFromSheet() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}!A:A?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            const branchesSet = new Set();
+            for(let i=1; i<rows.length; i++) {
+                const branch = rows[i] && rows[i][0] ? rows[i][0].trim() : "";
+                if(branch && branch !== "") branchesSet.add(branch);
+            }
+            return Array.from(branchesSet).sort((a, b) => a.localeCompare(b));
+        } catch(e) { console.error("Error fetching branches:", e); return []; }
+    }
+    
+    async function fetchDeviceRecords() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}!A:M?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            const records = [];
+            for(let i=1; i<rows.length; i++) {
+                const row = rows[i];
+                if(row.length > 0 && row[0]) {
+                    records.push({
+                        id: i,
+                        treasury: row[0] || "",
+                        location: row[1] || "",
+                        deviceType: row[2] || "",
+                        branchId: row[3] || "",
+                        deviceSerialNo: row[4] || "",
+                        deviceLabel: row[5] || "",
+                        status: row[6] || "",
+                        mainUpsBackup: row[7] || "",
+                        cctvUpsAccess: row[8] || "",
+                        mplsConnection: row[9] || "",
+                        installationDate: row[10] || "",
+                        migrationDate: row[11] || "",
+                        remarks: row[12] || ""
+                    });
+                }
+            }
+            allRecords = records;
+            findDuplicateSerials(); // Update duplicates map
+            return records;
+        } catch(e) { console.error("Error fetching records:", e); return []; }
+    }
+    
+    function populateBranchDropdown(branches) {
+        const $filterSelect = $('#branchFilterSelect');
+        $filterSelect.empty();
+        $filterSelect.append('<option value="">-- All Branches --</option>');
+        branches.forEach(branch => {
+            $filterSelect.append(`<option value="${escapeHtml(branch)}">${escapeHtml(branch)}</option>`);
+        });
+        $filterSelect.select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Select branch to filter',
+            allowClear: true
+        });
+    }
+    
+    function getStatusBadge(status) {
+        const statusLower = (status || "").toLowerCase();
+        if(statusLower === "installed") {
+            return '<span class="badge-installed"><i class="bi bi-check-circle-fill me-1"></i>Installed</span>';
+        } else if(statusLower === "pending") {
+            return '<span class="badge-pending"><i class="bi bi-clock-history me-1"></i>Pending</span>';
+        } else {
+            return '<span class="badge-not"><i class="bi bi-exclamation-triangle-fill me-1"></i>' + escapeHtml(status || '—') + '</span>';
+        }
+    }
+    
+    function getYesNoBadge(value) {
+        const val = (value || "").toLowerCase();
+        if(val === "yes" || val === "y") {
+            return '<span class="badge-yes">Yes</span>';
+        } else if(val === "no" || val === "n") {
+            return '<span class="badge-no">No</span>';
+        } else {
+            return '<span class="text-muted">—</span>';
+        }
+    }
+    
+    function applyFilters() {
+        const selectedBranch = $('#branchFilterSelect').val();
+        const selectedStatus = $('#statusFilterSelect').val();
+        
+        filteredRecords = allRecords.filter(record => {
+            if(selectedBranch && selectedBranch !== "" && record.treasury !== selectedBranch) return false;
+            if(selectedStatus && selectedStatus !== "") {
+                const statusLower = (record.status || "").toLowerCase();
+                if(statusLower !== selectedStatus.toLowerCase()) return false;
+            }
+            return true;
+        });
+        
+        filteredRecords.sort((a, b) => (a.treasury || "").localeCompare(b.treasury || ""));
+        
+        const installedCount = filteredRecords.filter(r => (r.status || "").toLowerCase() === "installed").length;
+        const pendingCount = filteredRecords.filter(r => (r.status || "").toLowerCase() === "pending").length;
+        const duplicateRecordsCount = filteredRecords.filter(r => isDuplicateSerial(r.deviceSerialNo)).length;
+        
+        $('#recordCount').text(`${filteredRecords.length} Records`);
+        $('#installedCount').text(`Installed: ${installedCount}`);
+        $('#pendingCount').text(`Pending: ${pendingCount}`);
+        $('#duplicateCount').html(`<i class="bi bi-exclamation-triangle"></i> Duplicates: ${duplicateSerialNumbers.size} (${getDuplicateCount()} records)`);
+        
+        return filteredRecords;
+    }
+    
+    function renderTable() {
+        const filtered = applyFilters();
+        
+        if(dataTable) {
+            dataTable.destroy();
+            $('#deviceTable tbody').empty();
+        }
+        
+        if(filtered.length === 0) {
+            $('#deviceTable tbody').html(`
+                <tr class="placeholder-row">
+                    <td colspan="14" class="placeholder-message">
+                        <i class="bi bi-inbox"></i>
+                        <h5>No Records Found</h5>
+                        <p>No records match the selected filters. Try changing your criteria.</p>
+                    </td>
+                </tr>
+            `);
+            dataTable = null;
+            $('#exportCsvBtn').prop('disabled', true);
+            return;
+        }
+        
+        dataTable = $('#deviceTable').DataTable({
+            data: filtered,
+            columns: [
+                { data: null, render: (row, type, rowData, meta) => meta.row + 1 },
+                { data: "treasury" },
+                { data: "location", render: d => d ? d : '—' },
+                { data: "deviceType", render: d => d ? d : '—' },
+                { data: "branchId", render: d => d ? d : '—' },
+                { 
+                    data: "deviceSerialNo", 
+                    render: (d, type, row) => {
+                        const isDup = isDuplicateSerial(d);
+                        if(isDup && d) {
+                            return `<span class="duplicate-highlight"><i class="bi bi-exclamation-triangle-fill"></i> ${escapeHtml(d)}</span>`;
+                        }
+                        return d ? escapeHtml(d) : '—';
+                    }
+                },
+                { data: "deviceLabel", render: d => d ? d : '—' },
+                { data: null, render: (row) => getStatusBadge(row.status) },
+                { data: null, render: (row) => getYesNoBadge(row.mainUpsBackup) },
+                { data: null, render: (row) => getYesNoBadge(row.cctvUpsAccess) },
+                { data: null, render: (row) => getYesNoBadge(row.mplsConnection) },
+                { data: "installationDate", render: d => formatDateForDisplay(d) },
+                { data: "migrationDate", render: d => formatDateForDisplay(d) },
+                { data: "remarks", render: d => d ? d : '—' }
+            ],
+            order: [[1, 'asc']],
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'All']],
+            language: { search: "Filter:", searchPlaceholder: "Search records..." },
+            scrollX: true,
+            autoWidth: false,
+            rowCallback: function(row, data) {
+                if(isDuplicateSerial(data.deviceSerialNo)) {
+                    $(row).addClass('duplicate-row');
+                }
+            },
+            drawCallback: function() {
+                $('#exportCsvBtn').prop('disabled', false);
+            }
+        });
+        
+        $('#exportCsvBtn').prop('disabled', false);
+    }
+    
+    async function generateReport() {
+        showGlobalLoading("Loading device data...");
+        await fetchDeviceRecords();
+        renderTable();
+        hideGlobalLoading();
+        
+        $('#statsContainer').show();
+        
+        if(filteredRecords.length === 0 && allRecords.length > 0) {
+            Swal.fire({ icon: 'info', title: 'No Records', text: 'No records match the selected filters.', timer: 2000 });
+        } else if(allRecords.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'No Data', text: 'No records found in the sheet.' });
+        } else {
+            const dupCount = duplicateSerialNumbers.size;
+            if(dupCount > 0) {
+                Swal.fire({ 
+                    icon: 'warning', 
+                    title: 'Report Generated', 
+                    text: `${filteredRecords.length} records found. Warning: ${dupCount} duplicate serial number(s) detected!`,
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire({ icon: 'success', title: 'Report Generated', text: `${filteredRecords.length} records found.`, timer: 1500, showConfirmButton: false });
+            }
+        }
+        isReportGenerated = true;
+    }
+    
+    function exportToCSV() {
+        if(!isReportGenerated || filteredRecords.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'No Data', text: 'No records to export. Please generate report first.' });
+            return;
+        }
+        
+        let dataToExport = filteredRecords;
+        if(dataTable) {
+            const searchTerm = dataTable.search();
+            if(searchTerm && searchTerm !== "") {
+                dataToExport = dataTable.rows({ search: 'applied' }).data().toArray();
+            }
+        }
+        
+        const headers = ['Sl No', 'Treasury', 'Location', 'Device TYPE', 'Branch ID', 'Device Serial No.', 'Device Label', 'Status', 'Main UPS Backup Availability', 'CCTV UPS Access for SDWAN', 'MPLS Connection Available?', 'Installation Date', 'Migration Date', 'Remarks', 'Duplicate Flag'];
+        
+        const rows = [];
+        let serialNo = 1;
+        
+        dataToExport.forEach(record => {
+            const isDup = isDuplicateSerial(record.deviceSerialNo);
+            rows.push([
+                serialNo++,
+                record.treasury || '',
+                record.location || '',
+                record.deviceType || '',
+                record.branchId || '',
+                record.deviceSerialNo || '',
+                record.deviceLabel || '',
+                record.status || '',
+                record.mainUpsBackup || '',
+                record.cctvUpsAccess || '',
+                record.mplsConnection || '',
+                formatDateForDisplay(record.installationDate),
+                formatDateForDisplay(record.migrationDate),
+                record.remarks || '',
+                isDup ? 'DUPLICATE' : 'OK'
+            ]);
+        });
+        
+        const csvContent = [headers, ...rows];
+        const csvString = csvContent.map(row => 
+            row.map(cell => {
+                const cellStr = String(cell);
+                if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                    return `"${cellStr.replace(/"/g, '""')}"`;
+                }
+                return cellStr;
+            }).join(',')
+        ).join('\n');
+        
+        const blob = new Blob(['\uFEFF' + csvString], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        const selectedBranch = $('#branchFilterSelect').val() || 'all';
+        const fileName = `installation_status_${selectedBranch}_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.csv`;
+        link.setAttribute('href', url);
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        Swal.fire({ icon: 'success', title: 'Export Successful!', text: `${dataToExport.length} records exported.`, timer: 1500, showConfirmButton: false });
+    }
+    
+    async function applyFilter() {
+        renderTable();
+        if(allRecords.length > 0) {
+            $('#statsContainer').show();
+            isReportGenerated = true;
+        }
+    }
+    
+    function resetFilters() {
+        $('#branchFilterSelect').val('').trigger('change');
+        $('#statusFilterSelect').val('');
+        if(allRecords.length > 0) {
+            renderTable();
+        }
+        Swal.fire({ icon: 'info', title: 'Reset Complete', text: 'Filters have been cleared.', timer: 1500, showConfirmButton: false });
+    }
+    
+    $(async function() {
+        showGlobalLoading("Loading branches...");
+        const branches = await fetchBranchesFromSheet();
+        branchesList = branches;
+        populateBranchDropdown(branchesList);
+        hideGlobalLoading();
+        
+        $('#viewRecordsBtn').on('click', generateReport);
+        $('#findDuplicatesBtn').on('click', showDuplicateReport);
+        $('#exportCsvBtn').on('click', exportToCSV);
+        $('#resetBtn').on('click', resetFilters);
+        $('#exportDuplicatesBtn').on('click', exportDuplicatesReport);
+        $('#branchFilterSelect').on('change', applyFilter);
+        $('#statusFilterSelect').on('change', applyFilter);
+        
+        $('#exportCsvBtn').prop('disabled', true);
+    });
+</script>
+</body>
+</html>

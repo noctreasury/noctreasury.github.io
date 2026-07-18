@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treasuries · Device & Network Monitoring</title>
+
+    <!-- LOCAL CSS – same as sample -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+
+    <style>
+        :root {
+            --primary: #0f5b9c;
+            --primary-dark: #1a4b7a;
+            --primary-light: #e8f0fe;
+            --success: #10b981;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --border: #e9ecef;
+        }
+
+        body {
+            background: #fff0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding: 20px;
+            color: var(--dark);
+        }
+
+        .dashboard-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            padding: 15px 2px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 12px !important;
+            flex-wrap: wrap !important;
+            justify-content: space-between !important;
+        }
+
+        .page-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .page-header-left i {
+            font-size: 1.8rem !important;
+            background: rgb(56 143 251 / 15%) !important;
+            padding: 10px !important;
+            border-radius: 12px !important;
+            color: #184f83 !important;
+        }
+
+        .page-header-left h1 {
+            margin: 0 !important;
+            font-size: 1.8rem !important;
+            font-weight: 700 !important;
+            color: #184f83 !important;
+        }
+
+        .page-header-left p {
+            margin: 2px 0 0;
+            opacity: 0.7;
+            font-size: 0.75rem;
+        }
+
+        .refresh-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--light);
+            padding: 8px 16px;
+            border-radius: 40px;
+            border: 1px solid var(--border);
+        }
+
+        .refresh-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--primary-light);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .last-updated {
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+
+        .refresh-btn {
+            background: white;
+            border: 1px solid var(--border);
+            color: var(--primary);
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .refresh-btn:hover {
+            background: var(--primary-light);
+            border-color: var(--primary);
+        }
+
+        .export-btn {
+            background: var(--success);
+            border: none;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .export-btn:hover {
+            background: #0d9668;
+            transform: translateY(-2px);
+        }
+
+        .refresh-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+        }
+
+        .refresh-controls select {
+            padding: 2px 6px;
+            font-size: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            height: 28px;
+            background: white;
+        }
+
+        /* Stats Cards */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 18px 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+
+        .stat-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.total { background: #e8f0fe; color: var(--primary); }
+        .stat-icon.wan1-up { background: #e8f7ed; color: var(--success); }
+        .stat-icon.wan1-down { background: #fee9e7; color: var(--danger); }
+        .stat-icon.wan2-up { background: #e8f7ed; color: var(--success); }
+        .stat-icon.wan2-down { background: #fee9e7; color: var(--danger); }
+        .stat-icon.branches { background: #fff3cd; color: #d97706; }
+        .stat-icon.treasuries { background: #e8f0fe; color: #3b82f6; }
+        .stat-icon.devices { background: #f3e8ff; color: #8b5cf6; }
+
+        .stat-info h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .stat-info p {
+            margin: 3px 0 0;
+            color: #64748b;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        /* Section Titles */
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin: 0 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+
+        .section-title .badge {
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 5px 15px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            margin-left: 10px;
+        }
+
+        /* Table Card */
+        .table-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+        }
+
+        .table thead th {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            font-weight: 500;
+            font-size: 0.8rem;
+            padding: 12px 8px;
+            white-space: nowrap;
+            border: 1px solid #d1d5db;
+        }
+
+        .table td {
+            padding: 10px 8px;
+            vertical-align: middle;
+            font-size: 0.85rem;
+            border: 1px solid #d1d5db;
+        }
+
+        .field-value {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .treasury-badge {          
+            font-size: 0.85rem;
+            display: inline-block;
+        }
+
+        .copy-field-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            padding: 2px 6px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            flex-shrink: 0;
+        }
+
+        .copy-field-btn:hover {
+            background: #e8f0fe;
+            color: var(--primary);
+            transform: scale(1.1);
+        }
+
+        .copy-field-btn.copied {
+            background: var(--success);
+            color: white;
+        }
+
+        .copy-field-btn .bi {
+            font-size: 0.8rem;
+        }
+
+        .short-id {
+            font-size: 0.85rem;
+            cursor: pointer;
+            white-space: nowrap;
+            display: inline-block;
+        }
+
+        .short-id:hover { background: #e2e8f0; }
+
+        .isp-tag {
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #1e293b;
+            white-space: nowrap;
+            display: inline-block;
+        }
+
+        .circuit-id-code {
+            padding: 3px 8px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--primary-light);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        .error-message {
+            background: #fee9e7;
+            color: var(--danger);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid var(--danger);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+            background: var(--light);
+            border-radius: 12px;
+        }
+
+        .copied-tooltip {
+            position: fixed;
+            background: var(--success);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            z-index: 9999;
+            pointer-events: none;
+            animation: fadeOut 1.5s ease-out forwards;
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: translateY(0); }
+            70% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-10px); }
+        }
+
+        /* Status arrow badges */
+        .status-arrow-up {
+            color: #10b981;
+            font-weight: 700;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .status-arrow-down {
+            color: #ef4444;
+            font-weight: 700;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .status-arrow-unknown {
+            color: #94a3b8;
+            font-weight: 400;
+            font-size: 0.8rem;
+        }
+
+        /* DataTables overrides */
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter {
+            font-size: 0.85rem;
+        }
+
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_paginate {
+            font-size: 0.85rem;
+        }
+
+        .dataTables_wrapper .dataTables_filter input {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            height: 38px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+        }
+
+        .dataTables_wrapper .dataTables_length select {
+            padding: 4px 8px;
+            font-size: 0.85rem;
+            height: 38px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            /*padding: 4px 12px !important;
+            margin: 0 2px !important;
+            border-radius: 6px !important;
+            border: 1px solid #e2e8f0 !important;*/
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: var(--primary) !important;
+            color: white !important;
+            border-color: var(--primary) !important;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) { .stats-row { grid-template-columns: repeat(4, 1fr); } }
+        @media (max-width: 768px) { 
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .page-header { flex-direction: column; align-items: flex-start; }
+            .table td, .table th { font-size: 0.75rem; padding: 6px 4px; }
+            .page-header-left h1 { font-size: 1.2rem !important; }
+        }
+        @media (max-width: 480px) { .stats-row { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="page-header">
+    <div class="page-header-left">
+        <i class="bi bi-hdd-network"></i>
+        <div>
+            <h1>Treasuries · Device & Network</h1>
+            <p>Live monitoring with auto-refresh</p>
+        </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+        <div class="refresh-indicator">
+            <div class="refresh-spinner" id="refreshSpinner"></div>
+            <span class="last-updated" id="lastUpdated">
+                <i class="bi bi-clock"></i> Loading...
+            </span>
+        </div>
+        <div class="refresh-controls">
+            <span>Auto-refresh</span>
+            <select id="refreshIntervalSelect">
+                <option value="0">Off</option>
+                <option value="1">1 min</option>
+                <option value="2" selected>2 min</option>
+                <option value="5">5 min</option>
+                <option value="10">10 min</option>
+            </select>
+        </div>
+        <button class="refresh-btn" onclick="manualRefresh()" id="refreshBtn">
+            <i class="bi bi-arrow-repeat"></i> Refresh
+        </button>
+        <button class="export-btn" onclick="exportToCSV()" id="exportBtn">
+            <i class="bi bi-download"></i> CSV
+        </button>
+    </div>
+</div>
+
+<div class="dashboard-container">
+    <!-- Stats -->
+    <div class="stats-row" id="statsContainer">
+        <div class="stat-card">
+            <div class="stat-icon total"><i class="bi bi-database"></i></div>
+            <div class="stat-info">
+                <h3 id="totalRecords">0</h3>
+                <p>Records</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon wan1-up"><i class="bi bi-arrow-up-circle-fill"></i></div>
+            <div class="stat-info">
+                <h3 id="wan1Up">0</h3>
+                <p>WAN1 Up</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon wan1-down"><i class="bi bi-arrow-down-circle-fill"></i></div>
+            <div class="stat-info">
+                <h3 id="wan1Down">0</h3>
+                <p>WAN1 Down</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon wan2-up"><i class="bi bi-arrow-up-circle-fill"></i></div>
+            <div class="stat-info">
+                <h3 id="wan2Up">0</h3>
+                <p>WAN2 Up</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon wan2-down"><i class="bi bi-arrow-down-circle-fill"></i></div>
+            <div class="stat-info">
+                <h3 id="wan2Down">0</h3>
+                <p>WAN2 Down</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon branches"><i class="bi bi-building"></i></div>
+            <div class="stat-info">
+                <h3 id="uniqueBranches">0</h3>
+                <p>Branches</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon treasuries"><i class="bi bi-pin-map"></i></div>
+            <div class="stat-info">
+                <h3 id="uniqueTreasuries">0</h3>
+                <p>Treasuries</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon devices"><i class="bi bi-server"></i></div>
+            <div class="stat-info">
+                <h3 id="deviceCount">0</h3>
+                <p>Devices</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="section-title">
+        <i class="bi bi-table"></i> Network & Device Details
+        <span class="badge" id="masterCount">0</span>
+    </div>
+
+    <div class="table-card" id="tableContainer">
+        <div class="loading" id="tableLoading">
+            <div class="spinner"></div>
+            <p>Loading sheet data...</p>
+        </div>
+        <div id="tableWrapper" style="display: none;">
+            <div class="table-responsive">
+                <table id="deviceTable" class="table table-hover" style="width:100%">
+                    <thead id="dynamicHead"></thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+        <div id="tableEmpty" class="empty-state" style="display: none;">
+            <i class="bi bi-database-slash fs-1"></i>
+            <h5 class="mt-2">No Data</h5>
+            <p class="text-muted">No records found.</p>
+        </div>
+    </div>
+</div>
+
+<!-- JS -->
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script src="../js/jquery.dataTables.min.js"></script>
+<script src="../js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+    // ========== CONFIG ==========
+    const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+    const SPREADSHEET_ID = '1fTZjxTndPFySqDhlto7dqU9kI1GBEqI5ZQL2qkHFQK8';
+    const SHEET_NAME = 'Data';
+    const RANGE = 'A:N';
+
+    let allRows = [];
+    let headers = [];
+    let dataTable = null;
+    let isRefreshing = false;
+    let autoRefreshTimer = null;
+
+    // Column mapping - handles headers with line breaks
+    const COLUMN_MAP = {
+        'Treasury': ['Treasury'],
+        'Location': ['Location'],
+        'Device Serial No.': ['Device Serial No.', 'Device Serial No'],
+        'Device Type': ['Device Type'],
+        'Instance ID': ['Instance ID'],
+        'API Key': ['API Key'],
+        'Encapsulation IP': ['Encapsulation IP'],
+        'LAN': ['LAN'],
+        'WAN 1 ISP': ['WAN 1\nISP', 'WAN 1 ISP', 'WAN1 ISP'],
+        'WAN 1 ID': ['WAN 1\nID', 'WAN 1 ID', 'WAN1 ID'],
+        'WAN 1Status': ['WAN 1\nStatus', 'WAN 1Status', 'WAN1 Status', 'WAN1Status'],
+        'WAN 2 ISP': ['WAN 2\nISP', 'WAN 2 ISP', 'WAN2 ISP'],
+        'WAN 2 ID': ['WAN 2\nID', 'WAN 2 ID', 'WAN2 ID'],
+        'WAN 2Status': ['WAN 2\nStatus', 'WAN 2Status', 'WAN2 Status', 'WAN2Status']
+    };
+
+    // Display labels
+    const DISPLAY_COLS = [
+        { key: 'Treasury', label: 'Treasury' },
+        { key: 'Location', label: 'Location' },
+        { key: 'Device Serial No.', label: 'Serial' },
+        { key: 'Device Type', label: 'Type' },
+        { key: 'Instance ID', label: 'Instance ID' },
+        { key: 'API Key', label: 'API Key' },
+        { key: 'Encapsulation IP', label: 'Enc.IP' },
+        { key: 'LAN', label: 'LAN' },
+        { key: 'WAN 1 ISP', label: 'WAN1 ISP' },
+        { key: 'WAN 1 ID', label: 'WAN1 ID' },
+        { key: 'WAN 1Status', label: 'WAN1 Sts' },
+        { key: 'WAN 2 ISP', label: 'WAN2 ISP' },
+        { key: 'WAN 2 ID', label: 'WAN2 ID' },
+        { key: 'WAN 2Status', label: 'WAN2 Sts' }
+    ];
+
+    // ========== HELPERS ==========
+    function escapeHtml(text) {
+        if (!text) return '';
+        return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    }
+
+    function shortId(val, len = 5) {
+        if (!val || val === '#N/A' || val === '') return val;
+        const s = String(val);
+        if (s.length <= len) return s;
+        return s.slice(0, len) + '…';
+    }
+
+    function copyField(text, button) {
+        if (!text) { showTooltip('Nothing to copy', button); return; }
+        navigator.clipboard.writeText(text).then(() => {
+            const $btn = $(button);
+            const orig = $btn.html();
+            $btn.addClass('copied').html('<i class="bi bi-check-lg"></i>');
+            setTimeout(() => { $btn.removeClass('copied').html(orig); }, 1500);
+            showTooltip('Copied!', button);
+        }).catch(() => {
+            const input = document.createElement('input');
+            input.value = text;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+            showTooltip('Copied!', button);
+        });
+    }
+
+    function showTooltip(msg, el) {
+        const $t = $(`<div class="copied-tooltip">${msg} <i class="bi bi-check-lg"></i></div>`);
+        $('body').append($t);
+        const rect = el.getBoundingClientRect();
+        $t.css({ left: rect.left + 'px', top: rect.top - 35 + 'px' });
+        setTimeout(() => $t.remove(), 1500);
+    }
+
+    function getStatusArrow(status) {
+        const s = String(status || '').toLowerCase().trim();
+        if (s === 'up') {
+            return `<span class="status-arrow-up"><i class="bi bi-arrow-up-circle-fill"></i> Up</span>`;
+        } else if (s === 'down') {
+            return `<span class="status-arrow-down"><i class="bi bi-arrow-down-circle-fill"></i> Down</span>`;
+        }
+        return `<span class="status-arrow-unknown">—</span>`;
+    }
+
+    // Find the actual header in the sheet
+    function findHeaderKey(searchKeys) {
+        for (const key of searchKeys) {
+            const normalizedKey = key.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+            for (const header of headers) {
+                const normalizedHeader = header.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+                if (normalizedHeader === normalizedKey) {
+                    return header;
+                }
+            }
+        }
+        return null;
+    }
+
+    function getCellValue(row, columnKey) {
+        const searchKeys = COLUMN_MAP[columnKey] || [columnKey];
+        const actualKey = findHeaderKey(searchKeys);
+        if (actualKey && row[actualKey] !== undefined) {
+            return row[actualKey] || '';
+        }
+        return '';
+    }
+
+    // ========== LOAD SHEET ==========
+    async function loadSheetData() {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}!${RANGE}?key=${API_KEY}`;
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        return data.values || [];
+    }
+
+    // ========== PROCESS ==========
+    function processData(rows) {
+        if (!rows || rows.length === 0) { allRows = []; headers = []; return; }
+        
+        headers = rows[0].map(h => h !== undefined && h !== null ? String(h) : '');
+        
+        console.log('Headers found:', headers);
+        console.log('Headers with newlines shown as \\n:', headers.map(h => h.replace(/\n/g, '\\n')));
+        
+        allRows = [];
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.every(c => !c || c === '')) continue;
+            const obj = {};
+            headers.forEach((h, idx) => {
+                let val = (row[idx] !== undefined && row[idx] !== null) ? String(row[idx]).trim() : '';
+                if (val === '#N/A') val = '';
+                obj[h] = val;
+            });
+            allRows.push(obj);
+        }
+        
+        console.log('Processed rows:', allRows.length);
+    }
+
+    // ========== DESTROY TABLE ==========
+    function destroyDataTable() {
+        if (dataTable) {
+            dataTable.destroy();
+            dataTable = null;
+        }
+        $('#deviceTable').off();
+        $('#tableBody').empty();
+        $('#dynamicHead').empty();
+        $('#tableWrapper').hide();
+    }
+
+    // ========== RENDER ==========
+    function renderTable() {
+        const $wrapper = $('#tableWrapper');
+        const $empty = $('#tableEmpty');
+        const $loading = $('#tableLoading');
+        $loading.hide();
+
+        if (!allRows || allRows.length === 0) {
+            $wrapper.hide();
+            $empty.show();
+            return;
+        }
+        $empty.hide();
+
+        // Build table header
+        let theadHtml = `<tr>`;
+        DISPLAY_COLS.forEach(col => {
+            theadHtml += `<th>${col.label}</th>`;
+        });
+        theadHtml += `</tr>`;
+        $('#dynamicHead').html(theadHtml);
+
+        // Build table body
+        const tbody = $('#tableBody');
+        tbody.empty();
+
+        allRows.forEach(row => {
+            const treasury = getCellValue(row, 'Treasury');
+            const location = getCellValue(row, 'Location');
+            const serial = getCellValue(row, 'Device Serial No.');
+            const deviceType = getCellValue(row, 'Device Type');
+            const instanceId = getCellValue(row, 'Instance ID');
+            const apiKey = getCellValue(row, 'API Key');
+            const encIP = getCellValue(row, 'Encapsulation IP');
+            const lan = getCellValue(row, 'LAN');
+            const wan1ISP = getCellValue(row, 'WAN 1 ISP');
+            const wan1ID = getCellValue(row, 'WAN 1 ID');
+            const wan1Status = getCellValue(row, 'WAN 1Status');
+            const wan2ISP = getCellValue(row, 'WAN 2 ISP');
+            const wan2ID = getCellValue(row, 'WAN 2 ID');
+            const wan2Status = getCellValue(row, 'WAN 2Status');
+
+            const instShort = shortId(instanceId, 5);
+            const instHtml = `
+                <div class="field-value">
+                    <span class="short-id" title="Click to copy full">${escapeHtml(instShort)}</span>
+                    <button class="copy-field-btn" onclick="copyField('${escapeHtml(instanceId).replace(/'/g, "\\'")}', this)" title="Copy full"><i class="bi bi-clipboard"></i></button>
+                </div>
+            `;
+
+            const apiShort = shortId(apiKey, 5);
+            const apiHtml = `
+                <div class="field-value">
+                    <span class="short-id" title="Click to copy full">${escapeHtml(apiShort)}</span>
+                    <button class="copy-field-btn" onclick="copyField('${escapeHtml(apiKey).replace(/'/g, "\\'")}', this)" title="Copy full"><i class="bi bi-clipboard"></i></button>
+                </div>
+            `;
+
+            const rowHtml = `
+                <tr>
+                    <td><span class="treasury-badge">${escapeHtml(treasury || '-')}</span></td>
+                    <td>${escapeHtml(location || '-')}</td>
+                    <td>${escapeHtml(serial || '-')}</td>
+                    <td>${escapeHtml(deviceType || '-')}</td>
+                    <td>${instHtml}</td>
+                    <td>${apiHtml}</td>
+                    <td>${escapeHtml(encIP || '-')}</td>
+                    <td>${escapeHtml(lan || '-')}</td>
+                    <td><span class="isp-tag">${escapeHtml(wan1ISP || '-')}</span></td>
+                    <td>${wan1ID ? `<span class="circuit-id-code" title="${escapeHtml(wan1ID)}">${escapeHtml(wan1ID)}</span>` : '-'}</td>
+                    <td>${getStatusArrow(wan1Status)}</td>
+                    <td><span class="isp-tag">${escapeHtml(wan2ISP || '-')}</span></td>
+                    <td>${wan2ID ? `<span class="circuit-id-code" title="${escapeHtml(wan2ID)}">${escapeHtml(wan2ID)}</span>` : '-'}</td>
+                    <td>${getStatusArrow(wan2Status)}</td>
+                </tr>
+            `;
+            tbody.append(rowHtml);
+        });
+
+        // Initialize DataTable
+        dataTable = $('#deviceTable').DataTable({
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            order: [[0, 'asc']],
+            language: {
+                search: "Search:",
+                searchPlaceholder: "Filter table...",
+                lengthMenu: "Show _MENU_ entries",
+                info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                infoEmpty: "Showing 0 to 0 of 0 entries",
+                infoFiltered: "(filtered from _MAX_ total entries)",
+                paginate: {
+                    first: '<i class="bi bi-chevron-double-left"></i>',
+                    previous: '<i class="bi bi-chevron-left"></i>',
+                    next: '<i class="bi bi-chevron-right"></i>',
+                    last: '<i class="bi bi-chevron-double-right"></i>'
+                }
+            },
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
+            autoWidth: false,
+            columnDefs: [
+                { width: '12%', targets: 0 },
+                { width: '2%', targets: 1 },
+                { width: '4%', targets: 2 },
+                { width: '4%', targets: 3 },
+                { width: '4%', targets: 4 },
+                { width: '4%', targets: 5 },
+                { width: '6%', targets: 6 },
+                { width: '5%', targets: 7 },
+                { width: '4%', targets: 8 },
+                { width: '4%', targets: 9 },
+                { width: '2%', targets: 10 },
+                { width: '4%', targets: 11 },
+                { width: '4%', targets: 12 },
+                { width: '2%', targets: 13 }
+            ]
+        });
+
+        $wrapper.show();
+        updateStats();
+    }
+
+    // ========== STATS ==========
+    function updateStats() {
+        const total = allRows.length;
+        let wan1Up = 0, wan1Down = 0, wan2Up = 0, wan2Down = 0;
+        const branches = new Set(), treasuries = new Set(), devices = new Set();
+
+        allRows.forEach(r => {
+            const location = getCellValue(r, 'Location');
+            const treasury = getCellValue(r, 'Treasury');
+            const serial = getCellValue(r, 'Device Serial No.');
+            
+            if (location) branches.add(location);
+            if (treasury) treasuries.add(treasury);
+            if (serial) devices.add(serial);
+
+            const s1 = getCellValue(r, 'WAN 1Status').toLowerCase().trim();
+            const s2 = getCellValue(r, 'WAN 2Status').toLowerCase().trim();
+            
+            if (s1 === 'up') wan1Up++; 
+            else if (s1 === 'down') wan1Down++;
+            
+            if (s2 === 'up') wan2Up++; 
+            else if (s2 === 'down') wan2Down++;
+        });
+
+        $('#totalRecords').text(total);
+        $('#wan1Up').text(wan1Up);
+        $('#wan1Down').text(wan1Down);
+        $('#wan2Up').text(wan2Up);
+        $('#wan2Down').text(wan2Down);
+        $('#uniqueBranches').text(branches.size);
+        $('#uniqueTreasuries').text(treasuries.size);
+        $('#deviceCount').text(devices.size);
+        $('#masterCount').text(total);
+    }
+
+    function updateLastUpdated() {
+        const now = new Date();
+        const dateString = now.toLocaleDateString();
+        const timeString = now.toLocaleTimeString();
+        $('#lastUpdated').html(`<i class="bi bi-clock"></i> Last updated: ${dateString} ${timeString}`);
+    }
+
+    // ========== EXPORT ==========
+    function exportToCSV() {
+        if (!allRows.length) { alert('No data.'); return; }
+        const $btn = $('#exportBtn');
+        const orig = $btn.html();
+        $btn.html('<i class="bi bi-hourglass-split"></i> Exporting...').prop('disabled', true);
+        setTimeout(() => {
+            try {
+                const dispHeaders = ['Treasury','Location','Device Serial No.','Device Type','Instance ID','API Key','Encapsulation IP','LAN','WAN 1 ISP','WAN 1 ID','WAN 1Status','WAN 2 ISP','WAN 2 ID','WAN 2Status'];
+                const csvRows = [dispHeaders.map(h => `"${h}"`).join(',')];
+                allRows.forEach(r => {
+                    const vals = dispHeaders.map(h => {
+                        const val = getCellValue(r, h);
+                        return `"${String(val || '').replace(/"/g, '""')}"`;
+                    });
+                    csvRows.push(vals.join(','));
+                });
+                const blob = new Blob(["\uFEFF" + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `treasuries_${new Date().toISOString().slice(0,10)}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                $btn.html('<i class="bi bi-check-lg"></i> Exported!').prop('disabled', false);
+                setTimeout(() => $btn.html(orig), 2000);
+            } catch(e) { alert('Export error'); $btn.html(orig).prop('disabled', false); }
+        }, 100);
+    }
+
+    // ========== AUTO-REFRESH ==========
+    function startAutoRefresh(minutes) {
+        if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+        if (minutes > 0) {
+            autoRefreshTimer = setInterval(() => {
+                if (!isRefreshing) {
+                    console.log('Auto-refresh triggered');
+                    loadAllData();
+                }
+            }, minutes * 60 * 1000);
+        }
+    }
+
+    // ========== LOAD MAIN ==========
+    async function loadAllData() {
+        if (isRefreshing) {
+            console.log('Refresh already in progress, skipping...');
+            return;
+        }
+        
+        isRefreshing = true;
+        console.log('Starting refresh...');
+        $('#refreshSpinner').show();
+        $('#refreshBtn').prop('disabled', true);
+        
+        // Destroy existing DataTable before rebuilding
+        destroyDataTable();
+        
+        $('#tableLoading').show();
+        $('#tableEmpty').hide();
+
+        try {
+            const rows = await loadSheetData();
+            processData(rows);
+            renderTable();
+            updateLastUpdated();
+            console.log('Refresh completed successfully');
+        } catch (err) {
+            console.error('Refresh error:', err);
+            $('#tableContainer').html(`
+                <div class="error-message">
+                    <i class="bi bi-exclamation-triangle-fill fs-1"></i>
+                    <h5 class="mt-3">Error Loading Data</h5>
+                    <p>${escapeHtml(err.message)}</p>
+                    <button class="btn btn-primary mt-3" onclick="location.reload()">
+                        <i class="bi bi-arrow-repeat"></i> Reload
+                    </button>
+                </div>
+            `);
+        } finally {
+            isRefreshing = false;
+            $('#refreshSpinner').hide();
+            $('#refreshBtn').prop('disabled', false);
+            $('#tableLoading').hide();
+        }
+    }
+
+    function manualRefresh() {
+        console.log('Manual refresh triggered');
+        loadAllData();
+    }
+
+    // ========== INIT ==========
+    $(document).ready(function() {
+        loadAllData();
+
+        $('#refreshIntervalSelect').on('change', function() {
+            const val = parseInt($(this).val(), 10);
+            console.log('Auto-refresh interval changed to:', val, 'minutes');
+            startAutoRefresh(val);
+        });
+        startAutoRefresh(2);
+        $('#refreshIntervalSelect').val('2');
+    });
+
+    window.copyField = copyField;
+    window.manualRefresh = manualRefresh;
+    window.exportToCSV = exportToCSV;
+</script>
+</body>
+</html>

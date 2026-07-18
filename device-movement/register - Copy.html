@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Fatpipe Device | Complaint & Movement Register</title>
+    
+    <!-- Local CSS Resources -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
+    <link rel="stylesheet" href="../css/flatpickr.min.css">
+    <link rel="stylesheet" href="../css/sweetalert2.min.css">
+    
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background: #eef2f7;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 20px 16px;
+            margin: 0;
+        }
+        .app-card {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .page-header {
+            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+            color: white;
+            padding: 15px 25px;
+        }
+        .page-header h4 {
+            margin: 0;
+            font-weight: 600;
+        }
+        .page-header i {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+        .tab-header {
+            display: flex;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0 24px;
+        }
+        .tab-btn {
+            padding: 16px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            background: transparent;
+            border: none;
+            color: #475569;
+            transition: 0.2s;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+        }
+        .tab-btn i { margin-right: 8px; font-size: 1.1rem; }
+        .tab-btn.active {
+            color: #1e4a76;
+            border-bottom-color: #1e4a76;
+            background: white;
+        }
+        .tab-pane {
+            display: none;
+            padding: 30px 32px;
+            background: white;
+        }
+        .tab-pane.active-pane {
+            display: block;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+        .required:after {
+            content: "*";
+            color: #dc2626;
+            margin-left: 4px;
+        }
+        .btn-primary-custom {
+            background: #0f3b5f;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-primary-custom:hover:not(:disabled) {
+            background: #0a2c46;
+            transform: translateY(-1px);
+        }
+        .btn-secondary-custom {
+            background: #64748b;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-secondary-custom:hover {
+            background: #475569;
+        }
+        .form-control, .form-select {
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            padding: 8px 12px;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #0f3b5f;
+            box-shadow: 0 0 0 3px rgba(15,59,95,0.1);
+        }
+        .info-banner {
+            background: #eef2ff;
+            border-radius: 16px;
+            padding: 12px 18px;
+            margin-bottom: 20px;
+            border-left: 5px solid #1e4a76;
+            font-size: 0.85rem;
+        }
+        .action-icons i {
+            font-size: 1.2rem;
+            margin: 0 5px;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .action-icons i.bi-pencil-square { color: #3b82f6; }
+        .action-icons i.bi-trash3 { color: #dc2626; }
+        .action-icons i.disabled-icon { 
+            color: #cbd5e1; 
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .badge-pending { background-color: #f59e0b; color: white; padding: 4px 10px; border-radius: 30px; font-size: 0.7rem; }
+        .badge-processing { background-color: #3b82f6; color: white; padding: 4px 10px; border-radius: 30px; font-size: 0.7rem; }
+        .badge-delivered { background-color: #10b981; color: white; padding: 4px 10px; border-radius: 30px; font-size: 0.7rem; }
+        #global-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(3px);
+        }
+        .modal-content { border-radius: 24px; }
+        .reference-id-display {
+            background: #e6f0fa;
+            padding: 10px 15px;
+            border-radius: 12px;
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #0f3b5f;
+        }
+        .readonly-field {
+            background-color: #f1f5f9;
+            cursor: not-allowed;
+        }
+        @media (max-width: 700px) {
+            .tab-pane { padding: 20px; }
+            .tab-btn { padding: 12px 16px; font-size: 0.9rem; }
+        }
+        .flatpickr-input {
+            background: white;
+        }
+        .stats-badge {
+            background: #e6f0fa;
+            padding: 5px 12px;
+            border-radius: 40px;
+            color: #0f5b9c;
+            font-size: 0.85rem;
+        }
+        .branch-info-row {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 12px 18px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .branch-info-row label {
+            font-weight: 600;
+            margin-bottom: 0;
+        }
+        .branch-info-row input {
+            width: 300px;
+            background-color: #f1f5f9;
+        }
+        .address-details-box {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 12px 15px;
+            margin-top: 8px;
+            border-left: 3px solid #0f3b5f;
+            font-size: 0.85rem;
+        }
+        .address-details-box i {
+            color: #0f3b5f;
+            margin-right: 8px;
+        }
+        .address-details-box .address-line {
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+<div class="app-card">
+    <div class="page-header d-flex align-items-center">
+        <i class="bi bi-file-text-fill"></i>
+        <div>
+            <h4>Fatpipe Device - Complaint & Movement Register</h4>
+        </div>
+    </div>
+    <div class="tab-header">
+        <button class="tab-btn active" id="tabAddBtn"><i class="bi bi-plus-circle"></i> Register Complaint</button>
+        <button class="tab-btn" id="tabEditBtn"><i class="bi bi-table"></i> Manage Records</button>
+    </div>
+    
+    <!-- Tab 1: Register Complaint Form -->
+    <div id="addPane" class="tab-pane active-pane">
+        <h4 class="mb-3"><i class="bi bi-exclamation-triangle-fill"></i> Register New Complaint / Movement</h4>
+        
+        <div class="info-banner">
+            <i class="bi bi-info-circle-fill"></i> Fill the details below to register a device complaint.
+        </div>
+        
+        <form id="complaintForm">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label class="form-label required">Select Branch</label>
+                    <select id="branchSelect" class="form-select" required>
+                        <option value="">-- Select Branch --</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">Reference ID</label>
+                    <div class="reference-id-display" id="referenceIdDisplay">—</div>
+                    <input type="hidden" id="referenceId" name="referenceId">
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">Treasury</label>
+                    <input type="text" id="treasury" class="form-control readonly-field" readonly>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">Serial Number</label>
+                    <input type="text" id="serialNo" class="form-control readonly-field" readonly>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">Device Type</label>
+                    <input type="text" id="deviceType" class="form-control readonly-field" readonly>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">From Branch</label>
+                    <input type="text" id="fromBranch" class="form-control readonly-field" readonly>
+                </div>
+                
+                <div class="col-12">
+                    <label class="form-label required">Remarks with Tracking ID</label>
+                    <textarea id="complaintRemarks" class="form-control" rows="3" placeholder="Describe the issue/ complaint..." required></textarea>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label required">Complaint Date</label>
+                    <input type="text" id="complaintDate" class="form-control flatpickr-date" placeholder="DD/MM/YYYY" required>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label required">Sent To Address</label>
+                    <select id="sentToAddress" class="form-select" required>
+                        <option value="">-- Select Address --</option>
+                    </select>
+                </div>
+                
+                <!-- Address Details Display -->
+                <div class="col-12" id="addressDetailsContainer" style="display: none;">
+                    <div class="address-details-box">
+                        <div class="address-line"><i class="bi bi-building"></i> <strong>Address Details:</strong></div>
+                        <div class="address-line" id="addressLine1">—</div>
+                        <div class="address-line" id="addressLine2">—</div>
+                        <div class="address-line"><i class="bi bi-geo-alt-fill"></i> <span id="addressPin">—</span></div>
+                        <div class="address-line"><i class="bi bi-telephone-fill"></i> <span id="addressContact">—</span></div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">Sent Date</label>
+                    <input type="text" id="sentDate" class="form-control flatpickr-date" placeholder="DD/MM/YYYY">
+                </div>
+                
+                <div class="col-12 mt-3">
+                    <button type="submit" id="submitBtn" class="btn btn-primary-custom px-5"><i class="bi bi-save"></i> Register</button>
+                    <button type="button" id="clearFormBtn" class="btn btn-secondary-custom px-4 ms-2"><i class="bi bi-eraser"></i> Clear</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tab 2: Manage Records DataTable -->
+    <div id="editPane" class="tab-pane">
+        <div class="branch-info-row">
+            <label><i class="bi bi-building"></i> Current Branch:</label>
+            <input type="text" id="currentBranchDisplay" class="form-control" readonly placeholder="Select a branch from Register tab first">
+            <span class="stats-badge ms-auto" id="recordCount">0 Records</span>
+            <button id="refreshTableBtn" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-repeat"></i> Refresh</button>
+        </div>
+        
+        <div class="info-banner" style="background: #e8f0fe; margin-bottom: 15px;">
+            <i class="bi bi-info-circle-fill"></i> Showing records for branch: <strong id="displayBranchName">—</strong>
+            <span class="ms-3"><i class="bi bi-check-circle-fill text-success"></i> Delivered records cannot be edited or deleted</span>
+        </div>
+        
+        <div class="table-responsive">
+            <table id="recordsTable" class="table table-striped table-hover" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Ref ID</th>
+                        <th>Treasury</th>
+                        <th>Branch</th>
+                        <th>Serial No</th>
+                        <th>Device Type</th>
+                        <th>Complaint</th>
+                        <th>Complaint Date</th>
+                        <th>Sent Date</th>
+                        <th>Received Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal - Only for non-delivered records -->
+<div class="modal fade" id="editRecordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Edit Complaint Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editRowId">
+                <div class="row g-3">
+                    <div class="col-md-6"><label class="form-label">Reference ID</label><input type="text" id="editRefId" class="form-control" readonly></div>
+                    <div class="col-md-6"><label class="form-label">Treasury</label><input type="text" id="editTreasury" class="form-control" readonly></div>
+                    <div class="col-md-6"><label class="form-label">Branch</label><input type="text" id="editBranch" class="form-control" readonly></div>
+                    <div class="col-md-6"><label class="form-label">Serial No</label><input type="text" id="editSerialNo" class="form-control" readonly></div>
+                    <div class="col-md-6"><label class="form-label">Device Type</label><input type="text" id="editDeviceType" class="form-control" readonly></div>
+                    <div class="col-md-6"><label class="form-label">Complaint Date</label><input type="text" id="editComplaintDate" class="form-control" readonly></div>
+                    <div class="col-12"><label class="form-label required">Complaint Remarks</label><textarea id="editComplaint" class="form-control" rows="2" required></textarea></div>
+                    <div class="col-md-6"><label class="form-label required">Sent To Address</label><select id="editSentToAddress" class="form-select" required></select></div>
+                    <div class="col-md-6"><label class="form-label">Sent Date</label><input type="text" id="editSentDate" class="form-control flatpickr-edit" placeholder="DD/MM/YYYY"></div>
+                </div>
+                <div class="alert alert-info mt-3 mb-0">
+                    <i class="bi bi-info-circle"></i> Note: Only Complaint Remarks, Sent To Address, and Sent Date can be edited.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button id="confirmUpdateBtn" class="btn btn-primary">Update Record</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script src="../js/jquery.dataTables.min.js"></script>
+<script src="../js/dataTables.bootstrap5.min.js"></script>
+<script src="../js/select2.min.js"></script>
+<script src="../js/flatpickr.min.js"></script>
+<script src="../js/sweetalert2.all.min.js"></script>
+
+<script>
+    // ================= CONFIGURATION =================
+    const SPREADSHEET_ID = "1MpftwfNIe82kORjP6xeLo1qUh3v6Cr8HHo0oSW2grYA";
+    const BRANCH_SHEET = "Branch and Device Details";
+    const MOVEMENT_SHEET = "Movement_Data";
+    const TO_ADDRESS_SHEET = "To Address";
+    const API_KEY = "AIzaSyDc8tegwi2rgHyDFYm7uWBqVqQ7Fwb3uWM";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzK1kMAjrOUU-ofZVND_tUMP-qEySDqz38vFzPY3NzDZ1tvS_a3MK3h0I9ZUlGBu9cx/exec";
+    
+    let branchesList = [];
+    let branchDataMap = {};
+    let addressesList = [];
+    let addressesFullData = []; // Store full address details
+    let movementRecords = [];
+    let dataTable = null;
+    let flatpickrComplaintDate, flatpickrSentDate, flatpickrEditSentDate;
+    let currentSelectedBranch = "";
+    
+    function showGlobalLoading(msg) {
+        if($('#global-loading-overlay').length) return;
+        $('body').append(`<div id="global-loading-overlay"><div style="background:white;padding:30px;border-radius:24px;text-align:center;"><i class="bi bi-arrow-repeat" style="font-size:48px;color:#0f3b5f;animation:spin 1s linear infinite;"></i><p>${msg}</p></div></div>`);
+    }
+    function hideGlobalLoading() { $('#global-loading-overlay').remove(); }
+    
+    function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
+    
+    function formatDateDMY(dateObj) {
+        if(!dateObj) return "";
+        let d = dateObj.getDate().toString().padStart(2,'0');
+        let m = (dateObj.getMonth()+1).toString().padStart(2,'0');
+        let y = dateObj.getFullYear();
+        return `${d}/${m}/${y}`;
+    }
+    
+    function parseDMYToDate(dateStr) {
+        if(!dateStr) return null;
+        let parts = dateStr.split('/');
+        if(parts.length === 3) {
+            return new Date(parts[2], parts[1]-1, parts[0]);
+        }
+        return null;
+    }
+    
+    function isFutureDate(dateStr) {
+        const inputDate = parseDMYToDate(dateStr);
+        if(!inputDate) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return inputDate > today;
+    }
+    
+    function isSentDateBeforeComplaintDate(sentDateStr, complaintDateStr) {
+        if(!sentDateStr) return true;
+        const sentDate = parseDMYToDate(sentDateStr);
+        const complaintDate = parseDMYToDate(complaintDateStr);
+        if(!sentDate || !complaintDate) return true;
+        return sentDate >= complaintDate;
+    }
+    
+    function displayAddressDetails(selectedOffice) {
+        const addressData = addressesFullData.find(addr => addr.office === selectedOffice);
+        if(addressData && addressData.address1) {
+            $('#addressLine1').text(addressData.address1 || '—');
+            $('#addressLine2').text(addressData.address2 || '—');
+            $('#addressPin').text(addressData.pin || '—');
+            $('#addressContact').text(addressData.contact || '—');
+            $('#addressDetailsContainer').show();
+        } else {
+            $('#addressDetailsContainer').hide();
+        }
+    }
+    
+    async function fetchBranches() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(BRANCH_SHEET)}!A:F?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            const map = {};
+            const branches = [];
+            for(let i=1; i<rows.length; i++) {
+                const row = rows[i];
+                const treasury = row[0] ? row[0].trim() : "";
+                const branch = row[1] ? row[1].trim() : "";
+                const serialNo = row[2] ? row[2].trim() : "";
+                const deviceType = row[3] ? row[3].trim() : "";
+                if(branch) {
+                    map[branch] = { treasury, serialNo, deviceType };
+                    branches.push(branch);
+                }
+            }
+            branchesList = branches;
+            branchDataMap = map;
+            return { branches, map };
+        } catch(e) { console.error("Error fetching branches:", e); return { branches: [], map: {} }; }
+    }
+    
+    async function fetchAddresses() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(TO_ADDRESS_SHEET)}!A:E?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            const addresses = [];
+            const fullData = [];
+            for(let i=1; i<rows.length; i++) {
+                const row = rows[i];
+                const office = row[0] ? row[0].trim() : "";
+                const address1 = row[1] ? row[1].trim() : "";
+                const address2 = row[2] ? row[2].trim() : "";
+                const pin = row[3] ? row[3].trim() : "";
+                const contact = row[4] ? row[4].trim() : "";
+                if(office) {
+                    addresses.push(office);
+                    fullData.push({ office, address1, address2, pin, contact });
+                }
+            }
+            addressesList = addresses;
+            addressesFullData = fullData;
+            return addresses;
+        } catch(e) { console.error("Error fetching addresses:", e); return []; }
+    }
+    
+    async function fetchMovementRecords() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(MOVEMENT_SHEET)}!A:O?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            const records = [];
+            for(let i=1; i<rows.length; i++) {
+                const row = rows[i];
+                if(row.length > 0 && row[0]) {
+                    records.push({
+                        id: i,
+                        refId: row[0] || "",
+                        treasury: row[1] || "",
+                        serialNo: row[2] || "",
+                        deviceType: row[3] || "",
+                        fromBranch: row[4] || "",
+                        complaintRemarks: row[5] || "",
+                        complaintDate: row[6] || "",
+                        sentToAddress: row[7] || "",
+                        sentDate: row[8] || "",
+                        receivedDate: row[9] || "",
+                        moveToOem: row[10] || "",
+                        returnFromOem: row[11] || "",
+                        toBranch: row[12] || "",
+                        transferDate: row[13] || "",
+                        remarks: row[14] || ""
+                    });
+                }
+            }
+            movementRecords = records;
+            return records;
+        } catch(e) { console.error("Error fetching movement records:", e); return []; }
+    }
+    
+    async function generateReferenceId(branchCode) {
+        const records = await fetchMovementRecords();
+        const branchRecords = records.filter(r => r.refId && r.refId.startsWith(branchCode));
+        let maxNum = 0;
+        branchRecords.forEach(record => {
+            const numPart = record.refId.substring(branchCode.length);
+            const num = parseInt(numPart, 10);
+            if(!isNaN(num) && num > maxNum) maxNum = num;
+        });
+        const newNum = maxNum + 1;
+        const paddedNum = newNum.toString().padStart(2, '0');
+        return `${branchCode}${paddedNum}`;
+    }
+    
+    function populateBranchDropdown(branches) {
+        const $select = $('#branchSelect');
+        $select.empty();
+        $select.append('<option value="">-- Select Branch --</option>');
+        branches.forEach(branch => {
+            $select.append(`<option value="${escapeHtml(branch)}">${escapeHtml(branch)}</option>`);
+        });
+        $select.select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Search and select branch',
+            allowClear: true
+        });
+    }
+    
+    function populateAddressDropdown(selectId, addresses, selectedValue = null) {
+        const $select = $(selectId);
+        $select.empty();
+        $select.append('<option value="">-- Select Address --</option>');
+        addresses.forEach(addr => {
+            $select.append(`<option value="${escapeHtml(addr)}" ${selectedValue === addr ? 'selected' : ''}>${escapeHtml(addr)}</option>`);
+        });
+        $select.select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Select destination address',
+            allowClear: true
+        });
+        
+        // Add change event to display address details
+        $select.off('change').on('change', function() {
+            const selected = $(this).val();
+            if(selected) {
+                displayAddressDetails(selected);
+            } else {
+                $('#addressDetailsContainer').hide();
+            }
+        });
+    }
+    
+    function initFlatpickr() {
+        const today = new Date();
+        flatpickrComplaintDate = flatpickr("#complaintDate", { 
+            dateFormat: "d/m/Y",
+            maxDate: today,
+            defaultDate: today
+        });
+        flatpickrSentDate = flatpickr("#sentDate", { dateFormat: "d/m/Y" });
+    }
+    
+    async function onBranchChange() {
+        const branch = $('#branchSelect').val();
+        currentSelectedBranch = branch;
+        if(branch && branchDataMap[branch]) {
+            const data = branchDataMap[branch];
+            $('#treasury').val(data.treasury || '');
+            $('#serialNo').val(data.serialNo || '');
+            $('#deviceType').val(data.deviceType || '');
+            $('#fromBranch').val(branch);
+            
+            showGlobalLoading("Generating Reference ID...");
+            const refId = await generateReferenceId(branch);
+            $('#referenceIdDisplay').text(refId);
+            $('#referenceId').val(refId);
+            hideGlobalLoading();
+            
+            updateEditTabBranch(branch);
+        } else {
+            $('#treasury').val('');
+            $('#serialNo').val('');
+            $('#deviceType').val('');
+            $('#fromBranch').val('');
+            $('#referenceIdDisplay').text('—');
+            $('#referenceId').val('');
+        }
+    }
+    
+    function updateEditTabBranch(branch) {
+        $('#currentBranchDisplay').val(branch || 'No branch selected');
+        $('#displayBranchName').text(branch || '—');
+        if(branch) {
+            loadAndRenderTable();
+        } else if(dataTable) {
+            dataTable.clear();
+            dataTable.draw();
+            $('#recordCount').text('0 Records');
+        }
+    }
+    
+    function validateDates(complaintDate, sentDate) {
+        if(isFutureDate(complaintDate)) {
+            Swal.fire({ icon: 'warning', title: 'Invalid Date', text: 'Complaint Date cannot be a future date.' });
+            return false;
+        }
+        if(sentDate && !isSentDateBeforeComplaintDate(sentDate, complaintDate)) {
+            Swal.fire({ icon: 'warning', title: 'Invalid Date', text: 'Sent Date cannot be before Complaint Date.' });
+            return false;
+        }
+        return true;
+    }
+    
+    async function submitComplaint() {
+        const branch = $('#branchSelect').val();
+        if(!branch) {
+            Swal.fire({ icon: 'warning', title: 'Missing', text: 'Please select a branch' });
+            return;
+        }
+        const complaintRemarks = $('#complaintRemarks').val().trim();
+        if(!complaintRemarks) {
+            Swal.fire({ icon: 'warning', title: 'Missing', text: 'Please enter complaint remarks' });
+            return;
+        }
+        const complaintDate = $('#complaintDate').val();
+        if(!complaintDate) {
+            Swal.fire({ icon: 'warning', title: 'Missing', text: 'Please select complaint date' });
+            return;
+        }
+        const sentToAddress = $('#sentToAddress').val();
+        if(!sentToAddress) {
+            Swal.fire({ icon: 'warning', title: 'Missing', text: 'Please select sent to address' });
+            return;
+        }
+        const sentDate = $('#sentDate').val() || "";
+        
+        if(!validateDates(complaintDate, sentDate)) return;
+        
+        const refId = $('#referenceId').val();
+        if(!refId) {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Reference ID not generated. Please reselect branch.' });
+            return;
+        }
+        
+        const payload = {
+            action: "ADD",
+            referenceId: refId,
+            treasury: $('#treasury').val(),
+            serialNo: $('#serialNo').val(),
+            deviceType: $('#deviceType').val(),
+            fromBranch: branch,
+            complaintRemarks: complaintRemarks,
+            complaintDate: complaintDate,
+            sentToAddress: sentToAddress,
+            sentDate: sentDate
+        };
+        
+        const $btn = $("#submitBtn");
+        const originalHtml = $btn.html();
+        $btn.html('<i class="bi bi-arrow-repeat"></i> Submitting...').prop('disabled', true);
+        showGlobalLoading("Submitting complaint...");
+        
+        try {
+            await fetch(APPS_SCRIPT_URL, { 
+                method: "POST", 
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" }, 
+                body: JSON.stringify(payload) 
+            });
+            hideGlobalLoading();
+            Swal.fire({ icon: 'success', title: 'Success!', text: 'Complaint registered successfully', timer: 1500, showConfirmButton: false });
+            
+            const newRefId = await generateReferenceId(branch);
+            $('#referenceIdDisplay').text(newRefId);
+            $('#referenceId').val(newRefId);
+            $('#complaintRemarks').val('');
+            $('#complaintDate').val(formatDateDMY(new Date()));
+            $('#sentDate').val('');
+            $('#sentToAddress').val(null).trigger('change');
+            $('#addressDetailsContainer').hide();
+            if(flatpickrComplaintDate) flatpickrComplaintDate.setDate(new Date());
+            if(flatpickrSentDate) flatpickrSentDate.setDate('');
+            
+            if(currentSelectedBranch === branch) {
+                await loadAndRenderTable();
+            }
+            
+        } catch(err) {
+            hideGlobalLoading();
+            console.error(err);
+            Swal.fire({ icon: 'success', title: 'Submitted!', text: 'Complaint registered successfully', timer: 1500, showConfirmButton: false });
+        } finally {
+            $btn.html(originalHtml).prop('disabled', false);
+        }
+    }
+    
+    function clearForm() {
+        $('#branchSelect').val(null).trigger('change');
+        $('#complaintRemarks').val('');
+        $('#complaintDate').val(formatDateDMY(new Date()));
+        $('#sentDate').val('');
+        $('#sentToAddress').val(null).trigger('change');
+        $('#addressDetailsContainer').hide();
+        if(flatpickrComplaintDate) flatpickrComplaintDate.setDate(new Date());
+        if(flatpickrSentDate) flatpickrSentDate.setDate('');
+    }
+    
+    function getStatusBadge(row) {
+        if(row.receivedDate && row.receivedDate.trim() !== "") {
+            return '<span class="badge-delivered"><i class="bi bi-check-circle-fill me-1"></i>Delivered</span>';
+        } else if(row.moveToOem || row.returnFromOem || row.toBranch) {
+            return '<span class="badge-processing"><i class="bi bi-arrow-repeat me-1"></i>Processing</span>';
+        } else {
+            return '<span class="badge-pending"><i class="bi bi-clock-history me-1"></i>Pending</span>';
+        }
+    }
+    
+    function isDelivered(row) {
+        return row.receivedDate && row.receivedDate.trim() !== "";
+    }
+    
+    async function loadAndRenderTable() {
+        if(!currentSelectedBranch) {
+            if(dataTable) {
+                dataTable.clear();
+                dataTable.draw();
+            }
+            $('#recordCount').text('0 Records');
+            return;
+        }
+        
+        showGlobalLoading("Loading records...");
+        const records = await fetchMovementRecords();
+        movementRecords = records;
+        
+        const filteredRecords = records.filter(r => r.fromBranch === currentSelectedBranch);
+        const sortedRecords = [...filteredRecords].sort((a, b) => b.id - a.id);
+        
+        const deliveredCount = filteredRecords.filter(r => isDelivered(r)).length;
+        const pendingCount = filteredRecords.length - deliveredCount;
+        $('#recordCount').text(`${filteredRecords.length} Records (${pendingCount} Pending, ${deliveredCount} Delivered)`);
+        
+        if(dataTable) {
+            dataTable.clear();
+            dataTable.rows.add(sortedRecords);
+            dataTable.draw();
+        } else {
+            $('#recordsTable tbody').empty();
+            dataTable = $('#recordsTable').DataTable({
+                data: sortedRecords,
+                columns: [
+                    { data: "refId" },
+                    { data: "treasury" },
+                    { data: "fromBranch" },
+                    { data: "serialNo" },
+                    { data: "deviceType" },
+                    { data: "complaintRemarks", render: d => d ? d.substring(0, 50) + (d.length > 50 ? '...' : '') : '' },
+                    { data: "complaintDate" },
+                    { data: "sentDate", render: d => d && d.trim() !== "" ? d : '—' },
+                    { data: "receivedDate", render: d => d && d.trim() !== "" ? d : '—' },
+                    { data: null, render: (row) => getStatusBadge(row) },
+                    { data: null, render: (row) => {
+                        const delivered = isDelivered(row);
+                        if(delivered) {
+                            return '<span class="text-muted"><i class="bi bi-lock-fill"></i> Locked</span>';
+                        }
+                        return `<div class="action-icons">
+                            <i class="bi bi-pencil-square edit-record" data-id="${row.id}" style="cursor:pointer;" title="Edit Record"></i>
+                            <i class="bi bi-trash3 delete-record" data-id="${row.id}" data-refid="${escapeHtml(row.refId)}" style="cursor:pointer;" title="Delete Record"></i>
+                        </div>`;
+                    } }
+                ],
+                order: [[6, 'desc']],
+                pageLength: 25,
+                language: { search: "Filter:" }
+            });
+        }
+        attachTableEvents();
+        hideGlobalLoading();
+    }
+    
+    function attachTableEvents() {
+        $('.edit-record').off('click').on('click', function() {
+            const id = $(this).data('id');
+            const record = movementRecords.find(r => r.id === id);
+            if(record && !isDelivered(record)) {
+                openEditModal(record);
+            } else if(record && isDelivered(record)) {
+                Swal.fire({ icon: 'warning', title: 'Cannot Edit', text: 'This record has been marked as Delivered and cannot be edited.' });
+            }
+        });
+        
+        $('.delete-record').off('click').on('click', function() {
+            const id = $(this).data('id');
+            const record = movementRecords.find(r => r.id === id);
+            const refId = $(this).data('refid');
+            if(record && isDelivered(record)) {
+                Swal.fire({ icon: 'warning', title: 'Cannot Delete', text: 'Delivered records cannot be deleted.' });
+                return;
+            }
+            Swal.fire({ 
+                title: 'Delete Record?', 
+                text: `Remove ${refId}? This action cannot be undone.`, 
+                icon: 'warning', 
+                showCancelButton: true, 
+                confirmButtonColor: '#dc2626',
+                confirmButtonText: 'Yes, delete it!'
+            }).then(res => { 
+                if(res.isConfirmed) deleteRecord(id); 
+            });
+        });
+    }
+    
+    function openEditModal(record) {
+        $("#editRowId").val(record.id);
+        $("#editRefId").val(record.refId);
+        $("#editTreasury").val(record.treasury);
+        $("#editBranch").val(record.fromBranch);
+        $("#editSerialNo").val(record.serialNo);
+        $("#editDeviceType").val(record.deviceType);
+        $("#editComplaintDate").val(record.complaintDate);
+        $("#editComplaint").val(record.complaintRemarks);
+        
+        populateAddressDropdown("#editSentToAddress", addressesList, record.sentToAddress);
+        $("#editSentDate").val(record.sentDate || '');
+        
+        if(flatpickrEditSentDate) flatpickrEditSentDate.destroy();
+        flatpickrEditSentDate = flatpickr("#editSentDate", { dateFormat: "d/m/Y" });
+        
+        const modal = new bootstrap.Modal(document.getElementById('editRecordModal'));
+        modal.show();
+    }
+    
+    async function updateRecord() {
+        const id = $("#editRowId").val();
+        const complaintRemarks = $("#editComplaint").val().trim();
+        const sentToAddress = $("#editSentToAddress").val();
+        const sentDate = $("#editSentDate").val() || "";
+        const complaintDate = $("#editComplaintDate").val();
+        
+        if(!complaintRemarks) {
+            Swal.fire({ icon: 'warning', title: 'Missing', text: 'Complaint remarks cannot be empty' });
+            return;
+        }
+        if(!sentToAddress) {
+            Swal.fire({ icon: 'warning', title: 'Missing', text: 'Please select sent to address' });
+            return;
+        }
+        
+        if(sentDate && !isSentDateBeforeComplaintDate(sentDate, complaintDate)) {
+            Swal.fire({ icon: 'warning', title: 'Invalid Date', text: 'Sent Date cannot be before Complaint Date.' });
+            return;
+        }
+        
+        const payload = {
+            action: "UPDATE_REGISTER",
+            rowId: parseInt(id),
+            complaintRemarks: complaintRemarks,
+            sentToAddress: sentToAddress,
+            sentDate: sentDate
+        };
+        
+        const $btn = $("#confirmUpdateBtn");
+        const originalHtml = $btn.html();
+        $btn.html('<i class="bi bi-arrow-repeat"></i> Updating...').prop('disabled', true);
+        showGlobalLoading("Updating record...");
+        
+        try {
+            await fetch(APPS_SCRIPT_URL, { 
+                method: "POST", 
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" }, 
+                body: JSON.stringify(payload) 
+            });
+            hideGlobalLoading();
+            Swal.fire({ icon: 'success', title: 'Updated!', timer: 1500, showConfirmButton: false });
+            bootstrap.Modal.getInstance(document.getElementById('editRecordModal')).hide();
+            await loadAndRenderTable();
+        } catch(e) {
+            hideGlobalLoading();
+            Swal.fire({ icon: 'error', title: 'Update Failed', text: e.message });
+        } finally {
+            $btn.html(originalHtml).prop('disabled', false);
+        }
+    }
+    
+    async function deleteRecord(id) {
+        const record = movementRecords.find(r => r.id === id);
+        if(record && isDelivered(record)) {
+            Swal.fire({ icon: 'warning', title: 'Cannot Delete', text: 'Delivered records cannot be deleted.' });
+            return;
+        }
+        
+        showGlobalLoading("Deleting...");
+        try {
+            await fetch(APPS_SCRIPT_URL, { 
+                method: "POST", 
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" }, 
+                body: JSON.stringify({ action: "DELETE", rowId: parseInt(id) }) 
+            });
+            hideGlobalLoading();
+            Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1500, showConfirmButton: false });
+            await loadAndRenderTable();
+        } catch(e) {
+            hideGlobalLoading();
+            Swal.fire({ icon: 'error', title: 'Delete Failed', text: e.message });
+        }
+    }
+    
+    function switchTab(tab) {
+        if(tab === 'add') {
+            $("#addPane").addClass("active-pane");
+            $("#editPane").removeClass("active-pane");
+            $("#tabAddBtn").addClass("active");
+            $("#tabEditBtn").removeClass("active");
+        } else {
+            $("#editPane").addClass("active-pane");
+            $("#addPane").removeClass("active-pane");
+            $("#tabEditBtn").addClass("active");
+            $("#tabAddBtn").removeClass("active");
+            if(currentSelectedBranch) {
+                loadAndRenderTable();
+            } else {
+                Swal.fire({ 
+                    icon: 'info', 
+                    title: 'No Branch Selected', 
+                    text: 'Please select a branch in the Register tab first to view records.',
+                    timer: 3000
+                });
+            }
+        }
+    }
+    
+    $(async function() {
+        showGlobalLoading("Loading application data...");
+        
+        await fetchBranches();
+        await fetchAddresses();
+        populateBranchDropdown(branchesList);
+        populateAddressDropdown("#sentToAddress", addressesList);
+        
+        initFlatpickr();
+        $('#complaintDate').val(formatDateDMY(new Date()));
+        
+        hideGlobalLoading();
+        
+        $('#branchSelect').on('change', onBranchChange);
+        $('#complaintForm').on('submit', function(e) { e.preventDefault(); submitComplaint(); });
+        $('#clearFormBtn').on('click', clearForm);
+        $('#refreshTableBtn').on('click', () => { if(currentSelectedBranch) loadAndRenderTable(); });
+        $('#tabAddBtn').on('click', () => switchTab('add'));
+        $('#tabEditBtn').on('click', () => switchTab('edit'));
+        $('#confirmUpdateBtn').on('click', updateRecord);
+        
+        if(currentSelectedBranch) {
+            updateEditTabBranch(currentSelectedBranch);
+        }
+    });
+</script>
+</body>
+</html>

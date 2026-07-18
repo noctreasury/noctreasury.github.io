@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>URL Bookmark Manager | Admin Only</title>
+    
+    <!-- LOCAL CSS (from your existing resources) -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
+    
+    <style>
+        :root {
+            --primary: #0f5b9c;
+            --primary-dark: #1a4b7a;
+            --primary-light: #e8f0fe;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --border: #e9ecef;
+        }
+        
+        body {
+            background: #fff0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding: 24px;
+            min-height: 100vh;
+        }
+        
+        /* Main Container */
+        .bookmark-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+    padding: 15px 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+ 
+}
+.page-header-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+.page-header-left i {
+    font-size: 1.8rem !important;
+    background: rgb(56 143 251 / 15%) !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    color: #184f83 !important;
+}
+
+
+.page-header-left h1 {
+    margin: 0 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    color: #184f83!important;
+}
+ .page-header-left p {
+            margin: 2px 0 0 !important;
+            opacity: 0.7 !important;
+            font-size: 0.75rem !important;
+ }
+        .refresh-badge {
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Tabs */
+        .tabs-container {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+        }
+        
+        .nav-tabs-custom {
+            background: var(--light);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+        }
+        
+        .nav-tabs-custom .nav-link {
+            border: none;
+            font-weight: 600;
+            color: #64748b;
+            padding: 15px 25px;
+            margin-right: 5px;
+            border-radius: 0;
+            position: relative;
+            transition: all 0.2s;
+        }
+        
+        .nav-tabs-custom .nav-link i {
+            margin-right: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .nav-tabs-custom .nav-link.active {
+            color: var(--primary);
+            background: white;
+            border-bottom: 3px solid var(--primary);
+        }
+        
+        .nav-tabs-custom .nav-link:hover:not(.active) {
+            color: var(--primary-dark);
+            background: rgba(15, 91, 156, 0.05);
+        }
+        
+        .tab-pane {
+            padding: 25px;
+        }
+        
+        /* Access Denied Styles */
+        .access-denied-container {
+            background: white;
+            border-radius: 24px;
+            padding: 60px 40px;
+            text-align: center;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        
+        .access-denied-icon {
+            width: 100px;
+            height: 100px;
+            background: var(--danger-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            color: var(--danger);
+            font-size: 3rem;
+        }
+        
+        .access-denied-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--danger);
+            margin-bottom: 15px;
+        }
+        
+        .access-denied-message {
+            color: #64748b;
+            margin-bottom: 25px;
+            font-size: 1.1rem;
+        }
+        
+        .login-redirect-btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border: none;
+            color: white;
+            padding: 12px 32px;
+            border-radius: 40px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+        
+        .login-redirect-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(15, 91, 156, 0.3);
+            color: white;
+        }
+        
+        .user-info-badge {
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* DataTable Styling */
+        .dataTable thead th {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            font-weight: 500;
+            font-size: 0.85rem;
+            padding: 12px 10px;
+            border: none;
+        }
+        
+        .dataTable tbody td {
+            padding: 12px 10px;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .dataTable tbody tr:hover {
+            background: var(--primary-light);
+        }
+        
+        .dataTables_wrapper .dataTables_filter input {
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            padding: 6px 16px 6px 35px;
+            margin-left: 8px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: 12px center;
+        }
+        
+        .dataTables_wrapper .dataTables_length select {
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            padding: 5px 25px 5px 12px;
+        }
+        
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            border-radius: 30px;
+            margin: 0 3px;
+            border: 1px solid var(--border);
+            color: var(--dark) !important;
+        }
+        
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: var(--primary) !important;
+            border-color: var(--primary) !important;
+            color: white !important;
+        }
+        
+        /* Badges */
+        .badge-type {
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .password-mask {
+            font-family: monospace;
+            letter-spacing: 2px;
+            background: var(--light);
+            padding: 4px 12px;
+            border-radius: 30px;
+            display: inline-block;
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+        
+        /* Buttons */
+        .btn-icon-sm {
+            background: transparent;
+            border: none;
+            font-size: 1.1rem;
+            padding: 5px 8px;
+            color: var(--primary);
+            transition: all 0.2s;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        
+        .btn-icon-sm:hover {
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            transform: scale(1.05);
+        }
+        
+        .hyperlink-url {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            word-break: break-all;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .hyperlink-url:hover {
+            text-decoration: underline;
+            color: var(--primary-dark);
+        }
+        
+        /* Form Styling */
+        .form-label {
+            font-weight: 500;
+            color: var(--dark);
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .form-label i {
+            color: var(--primary);
+            margin-right: 5px;
+        }
+        
+        .required:after {
+            content: " *";
+            color: var(--danger);
+        }
+        
+        .form-control, .form-select {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 15px;
+            transition: all 0.2s;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(15, 91, 156, 0.1);
+            outline: none;
+        }
+        
+        .btn-submit {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border: none;
+            color: white;
+            border-radius: 40px;
+            padding: 10px 32px;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(15, 91, 156, 0.3);
+        }
+        
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn-reset {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            padding: 10px 28px;
+            color: var(--dark);
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-reset:hover {
+            background: var(--light);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        /* Toast Notification */
+        .copy-toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--dark);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            z-index: 9999;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        
+        .copy-toast.show {
+            opacity: 1;
+        }
+        
+        .copy-toast i {
+            color: var(--success);
+        }
+        
+        /* Alert */
+        .alert-custom {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1100;
+            min-width: 320px;
+            animation: slideInRight 0.3s ease-out;
+            border-radius: 12px;
+            border-left: 4px solid;
+        }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .info-note {
+            background: var(--light);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-top: 15px;
+            border-left: 3px solid var(--primary);
+            font-size: 0.85rem;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+        
+        .select2-container--bootstrap-5 .select2-selection {
+            border-radius: 12px;
+            padding: 5px 12px;
+            min-height: 44px;
+            border-color: var(--border);
+        }
+        
+        .type-loading-badge {
+            background: #f1f5f9;
+            font-size: 0.7rem;
+            padding: 4px 8px;
+            border-radius: 40px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            body { padding: 15px; }
+            .header-card { flex-direction: column; align-items: flex-start; }
+            .tab-pane { padding: 20px; }
+            .btn-submit, .btn-reset { padding: 8px 20px; }
+            .access-denied-container { padding: 40px 20px; }
+            .access-denied-title { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                    <i class="bi bi-box-seam"></i>
+                    <div>
+                        <h1>URL Bookmark Manager</h1>
+                        <p>Secure credentials vault for all network devices and applications</p>
+                    </div>
+                </div>
+ <div class="refresh-badge">
+                    <i class="bi bi-database"></i>
+                    <span id="recordCount">0</span> Records
+                </div>
+            </div>
+
+
+    <div id="mainContent" style="display: none;">
+       
+            
+            <!-- Tabs Container -->
+            <div class="tabs-container">
+                <ul class="nav nav-tabs-custom nav-tabs" id="mainTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="view-tab" data-bs-toggle="tab" data-bs-target="#viewPane" type="button" role="tab">
+                            <i class="bi bi-table"></i> View Bookmarks
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="add-tab" data-bs-toggle="tab" data-bs-target="#addPane" type="button" role="tab">
+                            <i class="bi bi-plus-circle"></i> Add New URL
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content">
+                    <!-- TAB 1: VIEW TABLE -->
+                    <div class="tab-pane fade show active" id="viewPane" role="tabpanel">
+                        <div class="table-responsive">
+                            <table id="urlBookmarksTable" class="table table-hover" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Company/Device</th>
+                                        <th>URL / IP Address</th>
+                                        <th>User ID</th>
+                                        <th>Password</th>
+                                    </thead>
+                                <tbody>
+                                    <tr><td colspan="5" class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2 text-muted">Loading bookmarks...</p>32</tbody>
+                            </table>
+                        </div>
+                        <div class="info-note">
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                            Click the <i class="bi bi-eye"></i> icon to copy password to clipboard. URLs open in a new tab.
+                        </div>
+                    </div>
+                    
+                    <!-- TAB 2: ADD FORM with DYNAMIC TYPES from 'types' sheet -->
+                    <div class="tab-pane fade" id="addPane" role="tabpanel">
+                        <form id="addUrlForm">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="form-label required"><i class="bi bi-tag"></i> Type 
+                                        <span id="typeLoadStatus" class="type-loading-badge"><i class="bi bi-arrow-repeat spin-icon"></i> loading...</span>
+                                    </label>
+                                    <select id="inputType" class="form-select" required>
+                                        <option value="">-- Select Type --</option>
+                                    </select>
+                                    <small class="text-muted">Types fetched from sheet "types" column A (A2:A)</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label required"><i class="bi bi-laptop"></i> Company / Device Name</label>
+                                    <input type="text" id="inputDevice" class="form-control" placeholder="e.g., HQ Router, Finance Laptop" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label required"><i class="bi bi-link-45deg"></i> URL / IP Address</label>
+                                    <input type="text" id="inputUrl" class="form-control" placeholder="https://192.168.1.1 or https://example.com" required>
+                                    <small class="text-muted">Supports http://, https://, or IP addresses</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label"><i class="bi bi-person"></i> User ID / Username</label>
+                                    <input type="text" id="inputUserId" class="form-control" placeholder="admin / user@example.com">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label"><i class="bi bi-key"></i> Password</label>
+                                    <input type="text" id="inputPassword" class="form-control" placeholder="••••••••">
+                                </div>
+                                <div class="col-12">
+                                    <div class="info-note bg-light">
+                                        <i class="bi bi-shield-lock-fill me-2"></i>
+                                        Credentials stored securely in Google Sheets.
+                                    </div>
+                                </div>
+                                <div class="col-12 d-flex justify-content-end gap-3">
+                                    <button type="button" id="resetAddBtn" class="btn-reset">
+                                        <i class="bi bi-arrow-repeat"></i> Reset
+                                    </button>
+                                    <button type="submit" id="submitAddBtn" class="btn-submit">
+                                        <i class="bi bi-save"></i> Add
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <footer>
+                <i class="bi bi-shield-check"></i> Admin Secure Vault
+            </footer>
+        </div>
+    </div>
+    
+    <!-- Access Denied Container -->
+    <div id="accessDeniedContainer" style="display: none;">
+        <div class="bookmark-container">
+            <div class="access-denied-container">
+                <div class="access-denied-icon">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+                <div class="access-denied-title">
+                    Access Denied
+                </div>
+                <div class="access-denied-message">
+                    You do not have permission to view this page.<br>
+                    This area is restricted to Admin users only.
+                </div>
+                <div id="currentUserDisplay" class="mb-4">
+                    <span class="user-info-badge">
+                        <i class="bi bi-person-circle"></i>
+                        <span id="currentUserName">Not logged in</span>
+                    </span>
+                </div>
+               
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast for copy feedback -->
+    <div id="copyToast" class="copy-toast">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>Password copied to clipboard!</span>
+    </div>
+    
+    <!-- LOCAL SCRIPTS -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/jquery.dataTables.min.js"></script>
+    <script src="../js/dataTables.bootstrap5.min.js"></script>
+    <script src="../js/select2.min.js"></script>
+    
+    <script>
+        // ==================== AUTHENTICATION CHECK ====================
+        function checkAdminAccess() {
+            let currentUser = null;
+            
+            // Check sessionStorage first (from main app login)
+            const sessionUser = sessionStorage.getItem('currentUser');
+            if (sessionUser) {
+                try {
+                    const userData = JSON.parse(sessionUser);
+                    currentUser = userData.username;
+                } catch (e) {
+                    console.error('Error parsing session user:', e);
+                }
+            }
+            
+            // Fallback to localStorage
+            if (!currentUser) {
+                const localUser = localStorage.getItem('currentUser');
+                if (localUser) {
+                    try {
+                        const userData = JSON.parse(localUser);
+                        currentUser = userData.username;
+                    } catch (e) {
+                        console.error('Error parsing local user:', e);
+                    }
+                }
+            }
+            
+            // Check if user is Admin (case-insensitive)
+            const isAdmin = currentUser && currentUser.toLowerCase() === 'admin';
+            
+            // Display current user in access denied screen
+            $('#currentUserName').text(currentUser || 'Not logged in');
+            
+            if (isAdmin) {
+                // Show main content
+                $('#mainContent').show();
+                $('#accessDeniedContainer').hide();
+                initializeApp();
+                return true;
+            } else {
+                // Show access denied
+                $('#mainContent').hide();
+                $('#accessDeniedContainer').show();
+                return false;
+            }
+        }
+        
+        function redirectToLogin() {
+            // Try to find the login page path
+            const loginPath = window.location.pathname.includes('/sdwan/') ? '../../index.html' : '../index.html';
+            window.location.href = loginPath;
+        }
+        
+        // ==================== MAIN APPLICATION (Admin Only) ====================
+        function initializeApp() {
+            // CONFIGURATION
+            const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+            const SPREADSHEET_ID = '1jckPlli3Pcq2l30cCqvkKL3Q1WZluqlvFrTsF2uQ2Es';
+            const SHEET_NAME = 'URL-Bookmarks';
+            const TYPES_SHEET_NAME = 'types';
+            const APPS_SCRIPT_WRITE_URL = 'https://script.google.com/macros/s/AKfycbyLQi2DCzglZ9hk4sVgd3Div3bMQcxfIrDZWIPRuvcGVC4SJWWTeTR5U1UEo6uObrF9/exec';
+            
+            let dataTable = null;
+            let dynamicTypeOptions = [];
+            
+            // Helper Functions
+            function showAlert(message, type = 'success') {
+                const icon = type === 'success' ? 'bi-check-circle-fill' : (type === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill');
+                const borderColor = type === 'success' ? '#10b981' : type === 'danger' ? '#ef4444' : '#0f5b9c';
+                const alertDiv = $(`
+                    <div class="alert alert-custom shadow-sm" role="alert" style="background: white; border-left-color: ${borderColor};">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi ${icon} fs-5" style="color: ${borderColor}"></i>
+                            <span>${message}</span>
+                            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" style="font-size: 0.7rem;"></button>
+                        </div>
+                    </div>
+                `);
+                $('body').append(alertDiv);
+                setTimeout(() => alertDiv.fadeOut(300, function() { $(this).remove(); }), 5000);
+            }
+            
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    $('#copyToast').addClass('show');
+                    setTimeout(() => $('#copyToast').removeClass('show'), 2000);
+                }).catch(() => {
+                    showAlert('Unable to copy to clipboard', 'danger');
+                });
+            }
+            
+            function escapeHtml(str) {
+                if (!str) return '';
+                return String(str).replace(/[&<>]/g, function(m) {
+                    if (m === '&') return '&amp;';
+                    if (m === '<') return '&lt;';
+                    if (m === '>') return '&gt;';
+                    return m;
+                });
+            }
+            
+            function truncate(str, len = 50) {
+                if (!str) return '';
+                return str.length > len ? str.substring(0, len) + '…' : str;
+            }
+            
+            // Fetch Types from 'types' sheet
+            async function fetchDynamicTypes() {
+                try {
+                    const range = `${TYPES_SHEET_NAME}!A2:A`;
+                    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(range)}?key=${API_KEY}`;
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const data = await response.json();
+                    
+                    let typesList = [];
+                    if (data.values && data.values.length > 0) {
+                        typesList = data.values
+                            .map(row => row[0] ? row[0].toString().trim() : '')
+                            .filter(val => val !== '');
+                    }
+                    
+                    if (typesList.length === 0) {
+                        console.warn('No types found, using fallback defaults.');
+                        typesList = ['Wifi Modem', 'Router', 'Switch', 'Computer', 'Website', 'Application', 'Sheets', 'Other'];
+                    }
+                    
+                    typesList = [...new Set(typesList)];
+                    dynamicTypeOptions = typesList;
+                    return typesList;
+                } catch (err) {
+                    console.error('Error fetching types:', err);
+                    const fallback = ['Wifi Modem', 'Router', 'Switch', 'Computer', 'Website', 'Application', 'Sheets', 'Other'];
+                    dynamicTypeOptions = fallback;
+                    showAlert(`Could not load types from sheet. Using defaults.`, 'warning');
+                    return fallback;
+                }
+            }
+            
+            async function populateTypeDropdown() {
+                $('#typeLoadStatus').html('<i class="bi bi-arrow-repeat spin-icon"></i> loading types...').show();
+                const types = await fetchDynamicTypes();
+                
+                const $select = $('#inputType');
+                $select.empty().append('<option value="">-- Select Type --</option>');
+                types.forEach(type => {
+                    $select.append(`<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`);
+                });
+                
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    $select.select2('destroy');
+                }
+                $select.select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    placeholder: 'Select type',
+                    allowClear: true
+                });
+                
+                $('#typeLoadStatus').html(`<i class="bi bi-check-circle-fill text-success"></i> ${types.length} types loaded`).removeClass('text-muted');
+                setTimeout(() => {
+                    $('#typeLoadStatus').fadeOut(500, function() { $(this).remove(); });
+                }, 3000);
+            }
+            
+            async function loadBookmarks() {
+                try {
+                    const range = `${SHEET_NAME}!A:E`;
+                    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(range)}?key=${API_KEY}`;
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const data = await response.json();
+                    
+                    if (!data.values || data.values.length < 2) return [];
+                    
+                    const rows = data.values.slice(1);
+                    return rows.map(row => ({
+                        type: row[0] || '',
+                        company: row[1] || '',
+                        url_ip: row[2] || '',
+                        user_id: row[3] || '',
+                        password: row[4] || ''
+                    }));
+                } catch (err) {
+                    console.error('Load bookmarks error:', err);
+                    showAlert('Failed to load bookmarks: ' + err.message, 'danger');
+                    return [];
+                }
+            }
+            
+            async function renderDataTable() {
+                const records = await loadBookmarks();
+                const tbody = $('#urlBookmarksTable tbody');
+                
+                if (records.length === 0) {
+                    tbody.html('<tr><td colspan="5" class="text-center py-5 text-muted"><i class="bi bi-inbox"></i> No bookmarks found. Add your first bookmark!</td></tr>');
+                    $('#recordCount').text('0');
+                } else {
+                    let html = '';
+                    records.forEach(rec => {
+                        let urlDisplay = '';
+                        if (rec.url_ip && (rec.url_ip.startsWith('http://') || rec.url_ip.startsWith('https://'))) {
+                            urlDisplay = `<a href="${escapeHtml(rec.url_ip)}" target="_blank" class="hyperlink-url" title="Open link"><i class="bi bi-box-arrow-up-right"></i> ${escapeHtml(truncate(rec.url_ip, 45))}</a>`;
+                        } else if (rec.url_ip) {
+                            urlDisplay = `<span><i class="bi bi-hdd-network"></i> ${escapeHtml(rec.url_ip)}</span>`;
+                        } else {
+                            urlDisplay = '—';
+                        }
+                        
+                        const hasPwd = rec.password && rec.password.trim() !== '';
+                        const pwdDisplay = hasPwd ? '••••••••' : '—';
+                        const copyBtn = hasPwd ? `<button class="btn-icon-sm copy-pwd-btn" data-pwd="${escapeHtml(rec.password.replace(/"/g, '&quot;'))}" title="Copy password"><i class="bi bi-eye"></i></button>` : '';
+                        
+                        html += `
+                            <tr>
+                                <td><span class="badge-type"><i class="bi bi-folder-symlink"></i> ${escapeHtml(rec.type)}</span></td>
+                                <td><i class="bi bi-device-hdd"></i> ${escapeHtml(rec.company)}</td>
+                                <td>${urlDisplay}</td>
+                                <td><i class="bi bi-person-badge"></i> ${escapeHtml(rec.user_id) || '—'}</td>
+                                <td><div class="d-flex align-items-center gap-2"><span class="password-mask">${pwdDisplay}</span> ${copyBtn}</div></td>
+                            </tr>
+                        `;
+                    });
+                    tbody.html(html);
+                    $('#recordCount').text(records.length);
+                    
+                    $('.copy-pwd-btn').off('click').on('click', function(e) {
+                        e.preventDefault();
+                        const pwd = $(this).data('pwd');
+                        if (pwd) copyToClipboard(pwd);
+                    });
+                }
+                
+                if (dataTable) dataTable.destroy();
+                
+                dataTable = $('#urlBookmarksTable').DataTable({
+                    paging: true,
+                    searching: true,
+                    ordering: true,
+                    pageLength: 50,
+                    lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]],
+                    order: [[1, 'asc']],
+                    language: {
+                        search: "Filter:",
+                        searchPlaceholder: "Search bookmarks...",
+                        lengthMenu: "Show _MENU_ entries",
+                        info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                        paginate: {
+                            first: '<i class="bi bi-chevron-double-left"></i>',
+                            previous: '<i class="bi bi-chevron-left"></i>',
+                            next: '<i class="bi bi-chevron-right"></i>',
+                            last: '<i class="bi bi-chevron-double-right"></i>'
+                        }
+                    }
+                });
+            }
+            
+            async function addRecordToSheet(record) {
+                if (!APPS_SCRIPT_WRITE_URL || APPS_SCRIPT_WRITE_URL.includes('YOUR_APPS_SCRIPT_URL')) {
+                    showAlert('⚠️ Apps Script endpoint not configured.', 'warning');
+                    return false;
+                }
+                
+                try {
+                    const formBody = new URLSearchParams();
+                    formBody.append('type', record.type);
+                    formBody.append('company', record.company);
+                    formBody.append('url_ip', record.url_ip);
+                    formBody.append('user_id', record.user_id);
+                    formBody.append('password', record.password);
+                    
+                    await fetch(APPS_SCRIPT_WRITE_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: formBody
+                    });
+                    return true;
+                } catch (err) {
+                    console.error('Add error:', err);
+                    return false;
+                }
+            }
+            
+            function resetAddForm() {
+                $('#addUrlForm')[0].reset();
+                if ($('#inputType').length) $('#inputType').val('').trigger('change');
+                $('.is-invalid').removeClass('is-invalid');
+            }
+            
+            function isValidUrlOrIp(str) {
+                if (!str) return false;
+                const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/i;
+                const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+                const localPattern = /^(localhost|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3})$/;
+                return urlPattern.test(str) || ipPattern.test(str) || localPattern.test(str) || str.startsWith('http');
+            }
+            
+            // Event Handlers
+            $('#addUrlForm').on('submit', async function(e) {
+                e.preventDefault();
+                
+                const type = $('#inputType').val().trim();
+                const device = $('#inputDevice').val().trim();
+                const url_ip = $('#inputUrl').val().trim();
+                const userId = $('#inputUserId').val().trim();
+                const password = $('#inputPassword').val().trim();
+                
+                if (!type) { showAlert('Please select a type', 'warning'); $('#inputType').focus(); return; }
+                if (!device) { showAlert('Please enter company/device name', 'warning'); $('#inputDevice').focus(); return; }
+                if (!url_ip) { showAlert('Please enter URL or IP address', 'warning'); $('#inputUrl').focus(); return; }
+                if (!isValidUrlOrIp(url_ip)) {
+                    showAlert('Please enter a valid URL or IP address', 'warning');
+                    $('#inputUrl').addClass('is-invalid');
+                    return;
+                }
+                $('#inputUrl').removeClass('is-invalid');
+                
+                const $btn = $('#submitAddBtn');
+                const originalText = $btn.html();
+                $btn.prop('disabled', true).html('<span class="loading-spinner me-2"></span> Adding...');
+                
+                const newRecord = { type, company: device, url_ip, user_id: userId, password };
+                
+                try {
+                    const success = await addRecordToSheet(newRecord);
+                    if (success !== false) {
+                        showAlert('✅ Record added successfully!', 'success');
+                        resetAddForm();
+                    } else {
+                        showAlert('Failed to add record.', 'danger');
+                    }
+                } catch (err) {
+                    showAlert('Error: ' + err.message, 'danger');
+                } finally {
+                    $btn.prop('disabled', false).html(originalText);
+                }
+            });
+            
+            $('#resetAddBtn').on('click', function() {
+                resetAddForm();
+                showAlert('Form cleared', 'info');
+            });
+            
+            $('#view-tab').on('shown.bs.tab', function() {
+                renderDataTable();
+            });
+            
+            async function init() {
+                await populateTypeDropdown();
+                await renderDataTable();
+            }
+            
+            init();
+        }
+        
+        // Run authentication check when page loads
+        $(document).ready(function() {
+            checkAdminAccess();
+        });
+        
+        // Expose redirect function globally
+        window.redirectToLogin = redirectToLogin;
+    </script>
+</body>
+</html>

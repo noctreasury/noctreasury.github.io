@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Treasury Migration Status · SD-WAN Dashboard</title>
+    <!-- LOCAL CSS & JS (using ./css and ./js paths identical to attached users.html) -->
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <link rel="stylesheet" href="./css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="./css/dataTables.bootstrap5.min.css">
+   
+    <style>
+        :root {
+            --primary: #0f5b9c;
+            --primary-dark: #1a4b7a;
+            --primary-light: #e8f0fe;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --border: #e9ecef;
+        }
+        
+        body {
+            background: #f0f5fa;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding: 28px 24px;
+            color: var(--dark);
+        }
+        
+        .dashboard-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+            background: white;
+            border-radius: 24px;
+            padding: 20px 28px;
+            margin-bottom: 28px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .title-section h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 0;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .title-section h1 i {
+            background: none;
+            color: var(--primary);
+        }
+        
+        .stats-badge {
+            display: flex;
+            gap: 20px;
+            background: var(--light);
+            padding: 8px 20px;
+            border-radius: 60px;
+            border: 1px solid var(--border);
+        }
+        
+        .stats-badge span {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .stats-badge i {
+            margin-right: 6px;
+            color: var(--primary);
+        }
+        
+        .filter-bar {
+            background: white;
+            border-radius: 20px;
+            padding: 12px 20px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--primary-dark);
+        }
+        
+        .status-filter {
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            padding: 6px 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .status-filter.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .status-filter:hover {
+            background: var(--primary-light);
+        }
+        
+        .btn-export {
+            background: linear-gradient(135deg, var(--success) 0%, #0d9488 100%);
+            border: none;
+            border-radius: 40px;
+            padding: 8px 24px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-export:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+        }
+        
+        .table-card {
+            background: white;
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            overflow-x: auto;
+        }
+        
+        .table thead th {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 0.8rem;
+            padding: 14px 12px;
+            white-space: nowrap;
+            border-bottom: none;
+        }
+        
+        .table td {
+            padding: 12px 12px;
+            vertical-align: middle;
+            font-size: 0.82rem;
+            color: #334155;
+        }
+        
+        .table tbody tr:hover {
+            background-color: #f8fafc;
+        }
+        
+        .badge-completed {
+            background-color: #10b981 !important;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.7rem;
+        }
+        
+        .badge-not-completed {
+            background-color: #f59e0b !important;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.7rem;
+        }
+        
+        .badge-issue {
+            background-color: #ef4444 !important;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.7rem;
+        }
+        
+        .lan-badge {
+            font-family: monospace;
+            background: #e8f0fe;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+        }
+        
+        .dataTables_wrapper .dataTables_filter input {
+            border-radius: 30px;
+            padding: 6px 15px;
+            border: 1px solid var(--border);
+            background: white;
+        }
+        
+        .dataTables_wrapper .dataTables_length select {
+            border-radius: 20px;
+            padding: 4px 8px;
+        }
+        
+        @media (max-width: 768px) {
+            body { padding: 16px; }
+            .page-header { flex-direction: column; align-items: flex-start; }
+            .filter-bar { flex-direction: column; align-items: stretch; }
+            .table-card { padding: 12px; }
+            .table td, .table th { padding: 8px 6px; font-size: 0.7rem; }
+        }
+        
+        .spinner-sm {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e2e8f0;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background: #fee9e7;
+            color: var(--danger);
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            border-left: 4px solid var(--danger);
+        }
+        
+        td code, .gateway-ip {
+            background: #f1f5f9;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-family: monospace;
+        }
+        
+        .migrated-date {
+            font-family: monospace;
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard-container">
+    <div class="page-header">
+        <div class="title-section">
+            <h1><i class="bi bi-hdd-stack-fill"></i> Treasury Migration Status</h1>
+        </div>
+        <div class="stats-badge">
+            <span><i class="bi bi-building"></i> <span id="totalTreasuries">—</span> Treasuries</span>
+            <span><i class="bi bi-check-circle-fill"></i> <span id="completedCount">—</span> Completed</span>
+            <span><i class="bi bi-clock-history"></i> <span id="notCompletedCount">—</span> Not Completed</span>
+        </div>
+    </div>
+    
+    <!-- Status Filter Row + Export Button -->
+    <div class="filter-bar">
+        <div class="filter-group">
+            <span class="filter-label"><i class="bi bi-funnel-fill"></i> Filter by Status :</span>
+            <div class="d-flex flex-wrap gap-2">
+                <button class="status-filter active" data-filter="all">📋 All Treasuries</button>
+                <button class="status-filter" data-filter="completed">✅ Completed</button>
+                <button class="status-filter" data-filter="notcompleted">⏳ Not Completed</button>
+            </div>
+        </div>
+        <button class="btn-export" id="exportCsvBtn">
+            <i class="bi bi-download"></i> Export CSV
+        </button>
+    </div>
+    
+    <div class="table-card">
+        <div id="tableLoader" style="text-align:center; padding:60px;">
+            <div class="spinner-sm"></div>
+            <p class="mt-3 text-muted">Loading migration data from Treasury sheet...</p>
+        </div>
+        <div id="tableWrapper" style="display:none;">
+            <table id="migrationTable" class="table table-hover" style="width:100%">
+                <thead>
+                <tr>
+                    <th>Treasury</th>
+                    <th>BR Code</th>
+                    <th>Address</th>
+                    <th>PIN</th>
+                    <th>LAN Pool</th>
+                    <th>Gateway (Fatpipe IP)</th>
+                    <th>Migrated Date</th>
+                    <th>Migration Status</th>
+                </tr>
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+        </div>
+        <div id="errorContainer" style="display:none;"></div>
+    </div>
+</div>
+
+<!-- local JS dependencies -->
+<script src="./js/jquery.min.js"></script>
+<script src="./js/bootstrap.bundle.min.js"></script>
+<script src="./js/jquery.dataTables.min.js"></script>
+<script src="./js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+    // ============================================================
+    // CONFIGURATION: Google Sheet ID & API key
+    // ============================================================
+    const SPREADSHEET_ID = '105FU8biUFJETqboPumblZ1BJYv7TzKiOy7Jwfbn3zTw';
+    const SHEET_NAME = 'Treasuries';
+    const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+    
+    let fullTreasuryData = [];
+    let dataTable = null;
+    let currentFilter = 'all';   // 'all', 'completed', 'notcompleted'
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // ============================================================
+    // DATE FORMATTING: Convert any date to DD/MM/YYYY
+    // ============================================================
+    function formatToDDMMYYYY(dateVal) {
+        if (!dateVal || dateVal === '—') return '—';
+        
+        let str = dateVal.toString().trim();
+        
+        // Case 1: Already in DD/MM/YYYY format (starts with two digits, then slash)
+        if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
+            return str;
+        }
+        
+        // Case 2: YYYY-MM-DD format (e.g., "2026-03-07" or "2026-03-07 00:00:00")
+        let ymdMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (ymdMatch) {
+            let year = ymdMatch[1];
+            let month = ymdMatch[2];
+            let day = ymdMatch[3];
+            return `${day}/${month}/${year}`;
+        }
+        
+        // Case 3: MM/DD/YYYY (common US format) - swap if detected
+        let usMatch = str.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+        if (usMatch) {
+            let month = usMatch[1];
+            let day = usMatch[2];
+            let year = usMatch[3];
+            // if month > 12, it's probably DD/MM already
+            if (parseInt(month) <= 12 && parseInt(day) > 12) {
+                // swap: it's actually MM/DD? Actually if day >12, it's likely DD/MM already
+                return `${day}/${month}/${year}`;
+            }
+            return `${day}/${month}/${year}`;
+        }
+        
+        // Case 4: Try parsing as Date object
+        let parsed = new Date(str);
+        if (!isNaN(parsed.getTime())) {
+            let day = String(parsed.getDate()).padStart(2, '0');
+            let month = String(parsed.getMonth() + 1).padStart(2, '0');
+            let year = parsed.getFullYear();
+            if (year > 1900 && year < 2100) {
+                return `${day}/${month}/${year}`;
+            }
+        }
+        
+        // Case 5: Excel serial number? (rare but handle)
+        if (/^\d+$/.test(str) && str.length === 5) {
+            let excelDate = parseInt(str);
+            let jsDate = new Date((excelDate - 25569) * 86400000);
+            if (!isNaN(jsDate.getTime())) {
+                let day = String(jsDate.getDate()).padStart(2, '0');
+                let month = String(jsDate.getMonth() + 1).padStart(2, '0');
+                let year = jsDate.getFullYear();
+                return `${day}/${month}/${year}`;
+            }
+        }
+        
+        return str;
+    }
+    
+    // Determine migration category (Completed vs Not Completed)
+    function getMigrationCategory(row, idxStatus, idxSiteReadiness, idxWillingness) {
+        let statusRaw = (row[idxStatus] || '').toString().trim();
+        let siteReady = (row[idxSiteReadiness] || '').toString().trim();
+        let willingness = (row[idxWillingness] || '').toString().trim();
+        
+        if (statusRaw === 'Completed') {
+            return { category: 'Completed', displayStatus: 'Completed' };
+        }
+        
+        if (statusRaw.includes('BSNL Gateway Issue') || statusRaw.includes('Gateway Issue')) {
+            return { category: 'Not Completed', displayStatus: 'BSNL Gateway Issue' };
+        }
+        
+        if (statusRaw === 'Pending' || statusRaw === 'In Progress') {
+            return { category: 'Not Completed', displayStatus: 'Pending' };
+        }
+        
+        if (statusRaw === '' || statusRaw === '—') {
+            if (siteReady === 'No' || willingness === 'No') {
+                return { category: 'Not Completed', displayStatus: 'Not Started' };
+            }
+            return { category: 'Not Completed', displayStatus: 'Pending' };
+        }
+        
+        return { category: 'Not Completed', displayStatus: statusRaw || 'Pending' };
+    }
+    
+    function extractMigrationRecords(rows, headers) {
+        if (!rows || rows.length < 2) return [];
+        
+        const colIndex = {
+            treasury: -1, brCode: -1, address: -1, pin: -1, lanPool: -1,
+            gateway: -1, migratedDate: -1, migrationStatus: -1,
+            siteReadiness: -1, willingness: -1
+        };
+        
+        headers.forEach((h, idx) => {
+            const clean = (h || '').toString().trim().toLowerCase();
+            if (clean.includes('treasury') && !clean.includes('code')) colIndex.treasury = idx;
+            else if (clean.includes('br code') || clean === 'br code') colIndex.brCode = idx;
+            else if (clean.includes('address')) colIndex.address = idx;
+            else if (clean === 'pin') colIndex.pin = idx;
+            else if (clean.includes('lan pool')) colIndex.lanPool = idx;
+            else if (clean.includes('fatpipe') || clean.includes('gateway')) colIndex.gateway = idx;
+            else if (clean.includes('migrated date')) colIndex.migratedDate = idx;
+            else if (clean.includes('migration process status')) colIndex.migrationStatus = idx;
+            else if (clean.includes('site readiness')) colIndex.siteReadiness = idx;
+            else if (clean.includes('willingness') || clean.includes('inform willingness')) colIndex.willingness = idx;
+        });
+        
+        // Fallback mapping
+        if (colIndex.treasury === -1 && headers.length > 0) colIndex.treasury = 0;
+        if (colIndex.brCode === -1 && headers.length > 1) colIndex.brCode = 1;
+        if (colIndex.address === -1 && headers.length > 3) colIndex.address = 3;
+        if (colIndex.pin === -1 && headers.length > 4) colIndex.pin = 4;
+        if (colIndex.lanPool === -1 && headers.length > 5) colIndex.lanPool = 5;
+        if (colIndex.gateway === -1 && headers.length > 6) colIndex.gateway = 6;
+        if (colIndex.migratedDate === -1 && headers.length > 9) colIndex.migratedDate = 9;
+        if (colIndex.migrationStatus === -1 && headers.length > 10) colIndex.migrationStatus = 10;
+        if (colIndex.siteReadiness === -1 && headers.length > 7) colIndex.siteReadiness = 7;
+        if (colIndex.willingness === -1 && headers.length > 8) colIndex.willingness = 8;
+        
+        const records = [];
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0) continue;
+            
+            const treasury = (colIndex.treasury !== -1 && row[colIndex.treasury]) ? row[colIndex.treasury].toString().trim() : '';
+            if (treasury === '' || treasury === 'Treasury' || treasury === 'Sl No') continue;
+            
+            const brCode = (colIndex.brCode !== -1 && row[colIndex.brCode]) ? row[colIndex.brCode].toString().trim() : '';
+            const address = (colIndex.address !== -1 && row[colIndex.address]) ? row[colIndex.address].toString().trim() : '';
+            const pin = (colIndex.pin !== -1 && row[colIndex.pin]) ? row[colIndex.pin].toString().trim() : '';
+            const lanPool = (colIndex.lanPool !== -1 && row[colIndex.lanPool]) ? row[colIndex.lanPool].toString().trim() : '';
+            const gateway = (colIndex.gateway !== -1 && row[colIndex.gateway]) ? row[colIndex.gateway].toString().trim() : '';
+            const migratedRaw = (colIndex.migratedDate !== -1 && row[colIndex.migratedDate]) ? row[colIndex.migratedDate] : '';
+            // Apply DD/MM/YYYY formatting here
+            const migratedDateFormatted = formatToDDMMYYYY(migratedRaw);
+            
+            const migrationInfo = getMigrationCategory(row, colIndex.migrationStatus, colIndex.siteReadiness, colIndex.willingness);
+            
+            records.push({
+                treasury: treasury,
+                brCode: brCode,
+                address: address,
+                pin: pin,
+                lanPool: lanPool,
+                gateway: gateway,
+                migratedDate: migratedDateFormatted,
+                category: migrationInfo.category,
+                displayStatus: migrationInfo.displayStatus
+            });
+        }
+        return records;
+    }
+    
+    function getFilteredData() {
+        if (currentFilter === 'all') return [...fullTreasuryData];
+        if (currentFilter === 'completed') return fullTreasuryData.filter(rec => rec.category === 'Completed');
+        if (currentFilter === 'notcompleted') return fullTreasuryData.filter(rec => rec.category === 'Not Completed');
+        return [...fullTreasuryData];
+    }
+    
+    function updateStats() {
+        const total = fullTreasuryData.length;
+        const completed = fullTreasuryData.filter(r => r.category === 'Completed').length;
+        const notCompleted = total - completed;
+        $('#totalTreasuries').text(total);
+        $('#completedCount').text(completed);
+        $('#notCompletedCount').text(notCompleted);
+    }
+    
+    // Export current filtered table to CSV
+    function exportToCSV() {
+        const filteredData = getFilteredData();
+        if (filteredData.length === 0) {
+            alert('No data available to export.');
+            return;
+        }
+        
+        // Define CSV headers (matching table columns)
+        const headers = ['Treasury', 'BR Code', 'Address', 'PIN', 'LAN Pool', 'Gateway (Fatpipe IP)', 'Migrated Date', 'Migration Status'];
+        
+        // Build CSV rows
+        const rows = filteredData.map(rec => {
+            // Clean fields: remove commas, newlines, wrap in quotes if needed
+            const clean = (str) => {
+                if (!str) return '';
+                let s = String(str).replace(/"/g, '""'); // escape double quotes
+                if (s.includes(',') || s.includes('\n') || s.includes('"')) {
+                    s = `"${s}"`;
+                }
+                return s;
+            };
+            
+            let statusText = '';
+            if (rec.category === 'Completed') statusText = 'Completed';
+            else if (rec.displayStatus === 'BSNL Gateway Issue') statusText = 'BSNL Gateway Issue';
+            else if (rec.displayStatus === 'Not Started') statusText = 'Not Started';
+            else statusText = 'Not Completed';
+            
+            return [
+                clean(rec.treasury),
+                clean(rec.brCode),
+                clean(rec.address),
+                clean(rec.pin),
+                clean(rec.lanPool),
+                clean(rec.gateway),
+                clean(rec.migratedDate),
+                clean(statusText)
+            ].join(',');
+        });
+        
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' }); // BOM for Indian locale
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.setAttribute('download', `treasury_migration_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+    
+    function rebuildTableWithFilter() {
+        if (!fullTreasuryData.length) return;
+        
+        const filteredData = getFilteredData();
+        updateStats();
+        
+        const tbody = $('#tableBody');
+        tbody.empty();
+        
+        if (filteredData.length === 0) {
+            tbody.html('<tr><td colspan="8" class="text-center text-muted py-4">No treasuries match the selected filter.</td></tr>');
+            if (dataTable) {
+                dataTable.destroy();
+                dataTable = null;
+            }
+            $('#tableWrapper').show();
+            $('#tableLoader').hide();
+            return;
+        }
+        
+        filteredData.forEach(rec => {
+            let statusBadge = '';
+            if (rec.category === 'Completed') {
+                statusBadge = '<span class="badge-completed"><i class="bi bi-check-circle-fill"></i> Completed</span>';
+            } else {
+                if (rec.displayStatus === 'BSNL Gateway Issue') {
+                    statusBadge = '<span class="badge-issue"><i class="bi bi-exclamation-triangle-fill"></i> BSNL Gateway Issue</span>';
+                } else if (rec.displayStatus === 'Not Started') {
+                    statusBadge = '<span class="badge-not-completed"><i class="bi bi-hourglass-split"></i> Not Started</span>';
+                } else {
+                    statusBadge = '<span class="badge-not-completed"><i class="bi bi-clock"></i> Not Completed</span>';
+                }
+            }
+            
+            const row = `
+                <tr>
+                    <td><strong>${escapeHtml(rec.treasury)}</strong></td>
+                    <td><code>${escapeHtml(rec.brCode)}</code></td>
+                    <td><small>${escapeHtml(rec.address.length > 80 ? rec.address.substring(0, 80)+'…' : rec.address)}</small></td>
+                    <td>${escapeHtml(rec.pin)}</div></td>
+                    <td><span class="lan-badge">${escapeHtml(rec.lanPool)}</span></div></td>
+                    <td><code class="gateway-ip">${escapeHtml(rec.gateway || '—')}</code></div></td>
+                    <td class="migrated-date">${rec.migratedDate !== '—' ? escapeHtml(rec.migratedDate) : '<span class="text-muted">—</span>'}</div></td>
+                    <td>${statusBadge}</div></td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
+        
+        if (dataTable) {
+            dataTable.destroy();
+            dataTable = null;
+        }
+        
+        dataTable = $('#migrationTable').DataTable({
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            order: [[0, 'asc']],
+            language: {
+                search: "Search Treasury/BR Code:",
+                searchPlaceholder: "Type name, code or address...",
+                lengthMenu: "Show _MENU_ entries",
+                info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                infoEmpty: "No entries",
+                paginate: {
+                    first: '<i class="bi bi-chevron-double-left"></i>',
+                    previous: '<i class="bi bi-chevron-left"></i>',
+                    next: '<i class="bi bi-chevron-right"></i>',
+                    last: '<i class="bi bi-chevron-double-right"></i>'
+                }
+            }
+        });
+        
+        $('#tableWrapper').show();
+        $('#tableLoader').hide();
+    }
+    
+    async function fetchMigrationDataAndRender() {
+        $('#tableLoader').show();
+        $('#tableWrapper').hide();
+        $('#errorContainer').hide();
+        
+        if (dataTable) {
+            dataTable.destroy();
+            dataTable = null;
+        }
+        
+        try {
+            const range = encodeURIComponent(`${SHEET_NAME}!A:K`);
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            const data = await response.json();
+            if (!data.values || data.values.length < 2) {
+                throw new Error('No treasury data found in the sheet. Make sure sheet name is "Treasuries".');
+            }
+            
+            const headers = data.values[0];
+            const records = extractMigrationRecords(data.values, headers);
+            if (records.length === 0) {
+                throw new Error('No valid treasury migration entries found.');
+            }
+            
+            fullTreasuryData = records;
+            updateStats();
+            rebuildTableWithFilter();
+            
+        } catch (err) {
+            console.error('Sheet API error:', err);
+            $('#tableLoader').hide();
+            $('#errorContainer').html(`
+                <div class="error-message">
+                    <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                    <strong>Unable to load migration status</strong><br>
+                    ${escapeHtml(err.message)}<br>
+                    <small class="text-muted">Verify spreadsheet ID, API key, and sheet name "Treasuries".</small>
+                </div>
+            `).show();
+        }
+    }
+    
+    function applyFilterAndRebuild(filterValue) {
+        if (currentFilter === filterValue) return;
+        currentFilter = filterValue;
+        
+        $('.status-filter').removeClass('active');
+        $(`.status-filter[data-filter="${filterValue}"]`).addClass('active');
+        
+        if (dataTable) {
+            dataTable.destroy();
+            dataTable = null;
+        }
+        
+        rebuildTableWithFilter();
+    }
+    
+    function bindFilters() {
+        $('.status-filter').on('click', function() {
+            const filterVal = $(this).data('filter');
+            applyFilterAndRebuild(filterVal);
+        });
+        
+        $('#exportCsvBtn').on('click', function() {
+            exportToCSV();
+        });
+    }
+    
+    $(document).ready(function() {
+        fetchMigrationDataAndRender().then(() => {
+            bindFilters();
+        });
+    });
+    
+    window.addEventListener('beforeunload', function() {
+        if (dataTable) {
+            dataTable.destroy();
+        }
+    });
+</script>
+</body>
+</html>

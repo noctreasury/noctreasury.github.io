@@ -1,0 +1,613 @@
+// ============================================================
+// code.gs - To Do List Manager (Google Sheets backend)
+// Deploy as Web App (Execute as: Me, Access: Anyone)
+// ============================================================
+// Deployment URL (replace with your own after deploy):
+// https://script.google.com/macros/s/AKfycbzm3_Ft-hZdwZp69zf6nPJ4qOV_JFSZObwroXUEx6xZ2GnNGy9JrXIveqcEsDSvCE8P/exec
+// 
+// Sheet structure:
+//   - Data:         Track ID, Category, Subject, Description, Follow up Email/Url,
+//                   Assigned Date, Cut off date, Assigned To (User), Work Done Status,
+//                   Done By (User), Done By Date, Remarks
+//   - Users:        Users (single column)
+//   - Follow up MailUrl: Follow up items (single column)
+//   - Work Done Status: Status values (single column)
+//   - Category:     Category values (single column)
+// ============================================================
+
+const SPREADSHEET_ID = "1X68uyowieVR4n3mHIkx2rm_TuHMcyBxejckfDvWMGvY";
+
+// Sheet names (must match your Excel/Sheet tabs)
+const SHEET_TASKS       = "Data";
+const SHEET_USERS       = "Users";
+const SHEET_FOLLOWUP    = "Follow up MailUrl";
+const SHEET_STATUS      = "Work Done Status";
+const SHEET_CATEGORY    = "Category";
+
+// ==================== CORS HEADERS ====================
+function getCorsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Max-Age": "86400"
+  };
+}
+
+// ==================== DO GET (for OPTIONS preflight) ====================
+function doGet(e) {
+  // Handle OPTIONS preflight (CORS)
+  if (e && e.parameter && e.parameter.method === "OPTIONS") {
+    return ContentService
+      .createTextOutput("")
+      .setMimeType(ContentService.MimeType.TEXT)
+      .setHeaders(getCorsHeaders());
+  }
+
+  // For GET requests, return API status
+  return sendResponse({
+    status: "active",
+    message: "To Do List API is running. Use POST for all operations.",
+    timestamp: new Date().toISOString()
+  });
+}
+
+// ==================== DO POST (Main Handler) ====================
+function doPost(e) {
+  // Handle OPTIONS preflight (CORS)
+  if (e && e.method === "OPTIONS") {
+    return ContentService
+      .createTextOutput("")
+      .setMimeType(ContentService.MimeType.TEXT)
+      .setHeaders(getCorsHeaders());
+  }
+
+  try {
+    let params;
+    if (e && e.postData && e.postData.contents) {
+      params = JSON.parse(e.postData.contents);
+    } else {
+      return sendResponse({ status: "error", message: "No data received" });
+    }
+
+    const action = params.action;
+    let result;
+
+    switch(action) {
+      // ---- Task CRUD ----
+      case "ADD_TASK":
+        result = handleAddTask(params);
+        break;
+      case "UPDATE_TASK":
+        result = handleUpdateTask(params);
+        break;
+      case "DELETE_TASK":
+        result = handleDeleteTask(params);
+        break;
+      case "GET_TASKS":
+        result = handleGetTasks(params);
+        break;
+
+      // ---- Reference table management ----
+      case "ADD_REF_ITEM":
+        result = handleAddRefItem(params);
+        break;
+      case "GET_REF_ITEMS":
+        result = handleGetRefItems(params);
+        break;
+
+      // ---- Bulk fetch for metadata ----
+      case "GET_ALL_METADATA":
+        result = handleGetAllMetadata();
+        break;
+
+      default:
+        result = { status: "error", message: "Unknown action: " + action };
+    }
+
+    return sendResponse(result);
+
+  } catch(error) {
+    return sendResponse({ 
+      status: "error", 
+      message: error.toString(),
+      stack: error.stack 
+    });
+  }
+}
+
+// ============================================================
+//  TASK CRUD OPERATIONS
+// ============================================================
+
+// ---------- GET TASKS (with optional filter by status) ----------
+function handleGetTasks(params) {
+  try {
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_TASKS);
+    if (!sheet) {
+      return { status: "error", message: "Sheet 'Data' not found" };
+    }
+
+    const data = sheet.getDataRange().getValues();
+    if (!data || data.length < 2) {
+      return { status: "success", records: [] };
+    }
+
+    const filterStatus = params.filterStatus || "ALL";
+    const records = [];
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      // Skip empty rows
+      if (!row[0] || row[0].toString().trim() === "") continue;
+
+      const record = {
+        rowIndex: i + 1,        // 1-indexed row number
+        trackId: row[0] ? row[0].toString().trim() : "",
+        category: row[1] ? row[1].toString().trim() : "",
+        subject: row[2] ? row[2].toString().trim() : "",
+        description: row[3] ? row[3].toString().trim() : "",
+        followup: row[4] ? row[4].toString().trim() : "",
+        assignedDate: row[5] ? row[5].toString().trim() : "",
+        cutoffDate: row[6] ? row[6].toString().trim() : "",
+        assignedTo: row[7] ? row[7].toString().trim() : "",
+        workStatus: row[8] ? row[8].toString().trim() : "",
+        doneBy: row[9] ? row[9].toString().trim() : "",
+        doneDate: row[10] ? row[10].toString().trim() : "",
+        remarks: row[11] ? row[11].toString().trim() : ""
+      };
+
+      // Apply status filter if not "ALL"
+      if (filterStatus !== "ALL" && record.workStatus !== filterStatus) {
+        continue;
+      }
+
+      records.push(record);
+    }
+
+    // Sort by Track ID (ascending)
+    records.sort((a, b) => {
+      const numA = parseFloat(a.trackId) || 0;
+      const numB = parseFloat(b.trackId) || 0;
+      return numA - numB;
+    });
+
+    return {
+      status: "success",
+      records: records,
+      totalRecords: records.length,
+      filterApplied: filterStatus
+    };
+
+  } catch (error) {
+    console.error("Error in handleGetTasks:", error);
+    return { status: "error", message: error.toString() };
+  }
+}
+
+// ---------- ADD TASK ----------
+function handleAddTask(params) {
+  try {
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_TASKS);
+    if (!sheet) {
+      return { status: "error", message: "Sheet 'Data' not found" };
+    }
+
+    const record = params.data;
+    if (!record) {
+      return { status: "error", message: "No data provided" };
+    }
+
+    // Generate next Track ID (auto-increment)
+    const lastRow = sheet.getLastRow();
+    let nextTrackId = 1;
+    if (lastRow >= 2) {
+      const lastRef = sheet.getRange(lastRow, 1).getValue();
+      const lastNum = parseFloat(lastRef.toString().replace(/\.0$/, ''));
+      if (!isNaN(lastNum)) nextTrackId = lastNum + 1;
+    }
+    const trackId = nextTrackId + ".0";
+
+    // Prepare row data (12 columns matching Data sheet structure)
+    const rowData = [
+      trackId,                              // A: Track ID
+      record.category || "",                // B: Category
+      record.subject || "",                 // C: Subject
+      record.description || "",             // D: Description
+      record.followup || "",                // E: Follow up Email/Url
+      record.assignedDate || "",            // F: Assigned Date
+      record.cutoffDate || "",              // G: Cut off date
+      record.assignedTo || "",              // H: Assigned To (User)
+      record.workStatus || "Pending",       // I: Work Done Status
+      record.doneBy || "",                  // J: Done By (User)
+      record.doneDate || "",                // K: Done By Date
+      record.remarks || ""                  // L: Remarks
+    ];
+
+    sheet.appendRow(rowData);
+
+    return {
+      status: "success",
+      message: "Task added successfully",
+      trackId: trackId
+    };
+
+  } catch (error) {
+    console.error("Error in handleAddTask:", error);
+    return { status: "error", message: error.toString() };
+  }
+}
+
+// ---------- UPDATE TASK ----------
+function handleUpdateTask(params) {
+  try {
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_TASKS);
+    if (!sheet) {
+      return { status: "error", message: "Sheet 'Data' not found" };
+    }
+
+    const rowId = params.rowId;      // 1-indexed row number in sheet
+    const record = params.data;
+
+    if (!rowId || rowId < 2) {
+      return { status: "error", message: "Invalid row ID. Row must be >= 2" };
+    }
+
+    const lastRow = sheet.getLastRow();
+    if (rowId > lastRow) {
+      return { status: "error", message: "Row ID " + rowId + " does not exist" };
+    }
+
+    // Update columns B through L (skip column A which is Track ID)
+    sheet.getRange(rowId, 2).setValue(record.category || "");
+    sheet.getRange(rowId, 3).setValue(record.subject || "");
+    sheet.getRange(rowId, 4).setValue(record.description || "");
+    sheet.getRange(rowId, 5).setValue(record.followup || "");
+    sheet.getRange(rowId, 6).setValue(record.assignedDate || "");
+    sheet.getRange(rowId, 7).setValue(record.cutoffDate || "");
+    sheet.getRange(rowId, 8).setValue(record.assignedTo || "");
+    sheet.getRange(rowId, 9).setValue(record.workStatus || "Pending");
+    sheet.getRange(rowId, 10).setValue(record.doneBy || "");
+    sheet.getRange(rowId, 11).setValue(record.doneDate || "");
+    sheet.getRange(rowId, 12).setValue(record.remarks || "");
+
+    return { status: "success", message: "Task updated successfully" };
+
+  } catch (error) {
+    console.error("Error in handleUpdateTask:", error);
+    return { status: "error", message: error.toString() };
+  }
+}
+
+// ---------- DELETE TASK ----------
+function handleDeleteTask(params) {
+  try {
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_TASKS);
+    if (!sheet) {
+      return { status: "error", message: "Sheet 'Data' not found" };
+    }
+
+    const rowId = params.rowId;
+    if (!rowId || rowId < 2) {
+      return { status: "error", message: "Invalid row ID. Row must be >= 2" };
+    }
+
+    const lastRow = sheet.getLastRow();
+    if (rowId > lastRow) {
+      return { status: "error", message: "Row ID " + rowId + " does not exist" };
+    }
+
+    sheet.deleteRow(rowId);
+
+    return { status: "success", message: "Task deleted successfully" };
+
+  } catch (error) {
+    console.error("Error in handleDeleteTask:", error);
+    return { status: "error", message: error.toString() };
+  }
+}
+
+// ============================================================
+//  REFERENCE TABLE OPERATIONS
+// ============================================================
+
+// ---------- ADD REFERENCE ITEM ----------
+function handleAddRefItem(params) {
+  try {
+    const sheetName = params.sheetName;
+    const value = params.value ? params.value.trim() : "";
+
+    if (!sheetName || !value) {
+      return { status: "error", message: "Sheet name and value are required" };
+    }
+
+    // Validate sheet name
+    const validSheets = [SHEET_USERS, SHEET_FOLLOWUP, SHEET_STATUS, SHEET_CATEGORY];
+    if (!validSheets.includes(sheetName)) {
+      return { status: "error", message: "Invalid sheet name: " + sheetName };
+    }
+
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(sheetName);
+    if (!sheet) {
+      return { status: "error", message: "Sheet not found: " + sheetName };
+    }
+
+    // Check for duplicates (case-insensitive)
+    const existingData = sheet.getDataRange().getValues();
+    for (let i = 0; i < existingData.length; i++) {
+      const existingVal = existingData[i][0] ? existingData[i][0].toString().trim() : "";
+      if (existingVal.toLowerCase() === value.toLowerCase()) {
+        return { status: "error", message: "Duplicate value: " + value };
+      }
+    }
+
+    sheet.appendRow([value]);
+
+    return {
+      status: "success",
+      message: "Added '" + value + "' to " + sheetName
+    };
+
+  } catch (error) {
+    console.error("Error in handleAddRefItem:", error);
+    return { status: "error", message: error.toString() };
+  }
+}
+
+// ---------- GET REFERENCE ITEMS ----------
+function handleGetRefItems(params) {
+  try {
+    const sheetName = params.sheetName;
+    if (!sheetName) {
+      return { status: "error", message: "Sheet name is required" };
+    }
+
+    const validSheets = [SHEET_USERS, SHEET_FOLLOWUP, SHEET_STATUS, SHEET_CATEGORY];
+    if (!validSheets.includes(sheetName)) {
+      return { status: "error", message: "Invalid sheet name: " + sheetName };
+    }
+
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(sheetName);
+    if (!sheet) {
+      return { status: "error", message: "Sheet not found: " + sheetName };
+    }
+
+    const data = sheet.getDataRange().getValues();
+    const items = [];
+
+    for (let i = 0; i < data.length; i++) {
+      const val = data[i][0] ? data[i][0].toString().trim() : "";
+      // Skip empty and header rows
+      if (val && val !== sheetName && val !== "Users" && val !== "Work Done Status" && val !== "Category") {
+        items.push(val);
+      }
+    }
+
+    return {
+      status: "success",
+      sheetName: sheetName,
+      items: items,
+      count: items.length
+    };
+
+  } catch (error) {
+    console.error("Error in handleGetRefItems:", error);
+    return { status: "error", message: error.toString() };
+  }
+}
+
+// ---------- GET ALL METADATA (bulk fetch for initial load) ----------
+function handleGetAllMetadata() {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+    // Helper to get column data from a sheet (skip header)
+    function getColumnData(sheetName, headerSkip) {
+      const sheet = ss.getSheetByName(sheetName);
+      if (!sheet) return [];
+      const data = sheet.getDataRange().getValues();
+      const items = [];
+      const skipHeader = headerSkip || true;
+      const startIdx = skipHeader ? 1 : 0;
+      for (let i = startIdx; i < data.length; i++) {
+        const val = data[i][0] ? data[i][0].toString().trim() : "";
+        if (val) items.push(val);
+      }
+      return items;
+    }
+
+    // Get all reference data
+    const users = getColumnData(SHEET_USERS, true);
+    const followup = getColumnData(SHEET_FOLLOWUP, true);
+    const status = getColumnData(SHEET_STATUS, true);
+    const category = getColumnData(SHEET_CATEGORY, true);
+
+    // Also get tasks count
+    const taskSheet = ss.getSheetByName(SHEET_TASKS);
+    let taskCount = 0;
+    if (taskSheet) {
+      const data = taskSheet.getDataRange().getValues();
+      for (let i = 1; i < data.length; i++) {
+        if (data[i][0] && data[i][0].toString().trim() !== "") {
+          taskCount++;
+        }
+      }
+    }
+
+    return {
+      status: "success",
+      metadata: {
+        users: users,
+        followup: followup,
+        status: status,
+        category: category
+      },
+      taskCount: taskCount
+    };
+
+  } catch (error) {
+    console.error("Error in handleGetAllMetadata:", error);
+    return { status: "error", message: error.toString() };
+  }
+}
+
+// ============================================================
+//  HELPER: Send JSON Response with CORS
+// ============================================================
+function sendResponse(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeaders(getCorsHeaders());
+}
+
+// ============================================================
+//  UTILITY: Initialize Sheets (run once to set up structure)
+// ============================================================
+function initializeSheets() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+  // Create Data sheet if not exists
+  let sheet = ss.getSheetByName(SHEET_TASKS);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_TASKS);
+    const headers = [
+      "Track ID",
+      "Category",
+      "Subject",
+      "Description",
+      "Follow up Email / Url",
+      "Assigned Date",
+      "Cut off date",
+      "Assigned To (User)",
+      "Work Done Status",
+      "Done By (User)",
+      "Done By Date",
+      "Remarks"
+    ];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+    sheet.setFrozenRows(1);
+  }
+
+  // Create Users sheet if not exists
+  sheet = ss.getSheetByName(SHEET_USERS);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_USERS);
+    sheet.getRange(1, 1).setValue("Users");
+    sheet.getRange(1, 1).setFontWeight("bold");
+    // Add sample users
+    const sampleUsers = ["John Doe", "Jane Smith", "Mike Johnson", "Sarah Williams"];
+    for (let i = 0; i < sampleUsers.length; i++) {
+      sheet.getRange(i + 2, 1).setValue(sampleUsers[i]);
+    }
+  }
+
+  // Create Follow up MailUrl sheet if not exists
+  sheet = ss.getSheetByName(SHEET_FOLLOWUP);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_FOLLOWUP);
+    sheet.getRange(1, 1).setValue("Follow up Mail/Url");
+    sheet.getRange(1, 1).setFontWeight("bold");
+    const sampleFollowup = ["Email to support@example.com", "Check ticket #123", "Follow up call", "Submit documentation"];
+    for (let i = 0; i < sampleFollowup.length; i++) {
+      sheet.getRange(i + 2, 1).setValue(sampleFollowup[i]);
+    }
+  }
+
+  // Create Work Done Status sheet if not exists
+  sheet = ss.getSheetByName(SHEET_STATUS);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_STATUS);
+    sheet.getRange(1, 1).setValue("Work Done Status");
+    sheet.getRange(1, 1).setFontWeight("bold");
+    const sampleStatus = ["Done", "Pending", "On Process", "Terminated"];
+    for (let i = 0; i < sampleStatus.length; i++) {
+      sheet.getRange(i + 2, 1).setValue(sampleStatus[i]);
+    }
+  }
+
+  // Create Category sheet if not exists
+  sheet = ss.getSheetByName(SHEET_CATEGORY);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_CATEGORY);
+    sheet.getRange(1, 1).setValue("Category");
+    sheet.getRange(1, 1).setFontWeight("bold");
+    const sampleCategory = ["NMS", "SDWAN", "General", "ISP Issue"];
+    for (let i = 0; i < sampleCategory.length; i++) {
+      sheet.getRange(i + 2, 1).setValue(sampleCategory[i]);
+    }
+  }
+
+  return "All sheets initialized successfully!";
+}
+
+// ============================================================
+//  TEST FUNCTIONS
+// ============================================================
+
+function testGetAllMetadata() {
+  const result = handleGetAllMetadata();
+  Logger.log(JSON.stringify(result, null, 2));
+}
+
+function testAddTask() {
+  const testData = {
+    category: "General",
+    subject: "Test Task from Script",
+    description: "This is a test task created by Apps Script",
+    followup: "Email to support@example.com",
+    assignedDate: "08/07/2026",
+    cutoffDate: "15/07/2026",
+    assignedTo: "John Doe",
+    workStatus: "Pending",
+    doneBy: "",
+    doneDate: "",
+    remarks: "Test remark"
+  };
+  const result = handleAddTask({ data: testData });
+  Logger.log(JSON.stringify(result, null, 2));
+}
+
+function testGetTasks() {
+  const result = handleGetTasks({ filterStatus: "ALL" });
+  Logger.log("Total tasks: " + (result.records ? result.records.length : 0));
+}
+
+function testUpdateTask() {
+  // Update row 2 (first data row)
+  const testData = {
+    category: "NMS",
+    subject: "Updated Task Subject",
+    description: "This task was updated via script",
+    followup: "Updated followup info",
+    assignedDate: "08/07/2026",
+    cutoffDate: "20/07/2026",
+    assignedTo: "Jane Smith",
+    workStatus: "On Process",
+    doneBy: "",
+    doneDate: "",
+    remarks: "Updated by script"
+  };
+  const result = handleUpdateTask({ data: testData, rowId: 2 });
+  Logger.log(JSON.stringify(result, null, 2));
+}
+
+function testDeleteTask() {
+  const result = handleDeleteTask({ rowId: 2 });
+  Logger.log(JSON.stringify(result, null, 2));
+}
+
+function testAddRefItem() {
+  // Test adding a new category
+  const result = handleAddRefItem({
+    sheetName: SHEET_CATEGORY,
+    value: "New Test Category"
+  });
+  Logger.log(JSON.stringify(result, null, 2));
+}
+
+function testGetRefItems() {
+  const result = handleGetRefItems({ sheetName: SHEET_USERS });
+  Logger.log("Users: " + JSON.stringify(result.items, null, 2));
+}

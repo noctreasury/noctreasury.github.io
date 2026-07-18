@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Fatpipe Device | Processing Management</title>
+    
+    <!-- Local CSS Resources -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
+    <link rel="stylesheet" href="../css/flatpickr.min.css">
+    <link rel="stylesheet" href="../css/sweetalert2.min.css">
+    
+    <style>
+        * { box-sizing: border-box; }.modal-backdrop {background-color: #fff0;}
+        body {
+             background: #fff0;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 20px 16px;
+            margin: 0;
+        }
+        .app-card {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+.page-header {
+    padding: 15px 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+   
+}
+.page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-header-left i {
+    font-size: 1.8rem !important;
+    background: rgb(56 143 251 / 15%) !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    color: #184f83 !important;
+}
+
+
+.page-header-left h1 {
+    margin: 0 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    color: #184f83!important;
+}
+ .page-header-left p {
+            margin: 2px 0 0;
+            opacity: 0.7;
+            font-size: 0.75rem;
+ }
+
+       
+        .form-label {
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+        .btn-primary-custom {
+            background: #0f3b5f;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: white;
+        }
+        .btn-primary-custom:hover {
+            background: #0a2c46;
+            transform: translateY(-1px);
+        }
+        .btn-view {
+            background: #0f3b5f;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 8px 24px;
+            font-weight: 500;
+        }
+        .btn-view:hover {
+            background: #0a2c46;
+        }
+        .form-control, .form-select {
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            padding: 8px 12px;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #0f3b5f;
+            box-shadow: 0 0 0 3px rgba(15,59,95,0.1);
+        }
+        .readonly-field {
+            background-color: #f1f5f9;
+            cursor: not-allowed;
+        }
+        .action-icons i {
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: 0.1s;
+            color: #0f5b9c;
+        }
+        .action-icons i:hover {
+            opacity: 0.7;
+            transform: scale(1.05);
+        }
+        .badge-pending { background-color: #f59e0b; color: white; padding: 4px 10px; border-radius: 30px; font-size: 0.7rem; }
+        .badge-processing { background-color: #3b82f6; color: white; padding: 4px 10px; border-radius: 30px; font-size: 0.7rem; }
+        .badge-completed { background-color: #10b981; color: white; padding: 4px 10px; border-radius: 30px; font-size: 0.7rem; }
+   #global-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+              background: #fff0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            /*backdrop-filter: blur(3px);*/
+        }
+        .modal-content { border-radius: 24px; }
+        .filter-row {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-end;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .filter-row label {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .filter-row select {
+            width: 280px;
+        }
+        .stats-badge {
+            background: #e6f0fa;
+            padding: 5px 12px;
+            border-radius: 40px;
+            color: #0f5b9c;
+            font-size: 0.85rem;
+        }
+        .info-banner {
+            background: #eef2ff;
+            border-radius: 16px;
+            padding: 12px 18px;
+            margin-bottom: 20px;
+            border-left: 5px solid #1e4a76;
+            font-size: 0.85rem;
+        }
+        .update-master-checkbox {
+            background-color: #f8fafc;
+            padding: 12px 15px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        .update-master-checkbox.disabled {
+            background-color: #f1f5f9;
+            opacity: 0.7;
+        }
+        .treasury-info-card {
+            background: #f0f9ff;
+            border-left: 4px solid #0f5b9c;
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            margin-top: 8px;
+        }
+        .device-match-success {
+            color: #10b981;
+            font-weight: 600;
+        }
+        .device-match-fail {
+            color: #ef4444;
+            font-weight: 500;
+        }
+        /* Modal Select2 dropdown z-index fix */
+        .select2-container--bootstrap-5 .select2-dropdown {
+            z-index: 1060 !important;
+        }
+        @media (max-width: 700px) {
+            .content-pane { padding: 20px; }
+            .filter-row select { width: 100%; }
+        }
+        .content-pane {
+            padding: 25px;
+        }
+    </style>
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                  <i class="bi bi-gear-fill"></i>
+
+                    <div>
+                        <h1>Device Complaint / Movement Management</h1>
+                        <p>Manage Received Date, Movement to OEM, Return from OEM, To Branch, Transfer Date, and Remarks</p>
+                    </div>
+                </div>
+            </div>
+<div class="app-card">
+     
+    <div class="content-pane">
+        <div class="filter-row">
+            <div>
+                <label><i class="bi bi-funnel"></i> Choose Branch:</label>
+                <select id="branchFilterSelect" class="form-select">
+                    <option value="">-- All Branches --</option>
+                </select>
+            </div>
+            <div>
+                <button id="viewRecordsBtn" class="btn-view"><i class="bi bi-search"></i> View </button>
+            </div>
+            <div class="ms-auto">
+                <span class="stats-badge" id="recordCount">0 Records</span>
+            </div>
+        </div>
+        
+        <div class="info-banner">
+            <i class="bi bi-info-circle-fill"></i> Click the <i class="bi bi-eye-fill"></i> (Eye) button to edit Processing details.
+        </div>
+        
+        <div class="table-responsive">
+            <table id="processingTable" class="table table-striped table-hover" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Ref ID</th>
+                        <th>Treasury</th>
+                        <th>Branch</th>
+                        <th>Serial No</th>
+                        <th>Device Type</th>
+                        <th>Complaint</th>
+                        <th>Complaint Date</th>
+                        <th>Sent Date</th>
+                        <th>Received Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal for Processing Details -->
+<div class="modal fade" id="editProcessingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Manage Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editRowId">
+                <div class="row g-3">
+                    <div class="col-md-4"><label class="form-label">Reference ID</label><input type="text" id="editRefId" class="form-control" readonly></div>
+                    <div class="col-md-4"><label class="form-label">Treasury</label><input type="text" id="editTreasury" class="form-control" readonly></div>
+                    <div class="col-md-4"><label class="form-label">Branch</label>
+                        <select id="editBranch" class="form-select" required></select>
+                    </div>
+                    <div class="col-md-4"><label class="form-label">Serial No</label><input type="text" id="editSerialNo" class="form-control" readonly></div>
+                    <div class="col-md-4"><label class="form-label">Device Type</label><input type="text" id="editDeviceType" class="form-control" readonly></div>
+                    <div class="col-md-4"><label class="form-label">Complaint Date</label><input type="text" id="editComplaintDate" class="form-control" readonly></div>
+                    <div class="col-12"><label class="form-label">Complaint Remarks</label><textarea id="editComplaint" class="form-control" rows="2" readonly></textarea></div>
+                    
+                    <div class="col-12"><hr><h6 class="mt-2">Processing Details</h6></div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Received Date</label>
+                        <input type="text" id="editReceivedDate" class="form-control flatpickr-received" placeholder="DD/MM/YYYY">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Date of Movement to OEM</label>
+                        <input type="text" id="editMoveToOem" class="form-control flatpickr-move" placeholder="DD/MM/YYYY">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Date of Return from OEM</label>
+                        <input type="text" id="editReturnFromOem" class="form-control flatpickr-return" placeholder="DD/MM/YYYY">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">To Branch</label>
+                        <select id="editToBranch" class="form-select">
+                            <option value="">-- Select Branch --</option>
+                        </select>
+                        <!-- Treasury & Device Status Display -->
+                        <div id="toBranchInfoCard" class="treasury-info-card mt-2" style="display: none;">
+                            <div id="treasuryDisplay"><i class="bi bi-building"></i> <strong>Treasury:</strong> <span id="fetchedTreasury">-</span></div>
+                            <div id="deviceMatchDisplay" class="mt-1"><i class="bi bi-device-ssd"></i> <strong>Device Status:</strong> <span id="deviceMatchText">Checking...</span></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Date of Transfer</label>
+                        <input type="text" id="editTransferDate" class="form-control flatpickr-transfer" placeholder="DD/MM/YYYY">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Remarks with Tracking ID</label>
+                        <textarea id="editRemarks" class="form-control" rows="2" placeholder="Additional remarks"></textarea>
+                    </div>
+                    
+                    <div class="col-12 update-master-checkbox" id="masterCheckboxContainer">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="updateMasterSheetCheckbox" disabled>
+                            <label class="form-check-label" for="updateMasterSheetCheckbox">
+                                <i class="bi bi-cloud-upload"></i> Also update Device Serial Number in Master 
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-info mt-3 mb-0">
+                    <i class="bi bi-info-circle"></i> When "To Branch" is selected, Treasury name and device mapping status will be fetched automatically from Master Sheet.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button id="confirmProcessingUpdateBtn" class="btn btn-primary">Update</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script src="../js/jquery.dataTables.min.js"></script>
+<script src="../js/dataTables.bootstrap5.min.js"></script>
+<script src="../js/select2.min.js"></script>
+<script src="../js/flatpickr.min.js"></script>
+<script src="../js/sweetalert2.all.min.js"></script>
+
+<script>
+    // ================= CONFIGURATION =================
+    const SPREADSHEET_ID = "1MpftwfNIe82kORjP6xeLo1qUh3v6Cr8HHo0oSW2grYA";
+    const BRANCH_SHEET = "Branch and Device Details";
+    const MOVEMENT_SHEET = "Movement_Data";
+    const API_KEY = "AIzaSyDc8tegwi2rgHyDFYm7uWBqVqQ7Fwb3uWM";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw21JXZ_cjcDccSCzLF4Dzu0MJgGIACJ8vApbz4ndItRD6lsB-KkILkKJSWXs9o97AV/exec";
+    
+    let branchesList = [];
+    let movementRecords = [];
+    let dataTable = null;
+    let currentFilterBranch = "";
+    let flatpickrReceived, flatpickrMove, flatpickrReturn, flatpickrTransfer;
+    
+    // Master Sheet Data: Array of { treasury, branch, serialNo }
+    let masterDevicesList = [];
+    
+    function showGlobalLoading(msg) {
+        if($('#global-loading-overlay').length) return;
+        $('body').append(`<div id="global-loading-overlay"><div style="background:white;padding:30px;border-radius:24px;text-align:center;"><i class="bi bi-arrow-repeat" style="font-size:48px;color:#0f3b5f;animation:spin 1s linear infinite;"></i><p>${msg}</p></div></div>`);
+    }
+    function hideGlobalLoading() { $('#global-loading-overlay').remove(); }
+    
+    function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
+    
+    // Fetch Master Sheet Data (Columns: A=Treasury, B=Branch, C=Serial No)
+    async function fetchMasterDeviceData() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(BRANCH_SHEET)}!A:C?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            const devices = [];
+            for(let i=1; i<rows.length; i++) {
+                const row = rows[i];
+                const treasury = row[0] ? row[0].trim() : "";
+                const branch = row[1] ? row[1].trim() : "";
+                const serialNo = row[2] ? row[2].trim() : "";
+                if(branch && serialNo) {
+                    devices.push({ treasury, branch, serialNo });
+                } else if(branch) {
+                    devices.push({ treasury, branch, serialNo: "" });
+                }
+            }
+            masterDevicesList = devices;
+            console.log("Master data loaded:", masterDevicesList.length, "entries");
+            return devices;
+        } catch(e) { console.error("Error fetching master data:", e); return []; }
+    }
+    
+    // Get Treasury and Device Mapping Status for a given branch and serial number
+    function getTreasuryAndDeviceStatus(toBranch, deviceSerialNo) {
+        if(!toBranch || toBranch === "") {
+            return { treasury: "", deviceMatched: false, message: "" };
+        }
+        // Find matching branch in master sheet
+        const branchEntries = masterDevicesList.filter(item => item.branch === toBranch);
+        if(branchEntries.length === 0) {
+            return { treasury: "Not Found", deviceMatched: false, message: "No treasury mapping for this branch." };
+        }
+        // Get treasury (take first occurrence, usually consistent per branch)
+        const treasuryValue = branchEntries[0].treasury || "—";
+        
+        // Check if device serial number exists in any entry for this branch
+        const deviceExists = branchEntries.some(item => item.serialNo === deviceSerialNo && deviceSerialNo !== "");
+        let deviceMatched = deviceExists;
+        let deviceMessage = "";
+        if(deviceMatched) {
+            deviceMessage = "✓ Device Serial Number is registered in Master Sheet for this branch.";
+        } else {
+            if(deviceSerialNo === "") {
+                deviceMessage = "⚠ No Device Serial Number available to verify.";
+            } else {
+                deviceMessage = "✗ Device Serial Number NOT found in Master Sheet for this branch. Update Master required.";
+            }
+        }
+        return { treasury: treasuryValue, deviceMatched, message: deviceMessage };
+    }
+    
+    function parseDMYToDate(dateStr) {
+        if(!dateStr) return null;
+        let parts = dateStr.split('/');
+        if(parts.length === 3) {
+            return new Date(parts[2], parts[1]-1, parts[0]);
+        }
+        return null;
+    }
+    
+    function formatDateForCompare(dateStr) {
+        const date = parseDMYToDate(dateStr);
+        if(!date) return null;
+        return date.getTime();
+    }
+    
+    function validateDateOrder(receivedDate, moveToOem, returnFromOem, transferDate) {
+        const received = formatDateForCompare(receivedDate);
+        const move = formatDateForCompare(moveToOem);
+        const returnDt = formatDateForCompare(returnFromOem);
+        const transfer = formatDateForCompare(transferDate);
+        
+        if(received && move && move < received) {
+            return { valid: false, message: "Date of Movement to OEM cannot be before Received Date." };
+        }
+        if(move && returnDt && returnDt < move) {
+            return { valid: false, message: "Date of Return from OEM cannot be before Date of Movement to OEM." };
+        }
+        if(returnDt && transfer && transfer < returnDt) {
+            return { valid: false, message: "Date of Transfer cannot be before Date of Return from OEM." };
+        }
+        return { valid: true };
+    }
+    
+    async function fetchBranches() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(BRANCH_SHEET)}!B:B?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            const branches = [];
+            for(let i=1; i<rows.length; i++) {
+                const branch = rows[i] && rows[i][0] ? rows[i][0].trim() : "";
+                if(branch) branches.push(branch);
+            }
+            branchesList = [...new Set(branches)]; // unique branches
+            return branchesList;
+        } catch(e) { console.error("Error fetching branches:", e); return []; }
+    }
+    
+    async function fetchMovementRecords() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(MOVEMENT_SHEET)}!A:O?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            const records = [];
+            for(let i=1; i<rows.length; i++) {
+                const row = rows[i];
+                if(row.length > 0 && row[0]) {
+                    records.push({
+                        id: i,
+                        refId: row[0] || "",
+                        treasury: row[1] || "",
+                        serialNo: row[2] || "",
+                        deviceType: row[3] || "",
+                        fromBranch: row[4] || "",
+                        complaintRemarks: row[5] || "",
+                        complaintDate: row[6] || "",
+                        sentToAddress: row[7] || "",
+                        sentDate: row[8] || "",
+                        receivedDate: row[9] || "",
+                        moveToOem: row[10] || "",
+                        returnFromOem: row[11] || "",
+                        toBranch: row[12] || "",
+                        transferDate: row[13] || "",
+                        remarks: row[14] || ""
+                    });
+                }
+            }
+            movementRecords = records;
+            return records;
+        } catch(e) { console.error("Error fetching movement records:", e); return []; }
+    }
+    
+    function populateBranchDropdown(branches) {
+        const $filterSelect = $('#branchFilterSelect');
+        $filterSelect.empty();
+        $filterSelect.append('<option value="">-- All Branches --</option>');
+        branches.forEach(branch => {
+            $filterSelect.append(`<option value="${escapeHtml(branch)}">${escapeHtml(branch)}</option>`);
+        });
+        $filterSelect.select2({ theme: 'bootstrap-5', width: '100%', placeholder: 'Select branch to filter', allowClear: true });
+        
+        const $editBranch = $('#editBranch');
+        $editBranch.empty();
+        $editBranch.append('<option value="">-- Select Branch --</option>');
+        branches.forEach(branch => {
+            $editBranch.append(`<option value="${escapeHtml(branch)}">${escapeHtml(branch)}</option>`);
+        });
+        $editBranch.select2({ theme: 'bootstrap-5', width: '100%', placeholder: 'Select branch', allowClear: true });
+        
+        const $editToBranch = $('#editToBranch');
+        $editToBranch.empty();
+        $editToBranch.append('<option value="">-- Select Branch --</option>');
+        branches.forEach(branch => {
+            $editToBranch.append(`<option value="${escapeHtml(branch)}">${escapeHtml(branch)}</option>`);
+        });
+        $editToBranch.select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Search and select destination branch',
+            allowClear: true,
+            dropdownParent: $('#editProcessingModal')
+        });
+        
+        $editToBranch.on('change', function() {
+            const $checkbox = $('#updateMasterSheetCheckbox');
+            const $container = $('#masterCheckboxContainer');
+            const selectedBranch = $(this).val();
+            if(selectedBranch && selectedBranch !== "") {
+                $checkbox.prop('disabled', false);
+                $container.removeClass('disabled');
+                // Fetch treasury & device status for this branch + current serial no
+                const serialNo = $("#editSerialNo").val();
+                const statusInfo = getTreasuryAndDeviceStatus(selectedBranch, serialNo);
+                updateTreasuryAndDeviceUI(statusInfo);
+            } else {
+                $checkbox.prop('disabled', true);
+                $checkbox.prop('checked', false);
+                $container.addClass('disabled');
+                $('#toBranchInfoCard').hide();
+            }
+        });
+    }
+    
+    function updateTreasuryAndDeviceUI(statusInfo) {
+        if(statusInfo.treasury) {
+            $('#fetchedTreasury').html(escapeHtml(statusInfo.treasury));
+            $('#treasuryDisplay').show();
+            if(statusInfo.deviceMatched) {
+                $('#deviceMatchText').html(`<span class="device-match-success"><i class="bi bi-check-circle-fill"></i> ${escapeHtml(statusInfo.message)}</span>`);
+            } else {
+                $('#deviceMatchText').html(`<span class="device-match-fail"><i class="bi bi-exclamation-triangle-fill"></i> ${escapeHtml(statusInfo.message)}</span>`);
+            }
+            $('#toBranchInfoCard').show();
+        } else {
+            $('#toBranchInfoCard').hide();
+        }
+    }
+    
+    function getStatusBadge(row) {
+        if(row.receivedDate && row.receivedDate.trim() !== "") {
+            return '<span class="badge-completed"><i class="bi bi-check-circle-fill me-1"></i>Delivered</span>';
+        } else if(row.moveToOem || row.returnFromOem || row.toBranch) {
+            return '<span class="badge-processing"><i class="bi bi-arrow-repeat me-1"></i>Processing</span>';
+        } else {
+            return '<span class="badge-pending"><i class="bi bi-clock-history me-1"></i>Pending</span>';
+        }
+    }
+    
+    function attachTableEvents() {
+        $('.edit-processing').off('click').on('click', function() {
+            const id = $(this).data('id');
+            const record = movementRecords.find(r => r.id === id);
+            if(record) {
+                openEditModal(record);
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Record not found' });
+            }
+        });
+    }
+    
+    async function loadAndRenderTable() {
+        showGlobalLoading("Loading records...");
+        const records = await fetchMovementRecords();
+        movementRecords = records;
+        
+        let filteredRecords = records;
+        if(currentFilterBranch && currentFilterBranch !== "") {
+            filteredRecords = records.filter(r => r.fromBranch === currentFilterBranch);
+        }
+        const sortedRecords = [...filteredRecords].sort((a, b) => b.id - a.id);
+        $('#recordCount').text(`${sortedRecords.length} Records`);
+        
+        if(dataTable) {
+            dataTable.destroy();
+            $('#processingTable tbody').empty();
+        }
+        
+        dataTable = $('#processingTable').DataTable({
+            data: sortedRecords,
+            columns: [
+                { data: "refId" },
+                { data: "treasury" },
+                { data: "fromBranch" },
+                { data: "serialNo" },
+                { data: "deviceType" },
+                { data: "complaintRemarks", render: d => d ? d.substring(0, 40) + (d.length > 40 ? '...' : '') : '' },
+                { data: "complaintDate" },
+                { data: "sentDate", render: d => d && d.trim() !== "" ? d : '—' },
+                { data: "receivedDate", render: d => d && d.trim() !== "" ? d : '—' },
+                { data: null, render: (row) => getStatusBadge(row) },
+                { data: null, render: (row) => `
+                    <div class="action-icons">
+                        <i class="bi bi-eye-fill edit-processing" data-id="${row.id}" style="cursor:pointer; font-size:1.2rem;" title="Edit Processing Details"></i>
+                    </div>
+                ` }
+            ],
+            order: [[6, 'desc']],
+            pageLength: 25,
+            language: { search: "Filter:" },
+            drawCallback: function() {
+                attachTableEvents();
+            }
+        });
+        attachTableEvents();
+        hideGlobalLoading();
+    }
+    
+    function initFlatpickrForModal() {
+        if(flatpickrReceived) flatpickrReceived.destroy();
+        if(flatpickrMove) flatpickrMove.destroy();
+        if(flatpickrReturn) flatpickrReturn.destroy();
+        if(flatpickrTransfer) flatpickrTransfer.destroy();
+        flatpickrReceived = flatpickr("#editReceivedDate", { dateFormat: "d/m/Y" });
+        flatpickrMove = flatpickr("#editMoveToOem", { dateFormat: "d/m/Y" });
+        flatpickrReturn = flatpickr("#editReturnFromOem", { dateFormat: "d/m/Y" });
+        flatpickrTransfer = flatpickr("#editTransferDate", { dateFormat: "d/m/Y" });
+    }
+    
+    function openEditModal(record) {
+        $("#editRowId").val(record.id);
+        $("#editRefId").val(record.refId);
+        $("#editTreasury").val(record.treasury);
+        $("#editBranch").val(record.fromBranch).trigger('change');
+        $("#editSerialNo").val(record.serialNo);
+        $("#editDeviceType").val(record.deviceType);
+        $("#editComplaintDate").val(record.complaintDate);
+        $("#editComplaint").val(record.complaintRemarks);
+        $("#editReceivedDate").val(record.receivedDate || '');
+        $("#editMoveToOem").val(record.moveToOem || '');
+        $("#editReturnFromOem").val(record.returnFromOem || '');
+        $("#editToBranch").val(record.toBranch || '').trigger('change');
+        $("#editTransferDate").val(record.transferDate || '');
+        $("#editRemarks").val(record.remarks || '');
+        
+        const $checkbox = $('#updateMasterSheetCheckbox');
+        const $container = $('#masterCheckboxContainer');
+        if(record.toBranch && record.toBranch !== "") {
+            $checkbox.prop('disabled', false);
+            $container.removeClass('disabled');
+            const serialNo = record.serialNo;
+            const statusInfo = getTreasuryAndDeviceStatus(record.toBranch, serialNo);
+            updateTreasuryAndDeviceUI(statusInfo);
+        } else {
+            $checkbox.prop('disabled', true);
+            $checkbox.prop('checked', false);
+            $container.addClass('disabled');
+            $('#toBranchInfoCard').hide();
+        }
+        
+        initFlatpickrForModal();
+        const modal = new bootstrap.Modal(document.getElementById('editProcessingModal'));
+        modal.show();
+        
+        setTimeout(() => {
+            const $editToBranch = $('#editToBranch');
+            if ($editToBranch.data('select2')) $editToBranch.select2('destroy');
+            $editToBranch.select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: 'Search and select destination branch',
+                allowClear: true,
+                dropdownParent: $('#editProcessingModal')
+            });
+            $editToBranch.val(record.toBranch || '').trigger('change');
+        }, 100);
+    }
+    
+    async function updateProcessingDetails() {
+        const id = $("#editRowId").val();
+        const receivedDate = $("#editReceivedDate").val() || "";
+        const moveToOem = $("#editMoveToOem").val() || "";
+        const returnFromOem = $("#editReturnFromOem").val() || "";
+        const toBranch = $("#editToBranch").val() || "";
+        const transferDate = $("#editTransferDate").val() || "";
+        const remarks = $("#editRemarks").val().trim() || "";
+        const branch = $("#editBranch").val();
+        const updateMaster = $("#updateMasterSheetCheckbox").is(":checked");
+        const deviceSerialNo = $("#editSerialNo").val();
+        const deviceType = $("#editDeviceType").val();
+        
+        if(!branch) {
+            Swal.fire({ icon: 'warning', title: 'Missing', text: 'Please select a branch' });
+            return;
+        }
+        const dateValidation = validateDateOrder(receivedDate, moveToOem, returnFromOem, transferDate);
+        if(!dateValidation.valid) {
+            Swal.fire({ icon: 'warning', title: 'Invalid Date Order', text: dateValidation.message });
+            return;
+        }
+        
+        const payload = {
+            action: "UPDATE_PROCESSING",
+            rowId: parseInt(id),
+            receivedDate: receivedDate,
+            moveToOem: moveToOem,
+            returnFromOem: returnFromOem,
+            toBranch: toBranch,
+            transferDate: transferDate,
+            remarks: remarks,
+            branch: branch,
+            updateMasterSheet: updateMaster,
+            deviceSerialNo: deviceSerialNo,
+            deviceType: deviceType
+        };
+        
+        const $btn = $("#confirmProcessingUpdateBtn");
+        const originalHtml = $btn.html();
+        $btn.html('<i class="bi bi-arrow-repeat"></i> Updating...').prop('disabled', true);
+        showGlobalLoading("Updating processing details...");
+        try {
+            await fetch(APPS_SCRIPT_URL, { 
+                method: "POST", 
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" }, 
+                body: JSON.stringify(payload) 
+            });
+            hideGlobalLoading();
+            Swal.fire({ icon: 'success', title: 'Updated!', text: 'Processing details updated successfully', timer: 1500, showConfirmButton: false });
+            bootstrap.Modal.getInstance(document.getElementById('editProcessingModal')).hide();
+            await loadAndRenderTable();
+        } catch(e) {
+            hideGlobalLoading();
+            console.error("Update error:", e);
+            Swal.fire({ icon: 'error', title: 'Update Failed', text: e.message });
+        } finally {
+            $btn.html(originalHtml).prop('disabled', false);
+        }
+    }
+    
+    async function applyFilter() {
+        currentFilterBranch = $('#branchFilterSelect').val();
+        await loadAndRenderTable();
+    }
+    
+    $(async function() {
+        showGlobalLoading("Loading application data...");
+        await Promise.all([fetchBranches(), fetchMasterDeviceData()]);
+        populateBranchDropdown(branchesList);
+        currentFilterBranch = "";
+        await loadAndRenderTable();
+        hideGlobalLoading();
+        $('#viewRecordsBtn').on('click', applyFilter);
+        $('#confirmProcessingUpdateBtn').on('click', updateProcessingDetails);
+        $('#branchFilterSelect').on('change', function() { applyFilter(); });
+        initFlatpickrForModal();
+    });
+</script>
+</body>
+</html>

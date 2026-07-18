@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Author Registration - NOC / blog </title>
+	 <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="../images/favicon.svg">
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --success: #10b981;
+            --danger: #ef4444;
+            --gray-bg: #f8fafc;
+            --card-border: #e2e8f0;
+        }
+        body {
+           background: #f8fafc;
+            min-height: 100vh;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            padding: 2rem 1rem;
+        }
+        .registration-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .registration-card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            border: 1px solid var(--card-border);
+        }
+        .registration-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .registration-header i {
+            font-size: 3rem;
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .registration-header h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-top: 0.5rem;
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .registration-header p {
+            color: #64748b;
+            margin-top: 0.5rem;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+        .required:after {
+            content: " *";
+            color: var(--danger);
+        }
+        .form-control, .form-select {
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--card-border);
+            transition: all 0.2s;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            outline: none;
+        }
+        .input-group-text {
+            background: transparent;
+            border-right: none;
+            border-radius: 0.75rem 0 0 0.75rem;
+        }
+        .input-group .form-control {
+            border-left: none;
+            border-radius: 0 0.75rem 0.75rem 0;
+        }
+        .btn-register {
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            border: none;
+            border-radius: 0.75rem;
+            padding: 0.85rem;
+            font-weight: 600;
+            font-size: 1rem;
+            width: 100%;
+            color: white;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
+        }
+        .btn-register:disabled {
+            opacity: 0.7;
+            transform: none;
+        }
+        .password-requirements {
+            font-size: 0.7rem;
+            color: #64748b;
+            margin-top: 0.5rem;
+        }
+        .password-requirements .valid {
+            color: var(--success);
+        }
+        .password-requirements .invalid {
+            color: var(--danger);
+        }
+        .toast-custom {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1f1f1f;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 48px;
+            z-index: 1090;
+            opacity: 0;
+            transition: opacity 0.25s;
+            pointer-events: none;
+        }
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+        }
+        .spinner-overlay.active {
+            visibility: visible;
+        }
+        .spinner-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+        }
+        .login-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--card-border);
+        }
+        .login-link a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+        .image-preview {
+            margin-top: 0.5rem;
+            display: none;
+        }
+        .image-preview img {
+            max-width: 100px;
+            max-height: 100px;
+            border-radius: 0.5rem;
+            object-fit: cover;
+        }
+        @media (max-width: 768px) {
+            .registration-card {
+                padding: 1.5rem;
+            }
+            .registration-header h2 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="registration-container">
+        <div class="registration-card">
+            <div class="registration-header">
+                <i class="bi bi-person-plus-fill"></i>
+                <h2>Author Registration</h2>
+                <p>Join as a blog author</p>
+            </div>
+
+            <form id="registrationForm">
+                <!-- Author Name -->
+                <div class="mb-3">
+                    <label class="form-label required">Author Name</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                        <input type="text" class="form-control" id="authorName" placeholder="Enter your full name" required>
+                    </div>
+                    <div class="form-text">This will be displayed as the post author</div>
+                </div>
+
+                <!-- Designation -->
+                <div class="mb-3">
+                    <label class="form-label">Designation</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-briefcase"></i></span>
+                        <input type="text" class="form-control" id="designation" placeholder="e.g., Senior Writer, Tech Lead">
+                    </div>
+                </div>
+
+                <!-- About -->
+                <div class="mb-3">
+                    <label class="form-label">About</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-info-circle"></i></span>
+                        <textarea class="form-control" id="about" rows="3" placeholder="Tell us about yourself..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Profile Image URL -->
+                <div class="mb-3">
+                    <label class="form-label">Profile Image URL</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-image"></i></span>
+                        <input type="url" class="form-control" id="imageUrl" placeholder="https://example.com/profile.jpg">
+                    </div>
+                    <div class="image-preview" id="imagePreview">
+                        <img id="previewImg" src="" alt="Preview">
+                    </div>
+                    <div class="form-text">Enter a URL for your profile picture (optional)</div>
+                </div>
+
+                <!-- Email ID -->
+                <div class="mb-3">
+                    <label class="form-label required">Email ID</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                        <input type="email" class="form-control" id="email" placeholder="you@example.com" required>
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div class="mb-3">
+                    <label class="form-label required">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                        <input type="password" class="form-control" id="password" placeholder="Create a password" required>
+                    </div>
+                    <div class="password-requirements" id="passwordRequirements">
+                        <small><i class="bi bi-shield-check"></i> Password must have:</small>
+                        <div><i class="bi bi-dot" id="lengthReq"></i> At least 6 characters</div>
+                    </div>
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="mb-4">
+                    <label class="form-label required">Confirm Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                        <input type="password" class="form-control" id="confirmPassword" placeholder="Confirm your password" required>
+                    </div>
+                    <div class="form-text" id="passwordMatchMsg"></div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn-register" id="submitBtn">
+                    <i class="bi bi-person-check"></i> Register Account
+                </button>
+
+                <div class="login-link">
+                    Already have an account? <a href="login.html">Sign In</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="spinnerOverlay" class="spinner-overlay">
+        <div class="spinner-box">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 mb-0">Creating your account...</p>
+        </div>
+    </div>
+
+    <!-- Toast Message -->
+    <div id="liveToast" class="toast-custom"><i class="bi bi-check-lg me-2"></i><span id="toastMsg"></span></div>
+
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="config.js"></script>
+    <script>
+        // Show toast message
+        function showToastMessage(msg, isError = false) {
+            const toastEl = document.getElementById('liveToast');
+            const span = document.getElementById('toastMsg');
+            span.innerText = msg;
+            toastEl.style.background = isError ? '#dc2626' : '#1f1f1f';
+            toastEl.style.opacity = '1';
+            setTimeout(() => { toastEl.style.opacity = '0'; }, 3000);
+        }
+
+        // Set loading state
+        function setLoading(loading) {
+            const spinner = document.getElementById('spinnerOverlay');
+            const submitBtn = document.getElementById('submitBtn');
+            if (loading) {
+                spinner.classList.add('active');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Registering...';
+            } else {
+                spinner.classList.remove('active');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-person-check"></i> Register Account';
+            }
+        }
+
+        // Image preview
+        document.getElementById('imageUrl').addEventListener('input', function() {
+            const url = this.value.trim();
+            const previewDiv = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+            if (url) {
+                previewImg.src = url;
+                previewDiv.style.display = 'block';
+                previewImg.onerror = function() {
+                    previewDiv.style.display = 'none';
+                };
+            } else {
+                previewDiv.style.display = 'none';
+            }
+        });
+
+        // Password validation
+        function validatePassword() {
+            const password = document.getElementById('password').value;
+            const lengthReq = document.getElementById('lengthReq');
+            
+            let isValid = true;
+            
+            if (password.length >= 6) {
+                lengthReq.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> At least 6 characters';
+            } else {
+                lengthReq.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i> At least 6 characters';
+                isValid = false;
+            }
+            
+            return isValid && password.length >= 6;
+        }
+
+        // Password match check
+        function checkPasswordMatch() {
+            const password = document.getElementById('password').value;
+            const confirm = document.getElementById('confirmPassword').value;
+            const msgDiv = document.getElementById('passwordMatchMsg');
+            
+            if (confirm === '') {
+                msgDiv.innerHTML = '';
+                return false;
+            }
+            
+            if (password === confirm) {
+                msgDiv.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> Passwords match';
+                return true;
+            } else {
+                msgDiv.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i> Passwords do not match';
+                return false;
+            }
+        }
+
+        document.getElementById('password').addEventListener('input', function() {
+            validatePassword();
+            checkPasswordMatch();
+        });
+        
+        document.getElementById('confirmPassword').addEventListener('input', checkPasswordMatch);
+
+        // Check if author exists
+        async function checkAuthorExists(authorName, email) {
+            try {
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/Profiles!A:H?key=${CONFIG.API_KEY}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                const rows = data.values || [];
+                
+                for (let i = 1; i < rows.length; i++) {
+                    if (rows[i][0] && rows[i][0].trim().toLowerCase() === authorName.toLowerCase()) {
+                        return { exists: true, field: 'author' };
+                    }
+                    if (rows[i][6] && rows[i][6].trim().toLowerCase() === email.toLowerCase()) {
+                        return { exists: true, field: 'email' };
+                    }
+                }
+                return { exists: false };
+            } catch(error) {
+                console.error('Error checking author:', error);
+                return { exists: false };
+            }
+        }
+
+        // Submit registration
+        document.getElementById('registrationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Get form values
+            const authorName = document.getElementById('authorName').value.trim();
+            const designation = document.getElementById('designation').value.trim();
+            const about = document.getElementById('about').value.trim();
+            const imageUrl = document.getElementById('imageUrl').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Validation
+            if (!authorName) {
+                showToastMessage('Please enter author name', true);
+                return;
+            }
+            
+            if (!email) {
+                showToastMessage('Please enter email address', true);
+                return;
+            }
+            
+            if (!email.includes('@') || !email.includes('.')) {
+                showToastMessage('Please enter a valid email address', true);
+                return;
+            }
+            
+            if (!password) {
+                showToastMessage('Please enter a password', true);
+                return;
+            }
+            
+            if (password.length < 6) {
+                showToastMessage('Password must be at least 6 characters', true);
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showToastMessage('Passwords do not match', true);
+                return;
+            }
+            
+            setLoading(true);
+            
+            try {
+                // Check if author already exists
+                const check = await checkAuthorExists(authorName, email);
+                if (check.exists) {
+                    if (check.field === 'author') {
+                        showToastMessage('Author name already exists. Please choose a different name.', true);
+                    } else {
+                        showToastMessage('Email already registered. Please use a different email.', true);
+                    }
+                    setLoading(false);
+                    return;
+                }
+                
+                // Prepare data for Apps Script
+                const formData = new FormData();
+                formData.append('action', 'registerAuthor');
+                formData.append('authorName', authorName);
+                formData.append('designation', designation);
+                formData.append('about', about);
+                formData.append('imageUrl', imageUrl);
+                formData.append('email', email);
+                formData.append('password', password);
+                formData.append('confirm', 'No'); // Default to No until admin approves
+                
+                const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToastMessage('Registration successful! Please wait for admin approval.');
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
+                } else {
+                    throw new Error(result.error || 'Registration failed');
+                }
+            } catch(error) {
+                console.error('Registration error:', error);
+                showToastMessage('Registration failed: ' + error.message, true);
+                setLoading(false);
+            }
+        });
+    </script>
+</body>
+</html>

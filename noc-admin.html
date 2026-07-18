@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOC Admin</title>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- Bootstrap 5.3 + icons -->
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <link rel="stylesheet" href="./css/bootstrap-icons.min.css">
+    <!-- Google Fonts: Noto Malayalam -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Local CSS -->
+    <link rel="stylesheet" href="./css/main-style.css">
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/network/manifest.json">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="./images/favicon.svg">
+    <link rel="icon" type="image/png" sizes="192x192" href="./images/favicon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="./images/favicon-512x512.png">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="./images/favicon-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./images/favicon-192x192.png">
+    
+    <!-- iOS specific meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="NOC Admin">
+</head>
+<body class="light-theme">
+    <!-- Login Overlay -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <div class="login-logo">
+                        <i class="bi bi-compass"></i>
+                    </div>
+                    <h2>NOC Admin</h2>
+                    <p>Network Operations Center</p>
+                </div>
+                <div class="login-body">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" placeholder="Enter username">
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" placeholder="Enter password">
+                    </div>
+                    
+                    <!-- Error Message Footer -->
+                    <div class="login-error" id="loginError" style="display: none;">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span id="errorMessageText">Invalid username or password</span>
+                    </div>
+                    
+                    <button class="btn btn-primary w-100" id="loginBtn">
+                        <span class="spinner-border spinner-border-sm d-none" id="loginSpinner" role="status" aria-hidden="true"></span>
+                        <span id="loginText">Login</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard (initially hidden) -->
+    <div class="dashboard-container" id="dashboardContainer" style="display: none;">
+
+     <!-- Flash News Ticker Container -->
+        <div id="flashNewsContainer" class="flash-news-container hidden">
+            <div class="flash-news-ticker" id="flashNewsTicker">
+                <!-- Dynamic content will be inserted here -->
+            </div>
+        </div>
+
+      
+        <!-- Wrapper: sidebar + content -->
+        <div class="wrapper">
+            <!-- Desktop sidebar -->
+            <div class="sidebar d-none d-lg-block" id="desktopSidebarContainer">
+                <div class="sidebar-menu-container" id="desktopSidebar">
+                    <div class="text-muted p-3">
+                        <div class="loading-spinner"></div> Loading menu...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content area with iframe -->
+            <div class="content-area">
+                <iframe id="content-frame" src="about:blank" title="Content"></iframe>
+                <div class="loading" id="loading">
+                    <div class="loading-spinner"></div> Loading...
+                </div>
+                <div class="welcome-message" id="welcome-message">
+                    <h2><i class="bi bi-compass"></i> NOC Admin</h2>
+                    <p>Select a menu item to get started</p>
+                    <p class="text-muted mt-3" style="font-size: 0.9rem;">Network Operations Center</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile offcanvas sidebar -->
+        <div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="mobileMenuOffcanvas" aria-labelledby="offcanvasLabel">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="offcanvasLabel">
+                    <i class="bi bi-compass me-2"></i>NOC Admin
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body" id="mobileSidebar">
+                <div class="text-muted">
+                    <div class="loading-spinner"></div> Loading menu...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- scripts -->
+    <script src="./js/bootstrap.bundle.min.js"></script>
+    <script src="./js/main-script.js"></script>
+</body>
+</html>

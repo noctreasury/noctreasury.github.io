@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    
+    <meta property="og:title" content="Tag | NOC Blog">
+    <meta property="og:description" content="Browse articles by tag on NOC Blog">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="NOC Blog">
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Tag | NOC Blog">
+    <meta name="twitter:description" content="Browse articles by tag on NOC Blog">
+    
+    <link rel="icon" type="image/svg+xml" href="../images/favicon.svg">
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/blog.css">
+    <style>
+        /* Global Styles & Fonts */
+        * {
+            font-family: 'Google Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        body {
+            background: #f8fafc;
+        }
+        
+        /* EXACT MATCH of original tag-header style from attached HTML */
+        .tag-header {
+            background: linear-gradient(135deg, #001b9d, #001b9d);
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+        }
+        .tag-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        .tag-header .tag-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .post-count-badge {
+            background: rgba(255,255,255,0.2);
+            border-radius: 9999px;
+            padding: 0.25rem 1rem;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin-top: 0.5rem;
+        }
+        
+        /* Card styles (modern but clean) */
+        .card-blog {
+            background: white;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            cursor: pointer;
+            border: 1px solid #eef2ff;
+        }
+        
+        .card-blog:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 25px -12px rgba(0, 27, 157, 0.15);
+            border-color: #cbd5e1;
+        }
+        
+        .card-img-top {
+            height: 200px;
+            object-fit: cover;
+            width: 100%;
+            background: #eef2ff;
+        }
+        
+        .category-badge {
+            background: #eef2ff;
+            color: #1e3a8a;
+            padding: 0.25rem 1rem;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: inline-block;
+            transition: all 0.2s;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+        }
+        
+        .category-badge:hover {
+            background: #1e3a8a;
+            color: white;
+        }
+        
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0.75rem 0 0.5rem 0;
+            line-height: 1.4;
+        }
+        
+        .text-truncate-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .read-more-btn {
+            border-radius: 40px;
+            font-size: 0.8rem;
+            padding: 0.3rem 1rem;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+        
+        /* TAG CLOUD SECTION */
+        .tag-cloud-section {
+            background: white;
+            border-radius: 2rem;
+            padding: 2rem 1.8rem;
+            margin: 3rem 0 2rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.02);
+            border: 1px solid #eef2ff;
+        }
+        
+        .tag-cloud-title {
+            font-size: 1.6rem;
+            font-weight: 650;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            color: #0b2b9e;
+            margin-bottom: 1.8rem;
+            letter-spacing: -0.2px;
+            border-left: 5px solid #001b9d;
+            padding-left: 1rem;
+        }
+        
+        .tag-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem 1rem;
+            align-items: center;
+            justify-content: flex-start;
+        }
+        
+        .cloud-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #f1f5f9;
+            border-radius: 60px;
+            padding: 0.45rem 1.2rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #0f172a;
+            text-decoration: none;
+            transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            border: 1px solid #e2e8f0;
+        }
+        
+        .cloud-tag i {
+            font-size: 0.85rem;
+            color: #4f46e5;
+            transition: transform 0.15s;
+        }
+        
+        .cloud-tag:hover {
+            background: #001b9d;
+            color: white;
+            transform: translateY(-3px) scale(1.02);
+            border-color: #001b9d;
+            box-shadow: 0 10px 15px -6px rgba(0, 27, 157, 0.3);
+        }
+        
+        .cloud-tag:hover i {
+            color: white;
+        }
+        
+        /* Frequency-based sizes */
+        .cloud-tag[data-weight="high"] {
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 0.5rem 1.5rem;
+        }
+        
+        .cloud-tag[data-weight="medium"] {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .cloud-tag[data-weight="low"] {
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 0.35rem 1rem;
+        }
+        
+        .no-results-tag {
+            text-align: center;
+            padding: 3rem 2rem;
+            background: white;
+            border-radius: 1.5rem;
+        }
+        
+        .skeleton-loader {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 0.75rem;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .toast-custom {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: #1f1f1f;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 14px;
+            z-index: 1100;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+            pointer-events: none;
+        }
+        
+        footer {
+            border-top: 1px solid #e2e8f0;
+            background: white;
+        }
+        
+        @media (max-width: 768px) {
+            .tag-header h1 { font-size: 2rem; }
+            .cloud-tag { padding: 0.3rem 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header id="main-header"></header>
+
+<main>
+    <!-- tag-header style EXACTLY as original: gradient #001b9d, same padding and icon style -->
+    <div class="tag-header text-center">
+        <div class="container">
+            <div class="tag-icon">
+                <i class="bi bi-tags-fill"></i> Tag
+            </div>
+            <h1 id="tagName">Loading...</h1>
+            <div class="post-count-badge" id="postCount">0 posts</div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- Posts Grid -->
+        <div id="postsContainer" class="row g-4">
+            <div class="text-center p-5" id="loadingSpinner">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2">Loading posts...</p>
+            </div>
+        </div>
+
+        <!-- ========== BEAUTIFUL TAG CLOUD SECTION (all tags from column C) ========== -->
+        <div id="tagCloudWrapper" style="display: none;">
+            <div class="tag-cloud-section">
+                <div class="tag-cloud-title">
+                    <i class="bi bi-cloud-arrow-up-fill" style="font-size: 1.8rem;"></i> 
+                    All Tags from Your Blog
+                </div>
+                <div id="tagCloudContainer" class="tag-cloud">
+                    <div class="text-muted text-center w-100 py-3">Loading tag cloud...</div>
+                </div>
+                <div class="text-muted small mt-3 ms-2">
+                    <i class="bi bi-info-circle-fill"></i> Click any tag to browse related articles
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="py-4 mt-4">
+    <div class="container text-center text-muted small">
+        <i class="bi bi-c-circle"></i> NOC / blog 
+    </div>
+</footer>
+
+<div id="liveToast" class="toast-custom"><i class="bi bi-check-lg me-2"></i><span id="toastMsg"></span></div>
+
+<script src="js/bootstrap.bundle.min.js"></script>
+<script src="config.js"></script>
+<script>
+// ======================== UTILITY FUNCTIONS ========================
+function showToastMessage(msg, isError = false) {
+    const toastEl = document.getElementById('liveToast');
+    const span = document.getElementById('toastMsg');
+    if (!toastEl || !span) return;
+    span.innerText = msg;
+    toastEl.style.background = isError ? '#d32f2f' : '#001b9d';
+    toastEl.style.opacity = '1';
+    setTimeout(() => { toastEl.style.opacity = '0'; }, 2700);
+}
+
+function extractFirstImage(html) {
+    if (!html) return null;
+    const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+    return match ? match[1] : null;
+}
+
+function stripHtml(html) {
+    let temp = document.createElement("div");
+    temp.innerHTML = html;
+    return temp.textContent || temp.innerText || "";
+}
+
+function escapeHtml(str) { 
+    if(!str) return ''; 
+    return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m] || m)); 
+}
+
+// Navigation helpers
+function navigateToPost(postId) {
+    window.location.href = `post.html?id=${postId}`;
+}
+
+function navigateToCategory(category) {
+    window.location.href = `category.html?category=${encodeURIComponent(category)}`;
+}
+
+function navigateToTag(tag) {
+    window.location.href = `tag.html?tag=${encodeURIComponent(tag)}`;
+}
+
+function navigateToAuthor(authorName, authorDesignation) {
+    let url = `profile.html?author=${encodeURIComponent(authorName)}`;
+    if (authorDesignation && authorDesignation.trim()) {
+        url += `&designation=${encodeURIComponent(authorDesignation)}`;
+    }
+    window.location.href = url;
+}
+
+// ========== LOAD HEADER (config from sheet) ==========
+async function loadHeaderConfig() {
+    try {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/configure!A:F?key=${CONFIG.API_KEY}`;
+        const resp = await fetch(url);
+        const data = await resp.json();
+        const rows = data.values || [];
+        let blogTitle = "Blog Studio", logoUrl = "";
+        let menuItems = [];
+        for(let i=1; i<rows.length; i++) {
+            let row = rows[i];
+            let item = row[0]?.trim(), configVal = row[1]?.trim(), menu = row[2]?.trim(), sub = row[3]?.trim(), linkItem = row[4]?.trim(), link = row[5]?.trim();
+            if(item === "Blog Title" && configVal) blogTitle = configVal;
+            if(item === "Blog logo(url)" && configVal) logoUrl = configVal;
+            if(menu && menu !== "Menu") {
+                let existing = menuItems.find(m => m.name === menu);
+                if(!existing) {
+                    existing = { name: menu, subItems: [] };
+                    menuItems.push(existing);
+                }
+                if(sub && sub !== "Sub Menu" && linkItem && link) {
+                    existing.subItems.push({ label: sub, url: link });
+                } else if (linkItem && link && (!sub || sub === "Sub Menu")) {
+                    existing.subItems.push({ label: linkItem, url: link });
+                }
+            }
+        }
+        renderHeader(blogTitle, logoUrl, menuItems);
+    } catch(e) { 
+        console.error('Header error:', e);
+        renderHeader("Blog Studio", "", []); 
+    }
+}
+
+function renderHeader(title, logoUrl, menus) {
+    let logoHtml = logoUrl ? `<img src="${logoUrl}" height="35" alt="logo">` : `<i class="bi bi-journal-bookmark-fill fs-3" style="color:#1a73e8"></i>`;
+    let navHtml = `<nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top px-3 px-md-5 py-2 shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="./index.html">${logoHtml} ${escapeHtml(title)}</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#blogNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="blogNavbar">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 gap-2">`;
+    menus.forEach(menu => {
+        if(menu.subItems.length) {
+            navHtml += `<li class="nav-item dropdown"><a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">${escapeHtml(menu.name)}</a><ul class="dropdown-menu">`;
+            menu.subItems.forEach(sub => { navHtml += `<li><a class="dropdown-item" href="${sub.url}">${escapeHtml(sub.label)}</a></li>`; });
+            navHtml += `</ul></li>`;
+        } else {
+            navHtml += `<li class="nav-item"><a class="nav-link" href="#">${escapeHtml(menu.name)}</a></li>`;
+        }
+    });
+    navHtml += `</ul></div></div></nav>`;
+    document.getElementById('main-header').innerHTML = navHtml;
+}
+
+// Extract tags from post's column C (supports comma or space separated)
+function extractTagsFromPost(post) {
+    let tagStr = post.tagsRaw || "";
+    if (!tagStr.trim()) return [];
+    let candidates = [];
+    if (tagStr.includes(',')) {
+        candidates = tagStr.split(',').map(s => s.trim());
+    } else {
+        candidates = tagStr.split(/\s+/).map(s => s.trim());
+    }
+    return candidates.filter(t => t.length > 0);
+}
+
+// Fetch all posts from sheet "blog data" columns A:I
+async function fetchAllPosts() {
+    const blogUrl = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/blog%20data!A:I?key=${CONFIG.API_KEY}`;
+    const response = await fetch(blogUrl);
+    const data = await response.json();
+    const rows = data.values || [];
+    if(rows.length < 2) return [];
+    
+    const posts = [];
+    for(let i=1; i<rows.length; i++) {
+        let row = rows[i];
+        if(row[0]) {
+            posts.push({
+                id: row[0],
+                category: row[1] || "General",
+                tagsRaw: row[2] || "",        // Column C: tags field
+                author: row[3] || "Anonymous",
+                publishedTime: row[4] || "",
+                title: row[5] || "Untitled",
+                content: row[6] || "",
+                likeCount: parseInt(row[7]) || 0,
+                shareCount: parseInt(row[8]) || 0,
+                image: extractFirstImage(row[6] || "")
+            });
+        }
+    }
+    return posts;
+}
+
+// Get frequency of all tags across all posts (from column C)
+function getAllTagsFrequency(posts) {
+    const freqMap = new Map();
+    for (const post of posts) {
+        const tags = extractTagsFromPost(post);
+        for (const tag of tags) {
+            const normalized = tag.toLowerCase();
+            freqMap.set(normalized, (freqMap.get(normalized) || 0) + 1);
+        }
+    }
+    return freqMap;
+}
+
+// Filter posts by exact tag (case-insensitive) using column C
+function getPostsByTagColumn(posts, targetTag) {
+    const lowerTarget = targetTag.toLowerCase();
+    return posts.filter(post => {
+        const tags = extractTagsFromPost(post);
+        return tags.some(t => t.toLowerCase() === lowerTarget);
+    });
+}
+
+// Renders tag cloud with weighted sizes based on frequency
+function renderTagCloud(tagFrequencyMap, currentActiveTag = null) {
+    const container = document.getElementById('tagCloudContainer');
+    if (!container) return;
+    if (!tagFrequencyMap || tagFrequencyMap.size === 0) {
+        container.innerHTML = '<div class="text-muted w-100 text-center py-3">✨ No tags found in column C. Add tags like "tech, lifestyle" to see cloud ✨</div>';
+        return;
+    }
+    
+    const tagsArray = Array.from(tagFrequencyMap.entries()).map(([tag, count]) => ({ tag, count }));
+    tagsArray.sort((a,b) => a.tag.localeCompare(b.tag));
+    
+    const counts = tagsArray.map(t => t.count);
+    const maxCount = Math.max(...counts, 1);
+    
+    let cloudHtml = '';
+    for (let item of tagsArray) {
+        const { tag, count } = item;
+        const ratio = count / maxCount;
+        let weightClass = 'low';
+        if (ratio > 0.65) weightClass = 'high';
+        else if (ratio > 0.3) weightClass = 'medium';
+        
+        const isCurrent = (currentActiveTag && currentActiveTag.toLowerCase() === tag.toLowerCase());
+        const activeStyle = isCurrent ? 'background: #001b9d; color: white; border-color: #001b9d; box-shadow: 0 5px 12px rgba(0,27,157,0.3);' : '';
+        cloudHtml += `<a href="tag.html?tag=${encodeURIComponent(tag)}" class="cloud-tag" data-weight="${weightClass}" style="${activeStyle}" title="${count} article${count !== 1 ? 's' : ''}">
+            <i class="bi bi-hash"></i> ${escapeHtml(tag)} <span class="opacity-75 ms-1" style="font-size:0.7rem;">(${count})</span>
+        </a>`;
+    }
+    container.innerHTML = cloudHtml;
+}
+
+// Main initialization
+async function initTagPage() {
+    await loadHeaderConfig();
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const tagParam = urlParams.get('tag');
+    
+    if (!tagParam) {
+        document.getElementById("loadingSpinner").innerHTML = `
+            <div class="error-box alert alert-danger shadow-sm rounded-4">
+                <i class="bi bi-exclamation-triangle-fill fs-3"></i><br>
+                <strong>No tag specified!</strong><br>
+                Use: <code>tag.html?tag=yourTagName</code>
+            </div>`;
+        document.getElementById("tagName").innerHTML = `<i class="bi bi-tag"></i> Missing tag`;
+        document.getElementById("postCount").innerHTML = `0 posts`;
+        // Still load tag cloud even if no tag param
+        try {
+            const allPostsFetch = await fetchAllPosts();
+            const freqMap = getAllTagsFrequency(allPostsFetch);
+            if (freqMap.size) {
+                renderTagCloud(freqMap, null);
+                document.getElementById("tagCloudWrapper").style.display = "block";
+            } else {
+                document.getElementById("tagCloudWrapper").style.display = "block";
+                document.getElementById("tagCloudContainer").innerHTML = '<div class="text-muted w-100 text-center py-3">📭 No tags in column C</div>';
+            }
+        } catch(e) { console.warn(e); }
+        return;
+    }
+    
+    const decodedTag = decodeURIComponent(tagParam);
+    // Update header with exact style from original
+    document.getElementById("tagName").innerHTML = `<i class="bi bi-hash"></i> ${escapeHtml(decodedTag)}`;
+    document.title = `#${decodedTag} | NOC Blog`;
+    
+    try {
+        const allPosts = await fetchAllPosts();
+        const taggedPosts = getPostsByTagColumn(allPosts, decodedTag);
+        
+        const postsContainer = document.getElementById("postsContainer");
+        const loadingSpinner = document.getElementById("loadingSpinner");
+        const postCountSpan = document.getElementById("postCount");
+        
+        postCountSpan.innerHTML = `${taggedPosts.length} post${taggedPosts.length !== 1 ? 's' : ''}`;
+        
+        if (taggedPosts.length === 0) {
+            loadingSpinner.style.display = "none";
+            postsContainer.innerHTML = `
+                <div class="col-12">
+                    <div class="no-results-tag">
+                        <i class="bi bi-tag fs-1 text-muted"></i>
+                        <h3 class="mt-3">No posts found with tag "#${escapeHtml(decodedTag)}"</h3>
+                        <p class="text-muted">Check other tags from the cloud below or add this tag.</p>
+                        <a href="./index.html" class="btn btn-primary rounded-pill px-4 mt-3">
+                            <i class="bi bi-house"></i> Back to Home
+                        </a>
+                    </div>
+                </div>
+            `;
+        } else {
+            loadingSpinner.style.display = "none";
+            postsContainer.innerHTML = taggedPosts.map(post => `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card-blog h-100" data-post-id="${post.id}">
+                        <img src="${post.image || 'https://placehold.co/600x400/e2e8f0/64748b?text=Blog+Image'}" class="card-img-top" 
+                             alt="${escapeHtml(post.title)}"
+                             onerror="this.src='https://placehold.co/600x400/e2e8f0/64748b?text=No+Image'"
+                             loading="lazy">
+                        <div class="card-body">
+                            <span class="category-badge mb-2" data-category="${escapeHtml(post.category)}">${escapeHtml(post.category)}</span>
+                            <h5 class="card-title">${escapeHtml(post.title)}</h5>
+                            <p class="card-text text-truncate-2">${escapeHtml(stripHtml(post.content).substring(0, 110))}…</p>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <div class="small text-muted">
+                                    <i class="bi bi-person-circle"></i> ${escapeHtml(post.author)}<br>
+                                    <i class="bi bi-calendar3"></i> ${escapeHtml(post.publishedTime)}
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary rounded-pill read-more-btn" data-id="${post.id}" data-title="${escapeHtml(post.title)}">
+                                    Read <i class="bi bi-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // ========== GENERATE TAG CLOUD from column C ==========
+        const tagFreqMap = getAllTagsFrequency(allPosts);
+        const tagCloudWrapper = document.getElementById("tagCloudWrapper");
+        if (tagFreqMap.size > 0) {
+            renderTagCloud(tagFreqMap, decodedTag);
+            tagCloudWrapper.style.display = "block";
+        } else {
+            tagCloudWrapper.style.display = "block";
+            document.getElementById("tagCloudContainer").innerHTML = '<div class="text-muted w-100 text-center py-3">📭 No tags found in column C of your sheet. Add tags (comma or space separated) to see cloud.</div>';
+        }
+        
+        // Attach click handlers for cards, read more buttons, category badges
+        document.querySelectorAll('.card-blog').forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('read-more-btn') && 
+                    !e.target.closest('.read-more-btn') &&
+                    !e.target.classList.contains('category-badge') &&
+                    !e.target.closest('.category-badge')) {
+                    const postId = card.getAttribute('data-post-id');
+                    if (postId) navigateToPost(postId);
+                }
+            });
+        });
+        
+        document.querySelectorAll('.read-more-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const postId = btn.getAttribute('data-id');
+                if (postId) navigateToPost(postId);
+            });
+        });
+        
+        document.querySelectorAll('.category-badge').forEach(badge => {
+            badge.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const category = badge.getAttribute('data-category');
+                if (category) navigateToCategory(category);
+            });
+        });
+        
+    } catch(err) {
+        console.error('Tag page error:', err);
+        document.getElementById("loadingSpinner").innerHTML = `
+            <div class="alert alert-danger rounded-4">
+                <strong>⚠️ Error loading posts:</strong> ${err.message}<br>
+                <a href="./index.html">← Back to Home</a>
+            </div>`;
+        // Try to still load tag cloud
+        try {
+            const allPostsErr = await fetchAllPosts();
+            const freqErr = getAllTagsFrequency(allPostsErr);
+            if(freqErr.size) {
+                renderTagCloud(freqErr, null);
+                document.getElementById("tagCloudWrapper").style.display = "block";
+            }
+        } catch(e) {}
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initTagPage);
+</script>
+</body>
+</html>

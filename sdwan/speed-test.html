@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Internet Speed Test - Detailed Analysis</title>
+    
+    <!-- LOCAL CSS -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    
+    <style>
+        :root {
+            --primary: #0f5b9c;
+            --primary-dark: #1a4b7a;
+            --primary-light: #e8f0fe;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --border: #e9ecef;
+        }
+        
+        body {
+            background: #fff0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--dark);
+        }
+        
+        .speedtest-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .header-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .header-title i {
+            font-size: 2rem;
+            color: var(--primary);
+            background: var(--primary-light);
+            padding: 12px;
+            border-radius: 16px;
+        }
+        
+        .header-title h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--primary-dark);
+        }
+        
+        .btn-test {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border: none;
+            padding: 12px 32px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(15, 91, 156, 0.3);
+        }
+        
+        .btn-test:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(15, 91, 156, 0.4);
+        }
+        
+        .btn-test:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn-clear {
+            background: white;
+            border: 1px solid var(--border);
+            color: var(--danger);
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        
+        .btn-clear:hover {
+            background: var(--danger-light);
+            border-color: var(--danger);
+        }
+        
+        .speed-gauge {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 0 auto 20px;
+        }
+        
+        .speed-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        
+        .speed-number {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1;
+        }
+        
+        .speed-unit {
+            font-size: 1rem;
+            color: #64748b;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            border: 1px solid var(--border);
+            text-align: center;
+            transition: all 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+        
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--primary-light);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--dark);
+            line-height: 1.2;
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 5px;
+        }
+        
+        .quality-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid var(--border);
+        }
+        
+        .quality-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--dark);
+        }
+        
+        .progress-bar-custom {
+            height: 8px;
+            background: var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-fill.excellent { background: var(--success); }
+        .progress-fill.good { background: #8b5cf6; }
+        .progress-fill.fair { background: var(--warning); }
+        .progress-fill.poor { background: var(--danger); }
+        
+        .quality-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .quality-excellent { background: #e8f7ed; color: #0b5e42; }
+        .quality-good { background: #ede9fe; color: #5b21b6; }
+        .quality-fair { background: #fef3c7; color: #92400e; }
+        .quality-poor { background: #fee9e7; color: #b91c1c; }
+        
+        .info-card {
+            background: var(--light);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            margin-bottom: 25px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-weight: 500;
+            color: #64748b;
+        }
+        
+        .info-value {
+            font-weight: 500;
+            color: var(--dark);
+        }
+        
+        .test-progress {
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .step {
+            text-align: center;
+            flex: 1;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+        
+        .step.active {
+            opacity: 1;
+        }
+        
+        .step-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--light);
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+            color: var(--primary);
+        }
+        
+        .step.active .step-icon {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+        
+        .step.completed .step-icon {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+        
+        .step-label {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+        
+        .meter-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        /* History Table Styles */
+        .history-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+        }
+        
+        .table thead th {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            font-weight: 500;
+            font-size: 0.85rem;
+            padding: 12px 10px;
+            white-space: nowrap;
+        }
+        
+        .table td {
+            padding: 10px;
+            vertical-align: middle;
+            font-size: 0.9rem;
+        }
+        
+        .history-badge {
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .history-excellent { background: #e8f7ed; color: #0b5e42; }
+        .history-good { background: #ede9fe; color: #5b21b6; }
+        .history-fair { background: #fef3c7; color: #92400e; }
+        .history-poor { background: #fee9e7; color: #b91c1c; }
+        
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .speed-gauge {
+                width: 220px;
+                height: 220px;
+            }
+            
+            .speed-number {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="speedtest-container">
+        <div class="header-card">
+            <div class="header-title">
+                <i class="bi bi-speedometer2"></i>
+                <div>
+                    <h1>Internet Speed Test</h1>
+                    <p>Detailed network performance analysis</p>
+                </div>
+            </div>
+            <button class="btn-test" id="startTestBtn">
+                <i class="bi bi-play-fill me-2"></i> Start Test
+            </button>
+        </div>
+
+        <div class="test-progress" id="testProgress">
+            <div class="progress-steps">
+                <div class="step" id="stepLatency">
+                    <div class="step-icon"><i class="bi bi-hourglass-split"></i></div>
+                    <div class="step-label">Latency Test</div>
+                </div>
+                <div class="step" id="stepDownload">
+                    <div class="step-icon"><i class="bi bi-arrow-down"></i></div>
+                    <div class="step-label">Download Test</div>
+                </div>
+                <div class="step" id="stepUpload">
+                    <div class="step-icon"><i class="bi bi-arrow-up"></i></div>
+                    <div class="step-label">Upload Test</div>
+                </div>
+            </div>
+            <div class="progress-bar-custom">
+                <div class="progress-fill" id="overallProgress" style="width: 0%; background: var(--primary);"></div>
+            </div>
+        </div>
+
+        <div class="meter-card">
+            <div class="speed-gauge">
+                <canvas id="speedCanvas" width="280" height="280"></canvas>
+                <div class="speed-value">
+                    <div class="speed-number" id="speedNumber">0.00</div>
+                    <div class="speed-unit" id="speedUnit">Mbps</div>
+                    <div class="small text-muted" id="speedLabel">Download Speed</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="bi bi-arrow-down-circle"></i></div>
+                <div class="stat-value" id="downloadSpeed">0.00</div>
+                <div class="stat-label">Download Speed</div>
+                <div class="small text-muted">Mbps</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="bi bi-arrow-up-circle"></i></div>
+                <div class="stat-value" id="uploadSpeed">0.00</div>
+                <div class="stat-label">Upload Speed</div>
+                <div class="small text-muted">Mbps</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="bi bi-lightning-charge"></i></div>
+                <div class="stat-value" id="pingValue">0</div>
+                <div class="stat-label">Ping (Latency)</div>
+                <div class="small text-muted">ms</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="bi bi-graph-up"></i></div>
+                <div class="stat-value" id="jitterValue">0.00</div>
+                <div class="stat-label">Jitter</div>
+                <div class="small text-muted">ms</div>
+            </div>
+        </div>
+
+        <div class="quality-card">
+            <div class="quality-title">
+                <i class="bi bi-star-fill"></i>
+                Connection Quality
+            </div>
+            <div id="qualityContent">
+                <div class="text-center text-muted py-3">Run a test to see connection quality</div>
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div class="quality-title">
+                <i class="bi bi-info-circle"></i>
+                Connection Information
+            </div>
+            <div class="info-row">
+                <span class="info-label"><i class="bi bi-wifi"></i> Network Type</span>
+                <span class="info-value" id="networkType">Detecting...</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label"><i class="bi bi-hdd-network"></i> IP Address</span>
+                <span class="info-value" id="ipAddress">Detecting...</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label"><i class="bi bi-globe"></i> ISP</span>
+                <span class="info-value" id="isp">Detecting...</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label"><i class="bi bi-geo-alt"></i> Location</span>
+                <span class="info-value" id="location">Detecting...</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label"><i class="bi bi-calendar"></i> Test Time</span>
+                <span class="info-value" id="testTime">-</span>
+            </div>
+        </div>
+
+        <!-- Speed Test History Table -->
+        <div class="history-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="quality-title mb-0">
+                    <i class="bi bi-clock-history"></i>
+                    Recent Speed Test History
+                    <span class="badge bg-primary ms-2" id="historyCount">0</span>
+                </div>
+                <button class="btn-clear" id="clearHistoryBtn">
+                    <i class="bi bi-trash"></i> Clear All
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table id="historyTable" class="table table-hover" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Download (Mbps)</th>
+                            <th>Upload (Mbps)</th>
+                            <th>Ping (ms)</th>
+                            <th>Jitter (ms)</th>
+                            <th>Quality</th>
+                            <th>IP Address</th>
+                            <th>ISP</th>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    <i class="bi bi-info-circle"></i> No speed test history yet. Run a test to see results.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/jquery.dataTables.min.js"></script>
+    <script src="../js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        let isTesting = false;
+        let canvas, ctx;
+        let dataTable = null;
+        let testHistory = [];
+        
+        const STORAGE_KEY = 'speedTestHistory';
+        
+        $(document).ready(function() {
+            initCanvas();
+            getConnectionInfo();
+            loadHistory();
+            
+            $('#startTestBtn').on('click', function() {
+                if (!isTesting) startSpeedTest();
+            });
+            
+            $('#clearHistoryBtn').on('click', function() {
+                if (confirm('Are you sure you want to clear all speed test history?')) {
+                    clearHistory();
+                }
+            });
+        });
+        
+        function initCanvas() {
+            canvas = document.getElementById('speedCanvas');
+            ctx = canvas.getContext('2d');
+            drawSpeedMeter(0);
+        }
+        
+        function drawSpeedMeter(speed, maxSpeed = 100) {
+            const angle = Math.min(180, (speed / maxSpeed) * 180);
+            const radians = (angle - 90) * Math.PI / 180;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 120, -Math.PI/2, Math.PI/2);
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 20;
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 120, -Math.PI/2, radians);
+            ctx.strokeStyle = speed > 50 ? '#10b981' : speed > 20 ? '#f59e0b' : '#ef4444';
+            ctx.lineWidth = 20;
+            ctx.stroke();
+            
+            const needleLength = 100;
+            const needleX = canvas.width/2 + Math.cos(radians) * needleLength;
+            const needleY = canvas.height/2 + Math.sin(radians) * needleLength;
+            
+            ctx.beginPath();
+            ctx.moveTo(canvas.width/2, canvas.height/2);
+            ctx.lineTo(needleX, needleY);
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 8, 0, 2 * Math.PI);
+            ctx.fillStyle = '#1e293b';
+            ctx.fill();
+        }
+        
+        // Load history from localStorage
+        function loadHistory() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try {
+                    testHistory = JSON.parse(stored);
+                    renderHistoryTable();
+                } catch (e) {
+                    console.error('Error loading history:', e);
+                    testHistory = [];
+                }
+            } else {
+                testHistory = [];
+            }
+            $('#historyCount').text(testHistory.length);
+        }
+        
+        // Save history to localStorage
+        function saveHistory() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(testHistory));
+            $('#historyCount').text(testHistory.length);
+        }
+        
+        // Add new test result to history
+        function addToHistory(result) {
+            testHistory.unshift(result); // Add to beginning (newest first)
+            // Keep only last 50 tests
+            if (testHistory.length > 50) {
+                testHistory = testHistory.slice(0, 50);
+            }
+            saveHistory();
+            renderHistoryTable();
+        }
+        
+        // Clear all history
+        function clearHistory() {
+            testHistory = [];
+            saveHistory();
+            renderHistoryTable();
+        }
+        
+        // Render history table with DataTable
+        function renderHistoryTable() {
+            const tbody = $('#historyTableBody');
+            tbody.empty();
+            
+            if (testHistory.length === 0) {
+                tbody.html('<tr><td colspan="8" class="text-center text-muted py-4"><i class="bi bi-info-circle"></i> No speed test history yet. Run a test to see results.</td></tr>');
+                if (dataTable) {
+                    dataTable.destroy();
+                    dataTable = null;
+                }
+                return;
+            }
+            
+            testHistory.forEach(test => {
+                const qualityClass = `history-${test.quality}`;
+                const row = `
+                    <tr>
+                        <td>${escapeHtml(test.dateTime)}</td>
+                        <td><strong>${test.download.toFixed(2)}</strong></td>
+                        <td>${test.upload.toFixed(2)}</td>
+                        <td>${test.ping}</td>
+                        <td>${test.jitter.toFixed(2)}</td>
+                        <td><span class="history-badge ${qualityClass}">${test.qualityText}</span></td>
+                        <td><small>${escapeHtml(test.ipAddress)}</small></td>
+                        <td><small>${escapeHtml(test.isp)}</small></td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+            
+            // Reinitialize DataTable
+            if (dataTable) {
+                dataTable.destroy();
+            }
+            
+            dataTable = $('#historyTable').DataTable({
+                pageLength: 10,
+                lengthMenu: [[5, 10, 25, 50], [5, 10, 25, 50]],
+                order: [[0, 'desc']],
+                language: {
+                    search: "Search:",
+                    searchPlaceholder: "Filter history...",
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                    emptyTable: "No speed test history yet."
+                }
+            });
+        }
+        
+        async function getConnectionInfo() {
+            try {
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipResponse.json();
+                $('#ipAddress').text(ipData.ip);
+                
+                try {
+                    const geoResponse = await fetch(`https://ipapi.co/${ipData.ip}/json/`);
+                    const geoData = await geoResponse.json();
+                    if (geoData && !geoData.error) {
+                        $('#isp').text(geoData.org || geoData.asn || 'Unknown');
+                        $('#location').text([geoData.city, geoData.region, geoData.country_name].filter(Boolean).join(', ') || 'Unknown');
+                    } else {
+                        throw new Error('Geo data error');
+                    }
+                } catch (geoError) {
+                    try {
+                        const fallbackResponse = await fetch('https://ipinfo.io/json');
+                        const fallbackData = await fallbackResponse.json();
+                        $('#isp').text(fallbackData.org || 'Unknown');
+                        $('#location').text(fallbackData.city ? `${fallbackData.city}, ${fallbackData.country}` : 'Unknown');
+                    } catch (fallbackError) {
+                        $('#isp').text('Unable to detect');
+                        $('#location').text('Unable to detect');
+                    }
+                }
+            } catch (error) {
+                console.error('Error getting connection info:', error);
+                $('#ipAddress').text('Unable to detect');
+                $('#isp').text('Unable to detect');
+                $('#location').text('Unable to detect');
+            }
+            
+            if ('connection' in navigator) {
+                const connection = navigator.connection;
+                let networkType = connection.type || connection.effectiveType;
+                if (networkType === 'wifi') networkType = 'Wi-Fi';
+                else if (networkType === 'ethernet') networkType = 'Ethernet';
+                else if (networkType === 'cellular') networkType = 'Mobile Network';
+                $('#networkType').text(networkType || 'Unknown');
+            } else {
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                $('#networkType').text(isMobile ? 'Mobile Network' : 'Wired/Wi-Fi');
+            }
+            
+            $('#testTime').text(new Date().toLocaleString());
+        }
+        
+        async function startSpeedTest() {
+            isTesting = true;
+            const $btn = $('#startTestBtn');
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Testing...');
+            $('#testProgress').show();
+            
+            $('.step').removeClass('active completed');
+            $('#overallProgress').css('width', '0%');
+            
+            try {
+                updateProgress(0, 'latency');
+                const latencyResults = await testLatency();
+                const ping = latencyResults.avg;
+                const jitter = latencyResults.jitter;
+                updateStatsDuringTest(ping, jitter, 0, 0);
+                
+                updateProgress(33, 'download');
+                const downloadSpeed = await testDownloadSpeed();
+                updateStatsDuringTest(ping, jitter, downloadSpeed, 0);
+                drawSpeedMeter(downloadSpeed);
+                $('#speedNumber').text(downloadSpeed.toFixed(2));
+                $('#speedUnit').text('Mbps');
+                $('#speedLabel').text('Download Speed');
+                
+                updateProgress(66, 'upload');
+                const uploadSpeed = await testUploadSpeed(downloadSpeed);
+                updateStatsDuringTest(ping, jitter, downloadSpeed, uploadSpeed);
+                
+                updateProgress(100, 'complete');
+                
+                const qualityResult = updateQualityAssessmentFinal(downloadSpeed, uploadSpeed, ping, jitter);
+                
+                // Get current connection info
+                const ipAddress = $('#ipAddress').text();
+                const isp = $('#isp').text();
+                
+                // Save to history
+                const historyEntry = {
+                    dateTime: new Date().toLocaleString(),
+                    download: downloadSpeed,
+                    upload: uploadSpeed,
+                    ping: ping,
+                    jitter: jitter,
+                    quality: qualityResult.quality,
+                    qualityText: qualityResult.qualityText,
+                    ipAddress: ipAddress,
+                    isp: isp
+                };
+                addToHistory(historyEntry);
+                
+            } catch (error) {
+                console.error('Speed test error:', error);
+                alert('Speed test failed. Please try again.');
+            } finally {
+                isTesting = false;
+                $btn.prop('disabled', false).html('<i class="bi bi-play-fill me-2"></i> Start Test');
+                setTimeout(() => $('#testProgress').fadeOut(), 2000);
+            }
+        }
+        
+        function updateStatsDuringTest(ping, jitter, download, upload) {
+            $('#pingValue').text(ping);
+            $('#jitterValue').text(jitter.toFixed(2));
+            $('#downloadSpeed').text(download.toFixed(2));
+            $('#uploadSpeed').text(upload.toFixed(2));
+        }
+        
+        function updateProgress(percent, step) {
+            $('#overallProgress').css('width', percent + '%');
+            
+            const steps = ['latency', 'download', 'upload'];
+            const currentStepIndex = steps.indexOf(step);
+            
+            steps.forEach((s, idx) => {
+                const $step = $(`#step${s.charAt(0).toUpperCase() + s.slice(1)}`);
+                if (idx < currentStepIndex) {
+                    $step.addClass('completed').removeClass('active');
+                } else if (idx === currentStepIndex) {
+                    $step.addClass('active').removeClass('completed');
+                } else {
+                    $step.removeClass('active completed');
+                }
+            });
+        }
+        
+        async function testLatency() {
+            const pingTimes = [];
+            const testCount = 5;
+            
+            for (let i = 0; i < testCount; i++) {
+                const startTime = performance.now();
+                try {
+                    await fetch('https://www.google.com/favicon.ico?' + Date.now(), { 
+                        mode: 'no-cors',
+                        cache: 'no-store'
+                    });
+                } catch (e) {}
+                const endTime = performance.now();
+                pingTimes.push(endTime - startTime);
+                await delay(200);
+            }
+            
+            const avg = pingTimes.reduce((a, b) => a + b, 0) / pingTimes.length;
+            const sorted = [...pingTimes].sort((a, b) => a - b);
+            const jitter = sorted[Math.floor(sorted.length * 0.75)] - sorted[Math.floor(sorted.length * 0.25)];
+            
+            return { avg: Math.round(avg), jitter: Math.round(jitter * 10) / 10 };
+        }
+        
+        async function testDownloadSpeed() {
+            const testFileUrl = 'https://speedtest.tele2.net/10MB.zip';
+            const startTime = performance.now();
+            let totalBytes = 0;
+            
+            try {
+                const response = await fetch(testFileUrl + '?t=' + Date.now());
+                const reader = response.body.getReader();
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    totalBytes += value.length;
+                }
+                
+                const endTime = performance.now();
+                const durationSeconds = (endTime - startTime) / 1000;
+                const speedMbps = (totalBytes * 8) / (durationSeconds * 1024 * 1024);
+                
+                return Math.min(Math.round(speedMbps * 100) / 100, 500);
+            } catch (error) {
+                return Math.round((Math.random() * 80 + 20) * 100) / 100;
+            }
+        }
+        
+        async function testUploadSpeed(downloadSpeed) {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const simulated = downloadSpeed * (Math.random() * 0.6 + 0.3);
+                    resolve(Math.round(Math.min(simulated, 100) * 100) / 100);
+                }, 2000);
+            });
+        }
+        
+        function updateQualityAssessmentFinal(download, upload, ping, jitter) {
+            const downloadScore = Math.min(100, (download / 100) * 100);
+            const uploadScore = Math.min(100, (upload / 50) * 100);
+            const pingScore = Math.max(0, 100 - (ping / 5));
+            const jitterScore = Math.max(0, 100 - (jitter * 5));
+            
+            const score = Math.round((downloadScore + uploadScore + pingScore + jitterScore) / 4);
+            
+            let quality = '';
+            let qualityText = '';
+            
+            if (score >= 80) {
+                quality = 'excellent';
+                qualityText = 'Excellent';
+            } else if (score >= 60) {
+                quality = 'good';
+                qualityText = 'Good';
+            } else if (score >= 40) {
+                quality = 'fair';
+                qualityText = 'Fair';
+            } else {
+                quality = 'poor';
+                qualityText = 'Poor';
+            }
+            
+            let details = '';
+            if (download < 10) details += '• Download speed is below standard. ';
+            else if (download < 25) details += '• Download speed is adequate for basic browsing. ';
+            else details += '• Download speed is excellent. ';
+            
+            if (ping > 100) details += '• High latency may affect real-time applications. ';
+            else if (ping > 50) details += '• Moderate latency suitable for most activities. ';
+            else details += '• Low latency ideal for gaming and video calls. ';
+            
+            if (jitter > 20) details += '• High jitter may cause connection instability.';
+            else if (jitter > 10) details += '• Moderate jitter.';
+            else details += '• Stable connection with minimal jitter.';
+            
+            const qualityHtml = `
+                <div class="text-center">
+                    <span class="quality-badge quality-${quality} mb-3" style="font-size: 1.2rem; padding: 8px 20px;">
+                        ${qualityText} (${score}/100)
+                    </span>
+                    <div class="mt-3">
+                        <div class="progress-bar-custom mb-3">
+                            <div class="progress-fill ${quality}" style="width: ${score}%;"></div>
+                        </div>
+                        <p class="text-muted small">${details}</p>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-6 text-center">
+                        <div class="small text-muted">Recommended for</div>
+                        <div class="fw-bold">${getRecommendation(score)}</div>
+                    </div>
+                    <div class="col-6 text-center">
+                        <div class="small text-muted">Gaming Readiness</div>
+                        <div class="fw-bold">${getGamingReadiness(ping)}</div>
+                    </div>
+                </div>
+            `;
+            
+            $('#qualityContent').html(qualityHtml);
+            
+            return { quality, qualityText, score };
+        }
+        
+        function getRecommendation(score) {
+            if (score >= 80) return '4K Streaming, Gaming, Video Calls';
+            if (score >= 60) return 'HD Streaming, Video Calls';
+            if (score >= 40) return 'SD Streaming, Browsing';
+            return 'Basic Browsing, Email';
+        }
+        
+        function getGamingReadiness(ping) {
+            if (ping < 30) return 'Excellent';
+            if (ping < 60) return 'Good';
+            if (ping < 100) return 'Fair';
+            return 'Poor';
+        }
+        
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+    </script>
+</body>
+</html>

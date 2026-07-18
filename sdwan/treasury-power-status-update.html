@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Power Uptime Manager | Branch Power Failure Log</title>
+    
+    <!-- LOCAL CSS - Using existing resources -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="../css/flatpickr.min.css">
+    <link rel="stylesheet" href="../css/sweetalert2.min.css">
+    
+    <style>
+        * { box-sizing: border-box; }
+        body {
+             background: #fff0;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 20px 16px;
+        }
+   #global-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+              background: #fff0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            /*backdrop-filter: blur(3px);*/
+        }
+        .app-card {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+.page-header {
+    padding: 15px 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+ 
+}
+.page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-header-left i {
+    font-size: 1.8rem !important;
+    background: rgb(56 143 251 / 15%) !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    color: #184f83 !important;
+}
+
+
+.page-header-left h1 {
+    margin: 0 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    color: #184f83!important;
+}
+ .page-header-left p {
+            margin: 2px 0 0;
+            opacity: 0.7;
+            font-size: 0.75rem;
+ }
+        .tab-header {
+            display: flex;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0 24px;
+        }
+        .tab-btn {
+            padding: 16px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            background: transparent;
+            border: none;
+            color: #475569;
+            transition: 0.2s;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+        }
+        .tab-btn i { margin-right: 8px; font-size: 1.1rem; }
+        .tab-btn.active {
+            color: #1e4a76;
+            border-bottom-color: #1e4a76;
+            background: white;
+        }
+        .tab-pane {
+            display: none;
+            padding: 30px 32px;
+            background: white;
+        }
+        .tab-pane.active-pane {
+            display: block;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+        .required:after {
+            content: "*";
+            color: #dc2626;
+            margin-left: 4px;
+        }
+        .btn-primary-custom {
+            background: #0f3b5f;
+            border: none;
+            padding: 10px 20px;
+            font-weight: 600;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: #ffffff;
+            position: relative;
+        }
+        .btn-primary-custom:hover:not(:disabled) {
+            background: #0a2c46;
+            transform: translateY(-1px);
+            color: #ffffff;
+        }
+        .btn-primary-custom:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .dataTables_wrapper .dataTables_filter input {
+            border-radius: 30px;
+            padding: 6px 12px;
+            border: 1px solid #cbd5e1;
+        }
+        .badge-up {
+            background-color: #10b981;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 40px;
+            font-weight: 500;
+        }
+        .badge-down {
+            background-color: #ef4444;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 40px;
+        }
+        .action-icons i {
+            font-size: 1.2rem;
+            margin: 0 5px;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .action-icons i.bi-pencil-square { color: #3b82f6; }
+        .action-icons i.bi-trash3 { color: #dc2626; }
+        .action-icons i:hover { opacity: 0.7; transform: scale(1.05);}
+        .select2-container--bootstrap-5 .select2-selection {
+            border-radius: 12px !important;
+            border: 1px solid #cbd5e1 !important;
+            min-height: 42px;
+        }
+        .form-control, .form-select {
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            padding: 8px 12px;
+        }
+        footer { font-size: 12px; text-align: center; margin-top: 20px; color: #5b6e8c; }
+        .modal-content { border-radius: 24px; }
+        @media (max-width: 700px) {
+            .tab-pane { padding: 20px; }
+            .tab-btn { padding: 12px 16px; font-size: 0.9rem; }
+        }
+        /* Button loading state */
+        .btn-loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        .btn-loading i.bi-arrow-repeat {
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .bi-spinner {
+            animation: spin 1s linear infinite;
+        }
+        /* Time input styling */
+        .flatpickr-input {
+            background: white;
+        }
+        /* Select2 dropdown */
+        .select2-dropdown {
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        /* Confirmation popup styles */
+        .confirm-details {
+            text-align: left;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 16px;
+        }
+        .confirm-details p {
+            margin: 10px 0;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .confirm-details p strong {
+            min-width: 100px;
+            color: #0f3b5f;
+        }
+        .confirm-status-up {
+            color: #10b981;
+            font-weight: bold;
+        }
+        .confirm-status-down {
+            color: #ef4444;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                    <i class="bi bi-battery-charging"></i>
+                    <div>
+                        <h1> Register Power Event</h1>
+                        <p>All treasury Power Down & Up time reporting </p>
+                    </div>
+                </div>
+            </div>
+<div class="app-card">
+    <div class="tab-header">
+        <button class="tab-btn active" id="tabAddBtn"><i class="bi bi-lightning-charge"></i> Add Power Event</button>
+        <button class="tab-btn" id="tabEditBtn"><i class="bi bi-table"></i> Edit / Logs</button>
+    </div>
+    <!-- Tab 1: Add Power Data -->
+    <div id="addPane" class="tab-pane active-pane">
+        <h4 class="mb-3"><i class="bi bi-battery-charging text-primary"></i> Register Power Event</h4>
+        <div class="row g-4">
+            <div class="col-md-6">
+                <label class="form-label required">Treasury / Branch</label>
+                <select id="branchSelect" class="form-select" style="width:100%"></select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label required">Date</label>
+                <input type="text" id="eventDate" class="form-control flatpickr-date" placeholder="DD/MM/YYYY">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label required">Time (HH:MM:SS)</label>
+                <input type="text" id="eventTime" class="form-control time-picker" placeholder="HH:MM:SS">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label required">Power Status</label>
+                <select id="powerStatus" class="form-select">
+                    <option value="" selected disabled>-- Select Status --</option>
+                    <option value="Down">🔴 Down (Failure)</option>
+                    <option value="Up">🟢 Up (Restored)</option>
+                </select>
+            </div>
+            <div class="col-12 mt-3">
+                <button id="submitPowerBtn" class="btn btn-primary-custom px-4"><i class="bi bi-save"></i> Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 2: Edit / DataTable -->
+    <div id="editPane" class="tab-pane">
+        <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+            <h4><i class="bi bi-clock-history"></i> All Branch Power Logs</h4>
+            <div class="d-flex gap-2">
+                <select id="filterBranchTable" class="form-select w-auto" style="min-width:180px">
+                    <option value="">All Branches</option>
+                </select>
+                <button id="refreshTableBtn" class="btn btn-outline-secondary"><i class="bi bi-arrow-repeat"></i> Refresh</button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table id="powerLogsTable" class="table table-striped table-hover" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>ID</th><th>Branch</th><th>Date</th><th>Time</th><th>Status</th><th>Timestamp (ISO)</th><th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editEventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Edit Power Event</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editRowId">
+                <div class="mb-3">
+                    <label class="form-label">Treasury / Branch</label>
+                    <input type="text" id="editBranch" class="form-control" readonly disabled>
+                    <small class="text-muted">Branch cannot be changed</small>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Date</label>
+                    <input type="text" id="editDate" class="form-control flatpickr-edit-date">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Time (HH:MM:SS)</label>
+                    <input type="text" id="editTime" class="form-control time-edit-picker" placeholder="HH:MM:SS">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Power Status</label>
+                    <select id="editStatus" class="form-select">
+                        <option value="">Choose Status</option>
+                        <option value="Down">Down (Failure)</option>
+                        <option value="Up">Up (Restored)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button id="confirmEditBtn" class="btn btn-primary">Update Event</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- LOCAL SCRIPTS -->
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script src="../js/jquery.dataTables.min.js"></script>
+<script src="../js/dataTables.bootstrap5.min.js"></script>
+<script src="../js/select2.min.js"></script>
+<script src="../js/flatpickr.min.js"></script>
+<script src="../js/sweetalert2.min.js"></script>
+
+<script>
+    // ======================== CONFIGURATION ========================
+    const BRANCH_SHEET_ID = "1jd1xZe9x2mrZm5KAwGT12vMNYjbrnynsmelNKeK95jc";
+    const BRANCH_SHEET_NAME = "Login";
+    const DATA_SHEET_ID = "1dHllRe0lHgpX4LAKIP-3abKBcSvBqlIOR0TaheG4aRc";
+    const DATA_SHEET_NAME = "Data";
+    const API_KEY = "AIzaSyBAuS3Brpsw5JOJnjNJii1UlFa7ClXf8d4";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyHKWLvJo7dwG58XMey-Vv27UQTi4xAqy-f-rpuIZBen3V-WzBPOkdkdFQCJcg5DZYj/exec";
+
+    // Global variables
+    let branchesList = [];
+    let dataTable = null;
+    let currentEditRowId = null;
+    let flatpickrDate, flatpickrEditDate, timePickerInst, timeEditInst;
+
+    // Helper functions
+    function formatDateDMY(dateObj) {
+        if(!dateObj) return "";
+        let d = dateObj.getDate().toString().padStart(2,'0');
+        let m = (dateObj.getMonth()+1).toString().padStart(2,'0');
+        let y = dateObj.getFullYear();
+        return `${d}/${m}/${y}`;
+    }
+    
+    function formatTimeHHMMSS(dateObj) {
+        if(!dateObj) return "";
+        let hours = dateObj.getHours().toString().padStart(2,'0');
+        let minutes = dateObj.getMinutes().toString().padStart(2,'0');
+        let seconds = dateObj.getSeconds().toString().padStart(2,'0');
+        return `${hours}:${minutes}:${seconds}`;
+    }
+    
+    function escapeHtml(str) { 
+        if(!str) return ''; 
+        return str.replace(/[&<>]/g, function(m){
+            if(m==='&') return '&amp;'; 
+            if(m==='<') return '&lt;'; 
+            if(m==='>') return '&gt;'; 
+            return m;
+        }); 
+    }
+
+    // Show loading state on button
+    function setButtonLoading(button, isLoading, originalText = null) {
+        const $btn = $(button);
+        if (isLoading) {
+            $btn.data('original-html', $btn.html());
+            $btn.html('<i class="bi bi-arrow-repeat"></i> Processing...');
+            $btn.prop('disabled', true);
+            $btn.addClass('btn-loading');
+        } else {
+            if ($btn.data('original-html')) {
+                $btn.html($btn.data('original-html'));
+            } else if (originalText) {
+                $btn.html(originalText);
+            }
+            $btn.prop('disabled', false);
+            $btn.removeClass('btn-loading');
+        }
+    }
+
+    // Show global loading overlay
+    function showGlobalLoading(message = 'Processing...') {
+        if ($('#global-loading-overlay').length) return;
+        const overlay = $(`
+            <div id="global-loading-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10000;backdrop-filter:blur(3px);">
+                <div style="background:white;padding:30px 40px;border-radius:24px;text-align:center;box-shadow:0 20px 35px rgba(0,0,0,0.2);">
+                    <i class="bi bi-arrow-repeat bi-spinner" style="font-size:48px;color:#0f3b5f;margin-bottom:15px;display:inline-block;"></i>
+                    <p style="margin:0;font-weight:500;color:#1e293b;">${message}</p>
+                </div>
+            </div>
+        `);
+        $('body').append(overlay);
+    }
+    
+    function hideGlobalLoading() {
+        $('#global-loading-overlay').remove();
+    }
+
+    // ================ FETCH BRANCHES ================
+    async function fetchBranchesFromSheet() {
+        try {
+            const range = `${BRANCH_SHEET_NAME}!A2:A`;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${BRANCH_SHEET_ID}/values/${range}?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            if(data.values && data.values.length) {
+                branchesList = data.values.map(row => row[0]).filter(v => v && v.trim() !== "");
+            } else {
+                branchesList = ["Main Branch", "City Treasury", "District Office"];
+            }
+            localStorage.setItem("cachedBranches", JSON.stringify(branchesList));
+            populateBranchSelectors();
+        } catch(err) {
+            console.warn("Branch fetch error", err);
+            const cached = localStorage.getItem("cachedBranches");
+            if(cached) {
+                branchesList = JSON.parse(cached);
+            } else {
+                branchesList = ["Treasury A", "Treasury B", "Sub Treasury"];
+            }
+            populateBranchSelectors();
+        }
+    }
+
+    function populateBranchSelectors() {
+        const branchSelect = $("#branchSelect");
+        branchSelect.empty().append('<option></option>');
+        branchesList.forEach(branch => {
+            branchSelect.append(`<option value="${escapeHtml(branch)}">${escapeHtml(branch)}</option>`);
+        });
+        branchSelect.select2({ 
+            theme: 'bootstrap-5',
+            placeholder: "Select Branch", 
+            allowClear: false, 
+            width: '100%' 
+        });
+        
+        const savedBranch = localStorage.getItem("selectedBranch");
+        if(savedBranch && branchesList.includes(savedBranch)) {
+            branchSelect.val(savedBranch).trigger('change');
+        } else if(branchesList.length) {
+            branchSelect.val(branchesList[0]).trigger('change');
+        }
+        
+        const filterBranch = $("#filterBranchTable");
+        filterBranch.empty().append('<option value="">All Branches</option>');
+        branchesList.forEach(b => {
+            filterBranch.append(`<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`);
+        });
+        const savedFilter = localStorage.getItem("tableBranchFilter");
+        if(savedFilter) filterBranch.val(savedFilter);
+    }
+
+    $(document).on("change", "#branchSelect", function() {
+        let val = $(this).val();
+        if(val) localStorage.setItem("selectedBranch", val);
+    });
+    $(document).on("change", "#filterBranchTable", function() {
+        let branchVal = $(this).val();
+        localStorage.setItem("tableBranchFilter", branchVal);
+        if(dataTable) dataTable.column(1).search(branchVal).draw();
+    });
+
+    // ================ SHOW CONFIRMATION POPUP ================
+    function showConfirmationPopup(branch, date, time, status) {
+        const statusIcon = status === "Up" ? "🟢" : "🔴";
+        const statusClass = status === "Up" ? "confirm-status-up" : "confirm-status-down";
+        const statusText = status === "Up" ? "Up (Restored)" : "Down (Failure)";
+        
+        return Swal.fire({
+            title: '<i class="bi bi-check-circle-fill" style="color:#0f3b5f;"></i> Confirm Power Event',
+            html: `
+                <div class="confirm-details">
+                    <p><strong><i class="bi bi-building"></i> Branch:</strong> <span>${escapeHtml(branch)}</span></p>
+                    <p><strong><i class="bi bi-calendar"></i> Date:</strong> <span>${escapeHtml(date)}</span></p>
+                    <p><strong><i class="bi bi-clock"></i> Time:</strong> <span>${escapeHtml(time)}</span></p>
+                    <p><strong><i class="bi bi-lightning-charge"></i> Status:</strong> <span class="${statusClass}">${statusIcon} ${statusText}</span></p>
+                </div>
+                <p style="margin-top:15px;color:#64748b;">Please verify the details before submitting.</p>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0f3b5f',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: '<i class="bi bi-check-lg"></i> Confirm & Submit',
+            cancelButtonText: '<i class="bi bi-x-lg"></i> Cancel',
+            reverseButtons: false,
+            backdrop: true,
+            allowOutsideClick: false
+        });
+    }
+
+    // ================ SUBMIT POWER EVENT ================
+    async function submitPowerEvent() {
+        const branch = $("#branchSelect").val();
+        if(!branch) {
+            Swal.fire({ icon: 'warning', title: 'Missing Field', text: 'Please select a Treasury/Branch', confirmButtonColor: '#0f3b5f' });
+            return;
+        }
+        
+        const dateVal = document.getElementById("eventDate").value;
+        const timeVal = document.getElementById("eventTime").value;
+        if(!dateVal || !timeVal) {
+            Swal.fire({ icon: 'warning', title: 'Missing Fields', text: 'Date and Time are required', confirmButtonColor: '#0f3b5f' });
+            return;
+        }
+        
+        const status = $("#powerStatus").val();
+        if(!status) {
+            Swal.fire({ icon: 'warning', title: 'Missing Status', text: 'Please select a Power Status (Up/Down)', confirmButtonColor: '#0f3b5f' });
+            return;
+        }
+        
+        let dateParts = dateVal.split('/');
+        if(dateParts.length !== 3) {
+            Swal.fire({ icon: 'error', title: 'Invalid Date', text: 'Use DD/MM/YYYY format', confirmButtonColor: '#0f3b5f' });
+            return;
+        }
+        
+        // Validate date is real
+        const testDate = new Date(dateParts[2], dateParts[1]-1, dateParts[0]);
+        if(testDate.getDate() != dateParts[0] || testDate.getMonth() != dateParts[1]-1) {
+            Swal.fire({ icon: 'error', title: 'Invalid Date', text: 'Please enter a valid date', confirmButtonColor: '#0f3b5f' });
+            return;
+        }
+        
+        // Validate time format (HH:MM:SS)
+        const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/;
+        if(!timeRegex.test(timeVal)) {
+            Swal.fire({ icon: 'error', title: 'Invalid Time', text: 'Use HH:MM:SS format (e.g., 14:30:00)', confirmButtonColor: '#0f3b5f' });
+            return;
+        }
+        
+        // Show confirmation popup
+        const result = await showConfirmationPopup(branch, dateVal, timeVal, status);
+        
+        if (!result.isConfirmed) {
+            return; // User cancelled
+        }
+        
+        // Proceed with submission
+        let isoDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}T${timeVal}`;
+        const timestampISO = new Date(isoDate).toISOString();
+        
+        const payload = { action: "ADD", branch: branch, date: dateVal, time: timeVal, powerStatus: status, timestampISO: timestampISO };
+        
+        const $btn = $("#submitPowerBtn");
+        const originalHtml = $btn.html();
+        setButtonLoading($btn, true, originalHtml);
+        
+        try {
+            await fetch(APPS_SCRIPT_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+            
+            Swal.fire({ 
+                icon: 'success', 
+                title: 'Success!', 
+                text: 'Power event added successfully', 
+                timer: 2000, 
+                showConfirmButton: false,
+                backdrop: true
+            });
+            
+            // Reset form but keep branch selection
+            document.getElementById("eventDate").value = formatDateDMY(new Date());
+            document.getElementById("eventTime").value = formatTimeHHMMSS(new Date());
+            $("#powerStatus").val(""); // Reset to blank/default
+            
+            setTimeout(() => { loadPowerDataAndRender(); }, 800);
+        } catch(err) {
+            console.error(err);
+            Swal.fire({ icon: 'error', title: 'Submission Failed', text: 'Check Apps Script URL or network', confirmButtonColor: '#0f3b5f' });
+        } finally {
+            setButtonLoading($btn, false, originalHtml);
+        }
+    }
+
+    // ================ LOAD DATA & RENDER DATATABLE ================
+    async function loadPowerDataAndRender() {
+        showGlobalLoading('Loading power logs...');
+        const range = `${DATA_SHEET_NAME}!A:F`;
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${DATA_SHEET_ID}/values/${range}?key=${API_KEY}`;
+        try {
+            const resp = await fetch(url);
+            const data = await resp.json();
+            let rows = [];
+            if(data.values && data.values.length > 1) {
+                const sheetRows = data.values;
+                const startIdx = (sheetRows[0][0] && sheetRows[0][0].toString().toLowerCase().includes("id")) ? 1 : 0;
+                for(let i=startIdx; i<sheetRows.length; i++) {
+                    const row = sheetRows[i];
+                    if(row.length >=5 && row[0]) {
+                        rows.push({
+                            id: row[0],
+                            branch: row[1] || "",
+                            date: row[2] || "",
+                            time: row[3] || "",
+                            status: row[4] || "",
+                            timestampISO: row[5] || ""
+                        });
+                    }
+                }
+            }
+            rows.sort((a,b) => (b.timestampISO || "").localeCompare(a.timestampISO || ""));
+            renderDataTable(rows);
+            hideGlobalLoading();
+        } catch(err) {
+            console.error("Error loading data:", err);
+            hideGlobalLoading();
+            Swal.fire({ icon: 'error', title: 'Load Failed', text: 'Could not fetch data from sheet', confirmButtonColor: '#0f3b5f' });
+            if(dataTable) dataTable.clear().draw();
+        }
+    }
+
+    function renderDataTable(records) {
+        const tableBody = $("#powerLogsTable tbody");
+        if(dataTable) {
+            dataTable.destroy();
+            tableBody.empty();
+        }
+        dataTable = $("#powerLogsTable").DataTable({
+            data: records,
+            columns: [
+                { data: "id", title: "ID" },
+                { data: "branch", title: "Branch" },
+                { data: "date", title: "Date" },
+                { data: "time", title: "Time" },
+                { data: "status", title: "Status", render: function(data) {
+                    return data === "Up" ? '<span class="badge-up">🟢 Up</span>' : '<span class="badge-down">🔴 Down</span>';
+                } },
+                { data: "timestampISO", title: "Timestamp (ISO)", visible: false },
+                { data: null, title: "Actions", orderable: false, render: function(row) {
+                    return `<div class="action-icons">
+                                <i class="bi bi-pencil-square" data-id="${row.id}" data-branch="${escapeHtml(row.branch)}" data-date="${row.date}" data-time="${row.time}" data-status="${row.status}"></i>
+                                <i class="bi bi-trash3" data-id="${row.id}"></i>
+                            </div>`;
+                } }
+            ],
+            order: [[5, "desc"]],
+            pageLength: 15,
+            language: { search: "Filter:" },
+            drawCallback: function() { attachTableActionEvents(); }
+        });
+        const filterVal = localStorage.getItem("tableBranchFilter");
+        if(filterVal) dataTable.column(1).search(filterVal).draw();
+    }
+
+    function attachTableActionEvents() {
+        $(".bi-pencil-square").off("click").on("click", function() {
+            const id = $(this).data("id");
+            const branch = $(this).data("branch");
+            const date = $(this).data("date");
+            const time = $(this).data("time");
+            const status = $(this).data("status");
+            openEditModal(id, branch, date, time, status);
+        });
+        $(".bi-trash3").off("click").on("click", function() {
+            const id = $(this).data("id");
+            Swal.fire({
+                title: 'Delete Record?',
+                text: "This action cannot be undone!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    deletePowerEvent(id);
+                }
+            });
+        });
+    }
+
+    // ================ EDIT & DELETE ================
+    function openEditModal(id, branch, date, time, status) {
+        currentEditRowId = id;
+        $("#editBranch").val(branch);
+        $("#editDate").val(date);
+        $("#editTime").val(time);
+        $("#editStatus").val(status);
+        
+        if(flatpickrEditDate) flatpickrEditDate.destroy();
+        flatpickrEditDate = flatpickr("#editDate", { 
+            dateFormat: "d/m/Y", 
+            defaultDate: date 
+        });
+        
+        if(timeEditInst) timeEditInst.destroy();
+        timeEditInst = flatpickr("#editTime", { 
+            enableTime: true, 
+            noCalendar: true, 
+            dateFormat: "H:i:S", 
+            time_24hr: true, 
+            defaultDate: time 
+        });
+        
+        const modal = new bootstrap.Modal(document.getElementById("editEventModal"));
+        modal.show();
+    }
+
+    async function updatePowerEvent() {
+        const newDate = $("#editDate").val();
+        const newTime = $("#editTime").val();
+        const newStatus = $("#editStatus").val();
+        if(!newDate || !newTime) {
+            Swal.fire({ icon: 'warning', title: 'Incomplete', text: 'Date and time required', confirmButtonColor: '#0f3b5f' });
+            return;
+        }
+        if(!newStatus) {
+            Swal.fire({ icon: 'warning', title: 'Missing Status', text: 'Please select a power status', confirmButtonColor: '#0f3b5f' });
+            return;
+        }
+        
+        let parts = newDate.split('/');
+        let isoString = `${parts[2]}-${parts[1]}-${parts[0]}T${newTime}`;
+        const updatedISO = new Date(isoString).toISOString();
+        const payload = { action: "UPDATE", rowId: currentEditRowId, date: newDate, time: newTime, powerStatus: newStatus, timestampISO: updatedISO };
+        
+        const $btn = $("#confirmEditBtn");
+        const originalHtml = $btn.html();
+        setButtonLoading($btn, true, originalHtml);
+        
+        try {
+            await fetch(APPS_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(payload) });
+            Swal.fire({ icon: 'success', title: 'Updated!', text: 'Record updated successfully', timer: 1500, showConfirmButton: false });
+            bootstrap.Modal.getInstance(document.getElementById("editEventModal")).hide();
+            setTimeout(() => loadPowerDataAndRender(), 600);
+        } catch(e) {
+            Swal.fire({ icon: 'error', title: 'Update Failed', text: e.message, confirmButtonColor: '#0f3b5f' });
+        } finally {
+            setButtonLoading($btn, false, originalHtml);
+        }
+    }
+
+    async function deletePowerEvent(id) {
+        showGlobalLoading('Deleting record...');
+        const payload = { action: "DELETE", rowId: id };
+        try {
+            await fetch(APPS_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(payload) });
+            hideGlobalLoading();
+            Swal.fire({ icon: 'success', title: 'Deleted!', text: 'Record removed successfully', timer: 1500, showConfirmButton: false });
+            loadPowerDataAndRender();
+        } catch(e) {
+            hideGlobalLoading();
+            Swal.fire({ icon: 'error', title: 'Delete Failed', text: e.message, confirmButtonColor: '#0f3b5f' });
+        }
+    }
+
+    // ================ INIT ================
+    function setDefaultDateTime() {
+        const now = new Date();
+        if(document.getElementById("eventDate")) {
+            document.getElementById("eventDate").value = formatDateDMY(now);
+            document.getElementById("eventTime").value = formatTimeHHMMSS(now);
+        }
+        flatpickrDate = flatpickr(".flatpickr-date", { 
+            dateFormat: "d/m/Y", 
+            defaultDate: now 
+        });
+        timePickerInst = flatpickr(".time-picker", { 
+            enableTime: true, 
+            noCalendar: true, 
+            dateFormat: "H:i:S", 
+            time_24hr: true, 
+            defaultDate: now 
+        });
+    }
+
+    function switchTab(tabId) {
+        if(tabId === 'add') {
+            $("#addPane").addClass("active-pane");
+            $("#editPane").removeClass("active-pane");
+            $("#tabAddBtn").addClass("active");
+            $("#tabEditBtn").removeClass("active");
+        } else {
+            $("#editPane").addClass("active-pane");
+            $("#addPane").removeClass("active-pane");
+            $("#tabEditBtn").addClass("active");
+            $("#tabAddBtn").removeClass("active");
+            if(dataTable) dataTable.columns.adjust().draw();
+            else loadPowerDataAndRender();
+        }
+    }
+
+    $(document).ready(async function() {
+        setDefaultDateTime();
+        await fetchBranchesFromSheet();
+        $("#submitPowerBtn").on("click", submitPowerEvent);
+        $("#confirmEditBtn").on("click", updatePowerEvent);
+        $("#refreshTableBtn").on("click", () => loadPowerDataAndRender());
+        $("#tabAddBtn").on("click", () => switchTab('add'));
+        $("#tabEditBtn").on("click", () => switchTab('edit'));
+        window.loadPowerDataAndRender = loadPowerDataAndRender;
+    });
+</script>
+</body>
+</html>

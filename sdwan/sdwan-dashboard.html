@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SD-WAN NOC · Live Dashboard</title>
+    
+    <!-- LOCAL RESOURCES - Using existing from main project -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/font-awesome.min.css">
+    
+    <!-- Chart.js (new) -->
+    <script src="../js/chart.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+             background: #fff0;
+            font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            padding: 20px;
+            color: #1e293b;
+        }
+        
+        .dashboard {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 0 10px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: #0f5b9c;  /* Primary color from index */
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 0;
+        }
+        
+        .header h1 i {
+            background: linear-gradient(135deg, #0f5b9c, #1a4b7a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2.5rem;
+        }
+        
+        .status-badge {
+            background: white;
+            padding: 8px 24px;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #e2e8f0;
+            font-size: 0.95rem;
+            color: #1e293b;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .status-badge i {
+            color: #0f5b9c;
+        }
+        
+        .refresh-btn {
+            background: white;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
+            padding: 10px 28px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .refresh-btn:hover {
+            background: #f8fafc;
+            border-color: #0f5b9c;
+            color: #0f5b9c;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(15, 91, 156, 0.15);
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(15, 91, 156, 0.12);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eef2f6;
+            padding-bottom: 16px;
+        }
+        
+        .card-header i {
+            font-size: 1.8rem;
+            color: #0f5b9c;
+            background: #e8f0fe;
+            padding: 12px;
+            border-radius: 16px;
+            width: 54px;
+            height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .card-header h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1a4b7a;
+            margin: 0;
+        }
+        
+        .card-header p {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin: 4px 0 0 0;
+        }
+        
+        .chart-wrapper {
+            height: 240px;
+            position: relative;
+            margin: 15px 0 20px 0;
+        }
+        
+        .stats-mini {
+            display: flex;
+            justify-content: space-around;
+            background: #f8fafc;
+            padding: 14px;
+            border-radius: 40px;
+            border: 1px solid #e9ecef;
+            color: #1e293b;
+            font-weight: 500;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+        }
+        
+        .loading {
+            grid-column: 1/-1;
+            text-align: center;
+            padding: 60px;
+            background: white;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            color: #64748b;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        .error {
+            grid-column: 1/-1;
+            text-align: center;
+            padding: 50px;
+            background: #fef2f2;
+            border-radius: 20px;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        .error button {
+            background: #0f5b9c;
+            border: none;
+            color: white;
+            padding: 12px 32px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-top: 20px;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        
+        .error button:hover {
+            background: #1a4b7a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(15, 91, 156, 0.3);
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding: 20px;
+            text-align: right;
+            color: #64748b;
+            border-top: 1px solid #e9ecef;
+            font-size: 0.9rem;
+        }
+        
+        .district-tag {
+            background: #e8f0fe;
+            color: #0f5b9c;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 500;
+            border: 1px solid #b8d4fe;
+            transition: all 0.2s;
+        }
+        
+        .district-tag:hover {
+            background: #0f5b9c;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(15, 91, 156, 0.2);
+        }
+        
+        /* Chart.js custom colors for light theme */
+        canvas {
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+                justify-content: center;
+            }
+            
+            .status-badge, .refresh-btn {
+                justify-content: center;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>
+                <i class="bi bi-hdd-stack-fill"></i> 
+                SD-WAN NOC 
+            </h1>
+            <div class="status-badge">
+                <i class="bi bi-cloud-check"></i>
+                <span id="lastUpdate">fetching live...</span>
+            </div>
+            <button class="refresh-btn" onclick="loadLiveData()">
+                <i class="bi bi-arrow-repeat"></i> refresh now
+            </button>
+        </div>
+
+        <div id="dashboardGrid" class="grid">
+            <div class="loading">
+                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">Loading live data ...</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <i class="bi bi-database"></i> Data source: Working Status · Last 7 days trend
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+        const SPREADSHEET_ID = '1HvCqLHC8IyllKskBXX1MtMfjQMGUyhMP7KuTuJxDhmU';
+        const SHEET_NAME = 'Working Status';
+        const RANGE = 'A:T';  // fetch all columns
+
+        let chartInstances = [];
+
+        // Main function to load data and build dashboard
+        async function loadLiveData() {
+            const grid = document.getElementById('dashboardGrid');
+            grid.innerHTML = `<div class="loading">
+                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">Loading...</p>
+            </div>`;
+
+            try {
+                // Build Sheets API URL
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}!${RANGE}?key=${API_KEY}`;
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.values || data.values.length < 2) {
+                    throw new Error('No data rows found');
+                }
+
+                // Update timestamp
+                document.getElementById('lastUpdate').innerHTML = 
+                    `<i class="bi bi-check-circle-fill" style="color:#10b981;"></i> updated ${new Date().toLocaleTimeString()}`;
+
+                // Process the data (first row = headers)
+                const rows = data.values;
+                const headers = rows[0];
+                const sheetData = rows.slice(1).filter(row => row.length > 1 && row[0] && row[0].trim() !== '');
+
+                // Destroy old charts
+                chartInstances.forEach(chart => chart.destroy());
+                chartInstances = [];
+
+                // Build dashboard with real data
+                buildCharts(sheetData, headers);
+
+            } catch (error) {
+                console.error('API Error:', error);
+                grid.innerHTML = `
+                    <div class="error">
+                        <i class="bi bi-exclamation-triangle-fill" style="font-size: 3rem;"></i>
+                        <h3 class="mt-3">Failed to load live data</h3>
+                        <p style="margin-top: 10px;">${error.message}</p>
+                        <button onclick="loadLiveData()">
+                            <i class="bi bi-arrow-repeat me-2"></i> retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function buildCharts(rows, headers) {
+            // Find column indexes (case-insensitive matching)
+            const statusIdx = headers.findIndex(h => h?.toLowerCase().includes('status of work'));
+            const commissionedIdx = headers.findIndex(h => h?.toLowerCase().includes('commissioned'));
+            const typeIdx = headers.findIndex(h => h?.toLowerCase().includes('bsnl txn') || h?.toLowerCase().includes('tip'));
+            const remarksIdx = headers.findIndex(h => h?.toLowerCase().includes('treasury remarks'));
+            const issueIdx = headers.findIndex(h => h?.toLowerCase().includes('issue remarks'));
+            const nameIdx = 0; // Treasury name is first column
+
+            // 1. Count statuses
+            const statusCounts = { 'Completed': 0, 'WIP': 0, 'Other': 0 };
+            rows.forEach(row => {
+                const status = row[statusIdx] || '';
+                if (status.toLowerCase().includes('complete')) statusCounts.Completed++;
+                else if (status.toUpperCase().includes('WIP')) statusCounts.WIP++;
+                else statusCounts.Other++;
+            });
+
+            // 2. Commissioned (Yes/No/Blank)
+            const commissionedCounts = { 'YES': 0, 'NO': 0, 'Blank': 0 };
+            rows.forEach(row => {
+                const val = row[commissionedIdx] ? row[commissionedIdx].toString().toUpperCase() : '';
+                if (val === 'YES') commissionedCounts.YES++;
+                else if (val === 'NO') commissionedCounts.NO++;
+                else commissionedCounts.Blank++;
+            });
+
+            // 3. Connection type (FTTH vs TXMN)
+            const typeCounts = { 'FTTH': 0, 'TXMN': 0, 'Other': 0 };
+            rows.forEach(row => {
+                const type = row[typeIdx] ? row[typeIdx].toString().toUpperCase() : '';
+                if (type.includes('FTTH')) typeCounts.FTTH++;
+                else if (type.includes('TXMN')) typeCounts.TXMN++;
+                else typeCounts.Other++;
+            });
+
+            // 4. Working vs Not Working from remarks
+            let working = 0, notWorking = 0, unknown = 0;
+            rows.forEach(row => {
+                const remarks = row[remarksIdx] ? row[remarksIdx].toString() : '';
+                if (remarks.toLowerCase().includes('working fine') || remarks.toLowerCase().includes('ok')) working++;
+                else if (remarks.toLowerCase().includes('not working')) notWorking++;
+                else unknown++;
+            });
+
+            // 5. Top issue keywords (simplified)
+            const issues = {};
+            rows.forEach(row => {
+                const issue = row[issueIdx] ? row[issueIdx].toString() : '';
+                if (issue && issue.length > 3) {
+                    const key = issue.substring(0, 30);
+                    issues[key] = (issues[key] || 0) + 1;
+                }
+            });
+            const topIssues = Object.entries(issues).sort((a,b) => b[1] - a[1]).slice(0, 5);
+
+            // 6. Daily completions (from Treasury Remarks dates)
+            const dailyCompletions = {};
+            rows.forEach(row => {
+                const remarks = row[remarksIdx] ? row[remarksIdx].toString() : '';
+                const match = remarks.match(/(\d{2})-(\d{2})-(\d{4})/);
+                if (match) {
+                    const date = `${match[3]}-${match[2]}-${match[1]}`; // YYYY-MM-DD
+                    dailyCompletions[date] = (dailyCompletions[date] || 0) + 1;
+                }
+            });
+            const sortedDates = Object.keys(dailyCompletions).sort().slice(-7);
+            const lastWeekData = sortedDates.map(d => dailyCompletions[d]);
+
+            // Build HTML grid
+            const grid = document.getElementById('dashboardGrid');
+            grid.innerHTML = ''; // clear
+
+            // Helper to create cards
+            function addCard(icon, title, description, chartType, chartConfig, chartDataFn) {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <i class="bi ${icon}"></i>
+                        <div>
+                            <h3>${title}</h3>
+                            <p>${description}</p>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="chart-${chartInstances.length}"></canvas>
+                    </div>
+                    <div class="stats-mini" id="stats-${chartInstances.length}"></div>
+                `;
+                grid.appendChild(card);
+
+                const canvas = document.getElementById(`chart-${chartInstances.length}`);
+                const ctx = canvas.getContext('2d');
+                
+                const chart = new Chart(ctx, {
+                    type: chartType,
+                    data: chartConfig.data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { 
+                                labels: { 
+                                    color: '#1e293b',
+                                    font: { size: 11, weight: '500' }
+                                } 
+                            }
+                        },
+                        ...chartConfig.options
+                    }
+                });
+                chartInstances.push(chart);
+
+                // Add stats
+                const statsDiv = document.getElementById(`stats-${chartInstances.length-1}`);
+                if (statsDiv && chartDataFn) statsDiv.innerHTML = chartDataFn();
+            }
+
+            // Card 1: Status of Work (Pie)
+            addCard(
+                'bi-clipboard-check-fill',
+                'MPLS Installation Status',
+                'Completion status of all treasuries',
+                'pie',
+                {
+                    data: {
+                        labels: ['Completed', 'Work in Progress', 'Other/Blank'],
+                        datasets: [{
+                            data: [statusCounts.Completed, statusCounts.WIP, statusCounts.Other],
+                            backgroundColor: ['#10b981', '#f59e0b', '#94a3b8'],
+                            borderWidth: 0
+                        }]
+                    }
+                },
+                () => `✅ ${statusCounts.Completed} completed · 🔧 ${statusCounts.WIP} in progress · 📋 ${statusCounts.Other} other`
+            );
+
+            // Card 2: Commissioned Status (Doughnut)
+            addCard(
+                'bi-check-circle-fill',
+                'Commissioned Status',
+                'Officially commissioned (Yes/No)',
+                'doughnut',
+                {
+                    data: {
+                        labels: ['Commissioned (YES)', 'Not Commissioned', 'Not Specified'],
+                        datasets: [{
+                            data: [commissionedCounts.YES, commissionedCounts.NO, commissionedCounts.Blank],
+                            backgroundColor: ['#10b981', '#ef4444', '#94a3b8'],
+                        }]
+                    }
+                },
+                () => `✔️ ${commissionedCounts.YES} commissioned · ❌ ${commissionedCounts.NO} not commissioned · ❓ ${commissionedCounts.Blank} not specified`
+            );
+
+            // Card 3: Connection Type (Pie)
+            addCard(
+                'bi-diagram-3-fill',
+                'Connection Type',
+                'BSNL TXN / TIP distribution',
+                'pie',
+                {
+                    data: {
+                        labels: ['FTTH', 'TXMN', 'Other'],
+                        datasets: [{
+                            data: [typeCounts.FTTH, typeCounts.TXMN, typeCounts.Other],
+                            backgroundColor: ['#0f5b9c', '#8b5cf6', '#94a3b8'],
+                        }]
+                    }
+                },
+                () => `📡 FTTH: ${typeCounts.FTTH}  ·  🛰️ TXMN: ${typeCounts.TXMN} · 📊 Other: ${typeCounts.Other}`
+            );
+
+            // Card 4: Working Status from Remarks (Bar)
+            addCard(
+                'bi-heart-pulse-fill',
+                'Operational Status',
+                'Based on treasury remarks',
+                'bar',
+                {
+                    data: {
+                        labels: ['Working', 'Not Working', 'Unknown'],
+                        datasets: [{
+                            data: [working, notWorking, unknown],
+                            backgroundColor: ['#10b981', '#ef4444', '#94a3b8'],
+                        }]
+                    },
+                    options: { 
+                        scales: { 
+                            y: { 
+                                beginAtZero: true, 
+                                grid: { color: '#e9ecef' },
+                                ticks: { color: '#64748b' }
+                            },
+                            x: {
+                                ticks: { color: '#1e293b' }
+                            }
+                        } 
+                    }
+                },
+                () => `🟢 ${working} working  ·  🔴 ${notWorking} not working  ·  ⚪ ${unknown} unknown`
+            );
+
+            // Card 5: Recent Completions (Line chart - last 7 dates)
+            if (sortedDates.length > 0) {
+                addCard(
+                    'bi-calendar-week-fill',
+                    'SDWAN- Device Status',
+                    'Installation & Working.(Last 7 days)',
+                    'line',
+                    {
+                        data: {
+                            labels: sortedDates.map(d => {
+                                const parts = d.split('-');
+                                return `${parts[2]}-${parts[1]}`; // DD-MM format
+                            }),
+                            datasets: [{
+                                data: lastWeekData,
+                                borderColor: '#0f5b9c',
+                                backgroundColor: 'rgba(15, 91, 156, 0.1)',
+                                tension: 0.3,
+                                fill: true,
+                                pointBackgroundColor: '#0f5b9c',
+                                pointBorderColor: 'white',
+                                pointBorderWidth: 2,
+                                pointRadius: 4,
+                                pointHoverRadius: 6
+                            }]
+                        },
+                        options: {
+                            scales: { 
+                                y: { 
+                                    beginAtZero: true, 
+                                    grid: { color: '#e9ecef' },
+                                    ticks: { color: '#64748b' }
+                                },
+                                x: {
+                                    ticks: { color: '#1e293b' }
+                                }
+                            }
+                        }
+                    },
+                    () => `📅 Total last 7 days: ${lastWeekData.reduce((a,b) => a+b, 0)}`
+                );
+            }
+
+            // Card 6: Top Issue Keywords (Horizontal bar)
+            if (topIssues.length > 0) {
+                addCard(
+                    'bi-exclamation-triangle-fill',
+                    'Frequent Issue Indicators',
+                    'From Issue Remarks column',
+                    'bar',
+                    {
+                        data: {
+                            labels: topIssues.map(i => i[0].substring(0, 20) + (i[0].length > 20 ? '...' : '')),
+                            datasets: [{
+                                data: topIssues.map(i => i[1]),
+                                backgroundColor: '#f59e0b',
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            scales: { 
+                                x: { 
+                                    grid: { color: '#e9ecef' },
+                                    ticks: { color: '#64748b' }
+                                },
+                                y: {
+                                    ticks: { color: '#1e293b' }
+                                }
+                            },
+                            plugins: {
+                                legend: { display: false }
+                            }
+                        }
+                    },
+                    () => `⚠️ Most mentioned: ${topIssues[0]?.[0].substring(0,20)}... (${topIssues[0]?.[1]})`
+                );
+            }
+
+            // Full width card: Summary table by district
+            const districts = {};
+            rows.forEach(row => {
+                const name = row[0] || '';
+                if (name) {
+                    // Try to extract district from treasury name
+                    const words = name.split(' ');
+                    let district = 'Other';
+                    for (let word of words) {
+                        if (word.includes('DISTRICT') || word.includes('TREASURY')) {
+                            const index = words.indexOf(word);
+                            if (index > 0) {
+                                district = words[index-1];
+                                break;
+                            }
+                        }
+                    }
+                    if (district === 'Other' && words[0] && !words[0].includes('TREASURY')) {
+                        district = words[0];
+                    }
+                    districts[district] = (districts[district] || 0) + 1;
+                }
+            });
+
+            const districtCard = document.createElement('div');
+            districtCard.className = 'card full-width';
+            districtCard.innerHTML = `
+                <div class="card-header">
+                    <i class="bi bi-map-fill"></i>
+                    <div>
+                        <h3>Treasury Distribution by District</h3>
+                        <p>Count per region (auto-detected)</p>
+                    </div>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding: 15px;">
+                    ${Object.entries(districts)
+                        .sort((a,b) => b[1] - a[1])
+                        .slice(0, 15)
+                        .map(([d, c]) => 
+                            `<span class="district-tag">${d}: <strong>${c}</strong></span>`
+                        ).join('')}
+                </div>
+                <div class="stats-mini" style="margin-top: 20px;">
+                    <span><i class="bi bi-pin-map-fill"></i> Total Districts: ${Object.keys(districts).length}</span>
+                    <span><i class="bi bi-building"></i> Total Treasuries: ${rows.length}</span>
+                </div>
+            `;
+            grid.appendChild(districtCard);
+        }
+
+        // Initialize on page load
+        window.onload = loadLiveData;
+    </script>
+</body>
+</html>
