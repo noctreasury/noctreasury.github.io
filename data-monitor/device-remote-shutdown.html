@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Branch Shutdown Request | FatPipe</title>
+
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/sweetalert2.min.css">
+    <link rel="stylesheet" href="../css/flatpickr.min.css">
+
+    <style>
+        .modal-backdrop { background-color: #fff0; }
+        body {
+            background: #fff0;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 20px 16px;
+        }
+        .page-header {
+            padding: 15px 2px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 12px !important;
+            flex-wrap: wrap !important;
+            justify-content: space-between !important;
+        }
+        .page-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .page-header-left i {
+            font-size: 2rem !important;
+            background: rgb(56 143 251/15%)! important;
+            padding: 10px !important;
+            border-radius: 16px !important;
+            color: #184f83 !important;
+        }
+        .page-header-left h1 {
+            margin: 0 !important;
+            font-size: 1.8rem !important;
+            font-weight: 700 !important;
+            color: #184f83 !important;
+        }
+        .page-header-left p {
+            margin: 2px 0 0;
+            opacity: 0.7;
+            font-size: 0.8rem;
+        }
+        .app-card {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
+            padding: 30px 28px;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+        .required:after {
+            content: "*";
+            color: #dc2626;
+            margin-left: 4px;
+        }
+        .form-control, .form-select {
+            border-radius: 14px;
+            border: 1px solid #d1d9e6;
+            padding: 10px 14px;
+            background: white;
+            transition: 0.2s;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+        .form-control[readonly], .form-select:disabled {
+            background-color: #f1f5f9;
+            cursor: not-allowed;
+        }
+        .btn-primary-custom {
+            background: #0b2b4a;
+            border: none;
+            padding: 12px 32px;
+            font-weight: 600;
+            border-radius: 60px;
+            transition: 0.2s;
+            color: white;
+            font-size: 1rem;
+        }
+        .btn-primary-custom:hover:not(:disabled) {
+            background: #1a3f62;
+            transform: scale(1.01);
+            color: white;
+        }
+        .btn-primary-custom:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .btn-loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        .btn-loading i.bi-arrow-repeat {
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .status-badge {
+            background: #f1f5f9;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            color: #334155;
+        }
+        .waiting-modal .modal-content {
+            border-radius: 24px;
+            border: none;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        }
+        .waiting-modal .modal-header {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .waiting-modal .modal-footer {
+            border-top: none;
+            padding-top: 0;
+        }
+        .spinner-large {
+            width: 60px;
+            height: 60px;
+        }
+        .confirm-badge {
+            background: #dcfce7;
+            color: #166534;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .footer-note {
+            font-size: 12px;
+            text-align: center;
+            margin-top: 24px;
+            color: #5b6e8c;
+        }
+        .time-format-hint {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-header">
+    <div class="page-header-left">
+        <i class="bi bi-power"></i>
+        <div>
+            <h1>Shutdown Request</h1>
+            <p>FatPipe device shutdown • remote initiation</p>
+        </div>
+    </div>
+</div>
+
+<div class="app-card">
+    <div class="mb-4">
+        <span class="status-badge"><i class="bi bi-info-circle"></i> Awaiting confirmation will be shown after submit</span>
+    </div>
+
+    <form id="shutdownForm" autocomplete="off">
+        <div class="row g-4">
+            <div class="col-12">
+                <label class="form-label required">Branch ID</label>
+                <input type="text" id="branchId" class="form-control" readonly disabled placeholder="Detecting branch...">
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label required">Device Type</label>
+                <input type="text" id="deviceType" class="form-control" readonly disabled placeholder="Fetching...">
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label required">Serial No.</label>
+                <input type="text" id="deviceSerial" class="form-control" readonly disabled placeholder="Fetching...">
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label required">Date</label>
+                <input type="text" id="requestDate" class="form-control" readonly>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label required">Time</label>
+                <input type="text" id="requestTime" class="form-control flatpickr-time" placeholder="hh:mm AM/PM">
+                <div class="time-format-hint">12-hour format (e.g., 2:30 PM)</div>
+            </div>
+
+            <div class="col-3 mt-3">
+                <button type="button" id="submitShutdownBtn" class="btn btn-primary-custom w-100">
+                    <i class="bi bi-send"></i> Submit Shutdown Request
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+
+
+<!-- WAITING FOR CONFIRMATION MODAL -->
+<div class="modal fade waiting-modal" id="waitingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-clock-history text-warning"></i> Awaiting Confirmation</h5>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border spinner-large text-primary mb-3" role="status">
+                    <span class="visually-hidden">Waiting...</span>
+                </div>
+                <h5 id="waitingStatusText">Waiting for confirmation from DoT...</h5>
+                <p class="text-muted" id="waitingDetails"></p>
+                <div id="confirmStatusContainer" class="mt-3" style="display:none;">
+                    <span class="confirm-badge"><i class="bi bi-check-circle-fill"></i> Confirmed</span>
+                    <p class="mt-3 fw-bold text-success" id="confirmMessage">
+                        Remote Shutdown initiated from DoT, you can switch off the device after 2 min
+                    </p>
+                </div>
+                <div id="checkingInfo" class="mt-2">
+                    <small class="text-muted">Checking every 5 seconds...</small>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary" id="closeWaitingBtn" disabled>Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SCRIPTS -->
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script src="../js/select2.min.js"></script>
+<script src="../js/flatpickr.min.js"></script>
+<script src="../js/sweetalert2.min.js"></script>
+
+<script>
+// ============================================================
+//  CONFIGURATION
+// ============================================================
+
+// IMPORTANT: Replace this with YOUR Apps Script deployment URL
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxO9nOoDbwouU5YgXsiw_XlBB528Xlp03kdCvMvf8rdG1viWLn2M4yQVthlW93dSmncFg/exec";
+
+// Installation Status sheet (for fetching device info)
+const INSTALL_SHEET_ID = "1HvCqLHC8IyllKskBXX1MtMfjQMGUyhMP7KuTuJxDhmU";
+const INSTALL_SHEET_NAME = "Installation Status";
+const INSTALL_API_KEY = "AIzaSyDc8tegwi2rgHyDFYm7uWBqVqQ7Fwb3uWM";
+
+// Target sheet for checking confirmation
+const TARGET_SHEET_ID = "1dMKhs6mIicwqRIbakYp7mzI8CXGbJ-VXHkmNXDRT8wA";
+const TARGET_SHEET_NAME = "Data";
+const TARGET_API_KEY = "AIzaSyBAuS3Brpsw5JOJnjNJii1UlFa7ClXf8d4";
+
+// ============================================================
+//  GLOBALS
+// ============================================================
+let currentBranch = null;
+let timePicker = null;
+let isSubmitting = false;
+let confirmCheckInterval = null;
+let waitingModalInstance = null;
+let checkCount = 0;
+const MAX_CHECKS = 120; // 120 * 5 seconds = 10 minutes
+
+// ============================================================
+//  TIME FORMATTING FUNCTIONS
+// ============================================================
+
+// Convert 12-hour time (e.g., "2:30 PM") to 24-hour (e.g., "14:30")
+function convertTo24Hour(time12h) {
+    if (!time12h) return time12h;
+    
+    if (time12h.match(/^\d{1,2}:\d{2}$/)) {
+        return time12h;
+    }
+    
+    try {
+        const parts = time12h.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+        if (!parts) return time12h;
+        
+        let hours = parseInt(parts[1]);
+        const minutes = parts[2];
+        const ampm = parts[3].toUpperCase();
+        
+        if (ampm === 'PM' && hours !== 12) {
+            hours += 12;
+        } else if (ampm === 'AM' && hours === 12) {
+            hours = 0;
+        }
+        
+        return `${String(hours).padStart(2, '0')}:${minutes}`;
+    } catch (e) {
+        console.error('Error converting time:', e);
+        return time12h;
+    }
+}
+
+// ============================================================
+//  HELPER: get branch from storage
+// ============================================================
+function getBranchFromStorage() {
+    let branch = null;
+    const sessionUser = sessionStorage.getItem('currentUser');
+    if (sessionUser) {
+        try {
+            const userData = JSON.parse(sessionUser);
+            branch = userData.username;
+        } catch (e) { /* ignore */ }
+    }
+    if (!branch) {
+        const localUser = localStorage.getItem('currentUser');
+        if (localUser) {
+            try {
+                const userData = JSON.parse(localUser);
+                branch = userData.username;
+            } catch (e) { /* ignore */ }
+        }
+    }
+    if (!branch) {
+        branch = localStorage.getItem('selectedBranch');
+    }
+    return branch;
+}
+
+// ============================================================
+//  FETCH DEVICE INFO FROM INSTALLATION STATUS SHEET
+// ============================================================
+async function fetchDeviceInfo(branchId) {
+    if (!branchId) return { type: '', serial: '' };
+    try {
+        const range = `${INSTALL_SHEET_NAME}!C:E`;
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${INSTALL_SHEET_ID}/values/${range}?key=${INSTALL_API_KEY}`;
+        const resp = await fetch(url);
+        const data = await resp.json();
+        
+        if (!data.values || data.values.length < 2) return { type: '', serial: '' };
+
+        const rows = data.values.slice(1);
+        for (let row of rows) {
+            if (row.length >= 3) {
+                const sheetBranch = (row[1] || '').toString().trim();
+                if (sheetBranch === branchId.toString().trim()) {
+                    return {
+                        type: (row[0] || '').toString().trim(),
+                        serial: (row[2] || '').toString().trim()
+                    };
+                }
+            }
+        }
+        return { type: 'Not found', serial: 'Not found' };
+    } catch (err) {
+        console.error('fetchDeviceInfo error:', err);
+        return { type: 'Error', serial: 'Error' };
+    }
+}
+
+// ============================================================
+//  UPDATE UI WITH BRANCH & DEVICE INFO
+// ============================================================
+async function updateBranchAndDevice() {
+    const branch = getBranchFromStorage();
+    currentBranch = branch || null;
+
+    if (!branch) {
+        $('#branchId').val('No branch detected - login again');
+        $('#deviceType').val('—');
+        $('#deviceSerial').val('—');
+        return;
+    }
+
+    $('#branchId').val(branch);
+    const info = await fetchDeviceInfo(branch);
+    $('#deviceType').val(info.type || '—');
+    $('#deviceSerial').val(info.serial || '—');
+}
+
+// ============================================================
+//  SET DATE & TIME
+// ============================================================
+function setDefaultDateTime() {
+    const now = new Date();
+    const d = String(now.getDate()).padStart(2,'0');
+    const m = String(now.getMonth()+1).padStart(2,'0');
+    const y = now.getFullYear();
+    $('#requestDate').val(`${d}/${m}/${y}`);
+
+    if (timePicker) timePicker.destroy();
+    timePicker = flatpickr("#requestTime", {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "h:i K",
+        time_24hr: false,
+        defaultDate: now,
+        minuteIncrement: 1,
+        placeholder: "hh:mm AM/PM"
+    });
+}
+
+// ============================================================
+//  CHECK CONFIRM STATUS FROM SHEET
+// ============================================================
+async function checkConfirmStatus(branch, deviceType, serial, date, time12h) {
+    try {
+        const time24h = convertTo24Hour(time12h);
+        
+        const range = `${TARGET_SHEET_NAME}!A:F`;
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${TARGET_SHEET_ID}/values/${range}?key=${TARGET_API_KEY}`;
+        
+        const resp = await fetch(url);
+        
+        if (!resp.ok) {
+            return { confirmed: false, status: `HTTP ${resp.status}` };
+        }
+        
+        const data = await resp.json();
+        
+        if (!data.values || data.values.length < 2) {
+            return { confirmed: false, status: 'Empty sheet' };
+        }
+        
+        const rows = data.values.slice(1);
+        
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            if (row.length >= 6) {
+                const rowBranch = (row[0] || '').toString().trim();
+                const rowDeviceType = (row[1] || '').toString().trim();
+                const rowSerial = (row[2] || '').toString().trim();
+                const rowDate = (row[3] || '').toString().trim();
+                const rowTime = (row[4] || '').toString().trim();
+                const confirmVal = (row[5] || '').toString().trim();
+                
+                const branchMatch = rowBranch === branch.trim();
+                const deviceMatch = rowDeviceType === deviceType.trim();
+                const serialMatch = rowSerial === serial.trim();
+                const dateMatch = rowDate === date.trim();
+                
+                // Check time match - try both 12h and 24h formats
+                const timeMatch12h = rowTime === time12h.trim();
+                const timeMatch24h = rowTime === time24h.trim();
+                const timeMatch = timeMatch12h || timeMatch24h;
+                
+                if (branchMatch && deviceMatch && serialMatch && dateMatch && timeMatch) {
+                    return { 
+                        confirmed: confirmVal === 'Yes',
+                        status: confirmVal || 'Empty',
+                        rowIndex: i + 2
+                    };
+                }
+            }
+        }
+        
+        return { confirmed: false, status: 'Not found' };
+        
+    } catch (err) {
+        console.error('checkConfirmStatus error:', err);
+        return { confirmed: false, status: `Error: ${err.message}` };
+    }
+}
+
+// ============================================================
+//  START CONFIRMATION CHECKING (every 5 seconds)
+// ============================================================
+function startConfirmCheck(branch, deviceType, serial, date, time) {
+    checkCount = 0;
+    
+    if (confirmCheckInterval) {
+        clearInterval(confirmCheckInterval);
+        confirmCheckInterval = null;
+    }
+    
+    $('#waitingDetails').html(`
+        Branch: ${branch}<br>
+        Device: ${deviceType}<br>
+        Serial: ${serial}<br>
+        Date: ${date}<br>
+        Time: ${time}
+    `);
+    $('#waitingStatusText').text('Waiting for confirmation from DoT...');
+    $('#confirmStatusContainer').hide();
+    $('#closeWaitingBtn').prop('disabled', true);
+    $('#checkingInfo').show();
+    $('#checkingInfo').html('<small class="text-muted">Checking every 5 seconds...</small>');
+    
+    if (!waitingModalInstance) {
+        waitingModalInstance = new bootstrap.Modal(document.getElementById('waitingModal'), {
+            backdrop: 'static',
+            keyboard: false
+        });
+    }
+    waitingModalInstance.show();
+    
+    // First check immediately
+    performCheck();
+    
+    // Then check every 5 seconds
+    confirmCheckInterval = setInterval(performCheck, 5000);
+    
+    async function performCheck() {
+        checkCount++;
+        $('#checkingInfo').html(`<small class="text-muted">Checking every 5 seconds... (${checkCount})</small>`);
+        
+        const result = await checkConfirmStatus(branch, deviceType, serial, date, time);
+        
+        if (result.confirmed) {
+            // Confirmed! Show success message
+            clearInterval(confirmCheckInterval);
+            confirmCheckInterval = null;
+            
+            // Hide the waiting modal
+            if (waitingModalInstance) {
+                waitingModalInstance.hide();
+            }
+            
+            // Show the confirmation message with SweetAlert (stays until user clicks OK)
+            Swal.fire({
+                icon: 'success',
+                title: 'Remote Shutdown Done!',
+                html: 'Remote Shutdown initiated from DoT, you can switch off the device after 2 min',
+                confirmButtonColor: '#0b2b4a',
+                confirmButtonText: 'OK',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            });
+            
+        } else if (checkCount >= MAX_CHECKS) {
+            // Timeout
+            clearInterval(confirmCheckInterval);
+            confirmCheckInterval = null;
+            $('#waitingStatusText').html('<span class="text-warning"><i class="bi bi-clock"></i> Still awaiting confirmation...</span>');
+            $('#checkingInfo').html('<small class="text-muted">Checking timed out. Please refresh or check manually.</small>');
+            $('#closeWaitingBtn').prop('disabled', false);
+        }
+    }
+}
+
+// ============================================================
+//  SUBMIT TO GOOGLE SHEET (via Apps Script)
+// ============================================================
+async function submitShutdownRequest() {
+    if (isSubmitting) return;
+
+    const branch = $('#branchId').val();
+    if (!branch || branch.includes('No branch')) {
+        Swal.fire({ icon: 'warning', title: 'Branch missing', text: 'Branch ID is required. Please login again.', confirmButtonColor: '#0b2b4a' });
+        return;
+    }
+
+    const deviceType = $('#deviceType').val();
+    const serial = $('#deviceSerial').val();
+    if (!deviceType || deviceType === '—' || deviceType === 'Not found' || deviceType === 'Error') {
+        Swal.fire({ icon: 'error', title: 'Device info missing', text: 'Could not fetch Device Type.', confirmButtonColor: '#0b2b4a' });
+        return;
+    }
+
+    const dateVal = $('#requestDate').val();
+    const timeVal = $('#requestTime').val();
+    if (!dateVal || !timeVal) {
+        Swal.fire({ icon: 'warning', title: 'Incomplete', text: 'Date and Time are required.', confirmButtonColor: '#0b2b4a' });
+        return;
+    }
+
+    // Convert time to 24-hour format for submission to sheet
+    const time24h = convertTo24Hour(timeVal);
+
+    const payload = {
+        action: "ADD_SHUTDOWN",
+        branch: branch,
+        deviceType: deviceType,
+        serial: serial,
+        date: dateVal,
+        time: time24h
+    };
+
+    const $btn = $('#submitShutdownBtn');
+    const originalHtml = $btn.html();
+    $btn.html('<i class="bi bi-arrow-repeat"></i> Sending...');
+    $btn.prop('disabled', true);
+    $btn.addClass('btn-loading');
+    isSubmitting = true;
+
+    try {
+        await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        await Swal.fire({
+            icon: 'success',
+            title: '✅ Request Submitted Successfully!',
+            text: 'Your shutdown request has been logged.',
+            confirmButtonColor: '#0b2b4a',
+            timer: 2000,
+            timerProgressBar: true,
+            showConfirmButton: true
+        });
+
+        startConfirmCheck(branch, deviceType, serial, dateVal, timeVal);
+
+    } catch (err) {
+        console.error('Submit error:', err);
+        Swal.fire({
+            icon: 'error',
+            title: 'Submission failed',
+            text: 'Network or Apps Script error. Please try again.',
+            confirmButtonColor: '#0b2b4a'
+        });
+    } finally {
+        $btn.html(originalHtml);
+        $btn.prop('disabled', false);
+        $btn.removeClass('btn-loading');
+        isSubmitting = false;
+    }
+}
+
+// ============================================================
+//  CLOSE WAITING MODAL HANDLER
+// ============================================================
+function closeWaitingModal() {
+    if (confirmCheckInterval) {
+        clearInterval(confirmCheckInterval);
+        confirmCheckInterval = null;
+    }
+    if (waitingModalInstance) {
+        waitingModalInstance.hide();
+    }
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+$(document).ready(async function() {
+    setDefaultDateTime();
+    await updateBranchAndDevice();
+
+    $('#submitShutdownBtn').on('click', submitShutdownRequest);
+    $('#closeWaitingBtn').on('click', closeWaitingModal);
+
+    $('#waitingModal').on('hidden.bs.modal', function() {
+        if (confirmCheckInterval) {
+            clearInterval(confirmCheckInterval);
+            confirmCheckInterval = null;
+        }
+    });
+});
+</script>
+</body>
+</html>

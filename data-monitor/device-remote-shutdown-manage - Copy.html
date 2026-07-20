@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Shutdown Management</title>
+
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/flatpickr.min.css">
+    <link rel="stylesheet" href="../css/sweetalert2.min.css">
+
+    <style>
+        body {
+            background: #fff0;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 20px 16px;
+        }
+        .page-header {
+            padding: 15px 2px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 12px !important;
+            flex-wrap: wrap !important;
+            justify-content: space-between !important;
+        }
+        .page-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .page-header-left i {
+            font-size: 2rem !important;
+            background: rgba(37, 99, 235, 0.12) !important;
+            padding: 10px !important;
+            border-radius: 16px !important;
+            color: #184f83 !important;
+        }
+        .page-header-left h1 {
+            margin: 0 !important;
+            font-size: 1.8rem !important;
+            font-weight: 700 !important;
+            color: #184f83 !important;
+        }
+        .page-header-left p {
+            margin: 2px 0 0;
+            opacity: 0.7;
+            font-size: 0.8rem;
+        }
+        .app-card {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
+            padding: 30px 28px;
+        }
+        .tab-header {
+            display: flex;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0 24px;
+            border-radius: 28px 28px 0 0;
+            margin: -30px -28px 20px -28px;
+        }
+        .tab-btn {
+            padding: 16px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            background: transparent;
+            border: none;
+            color: #475569;
+            transition: 0.2s;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+        }
+        .tab-btn i { margin-right: 8px; font-size: 1.1rem; }
+        .tab-btn.active {
+            color: #1e4a76;
+            border-bottom-color: #1e4a76;
+            background: white;
+        }
+        .tab-pane {
+            display: none;
+            padding: 10px 0;
+            background: white;
+        }
+        .tab-pane.active-pane {
+            display: block;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+        .required:after {
+            content: "*";
+            color: #dc2626;
+            margin-left: 4px;
+        }
+        .form-control {
+            border-radius: 14px;
+            border: 1px solid #d1d9e6;
+            padding: 10px 14px;
+            background: white;
+            transition: 0.2s;
+        }
+        .form-control:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+        .btn-primary-custom {
+            background: #0b2b4a;
+            border: none;
+            padding: 12px 32px;
+            font-weight: 600;
+            border-radius: 60px;
+            transition: 0.2s;
+            color: white;
+            font-size: 1rem;
+        }
+        .btn-primary-custom:hover:not(:disabled) {
+            background: #1a3f62;
+            transform: scale(1.01);
+            color: white;
+        }
+        .btn-primary-custom:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .btn-success-custom {
+            background: #059669;
+            border: none;
+            padding: 6px 16px;
+            font-weight: 600;
+            border-radius: 30px;
+            transition: 0.2s;
+            color: white;
+            font-size: 0.85rem;
+        }
+        .btn-success-custom:hover:not(:disabled) {
+            background: #047857;
+            color: white;
+        }
+        .btn-success-custom:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .footer-note {
+            font-size: 12px;
+            text-align: center;
+            margin-top: 24px;
+            color: #5b6e8c;
+        }
+        .table-responsive {
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        .table {
+            margin-bottom: 0;
+        }
+        .table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #1e293b;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .badge-pending {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-weight: 500;
+        }
+        .badge-confirmed {
+            background: #dcfce7;
+            color: #166534;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-weight: 500;
+        }
+        .no-data-message {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin: 10px 0;
+        }
+        .no-data-message i {
+            font-size: 3rem;
+            color: #cbd5e1;
+            margin-bottom: 15px;
+        }
+        @media (max-width: 700px) {
+            .tab-pane { padding: 15px 0; }
+            .tab-btn { padding: 12px 16px; font-size: 0.9rem; }
+            .table-responsive { font-size: 0.85rem; }
+        }
+        .filter-row {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+        .status-message {
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: none;
+        }
+        .status-message.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+            display: block;
+        }
+        .status-message.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+            display: block;
+        }
+        .status-message.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+            display: block;
+        }
+        .flatpickr-input {
+            background: white;
+        }
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+            border-width: 0.15em;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .loading-overlay.active {
+            display: flex;
+        }
+        .loading-spinner {
+            font-size: 3rem;
+            color: #0b2b4a;
+        }
+    </style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner">
+        <i class="bi bi-arrow-repeat spinner-border"></i>
+    </div>
+</div>
+
+<div class="page-header">
+    <div class="page-header-left">
+        <i class="bi bi-check2-circle"></i>
+        <div>
+            <h1>Shutdown Management</h1>
+            <p>Confirm shutdown requests & verify power on</p>
+        </div>
+    </div>
+</div>
+
+<div class="app-card">
+    <div class="tab-header">
+        <button class="tab-btn active" id="tabConfirmBtn"><i class="bi bi-check2-circle"></i> Shutdown Confirmation</button>
+        <button class="tab-btn" id="tabPowerOnBtn"><i class="bi bi-power"></i> Device Power On</button>
+    </div>
+
+    <!-- ==================== TAB 1: SHUTDOWN CONFIRMATION ==================== -->
+    <div id="confirmPane" class="tab-pane active-pane">
+        <div class="filter-row">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label required">Date (DD/MM/YYYY)</label>
+                    <input type="text" id="confirmDate" class="form-control flatpickr-date" placeholder="DD/MM/YYYY">
+                </div>
+                <div class="col-md-2">
+                    <button id="viewConfirmBtn" class="btn btn-primary-custom w-100">
+                        <i class="bi bi-search"></i> View Requests
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="confirmStatusMsg" class="status-message"></div>
+        <div id="confirmRecordsContainer">
+            <div class="no-data-message">
+                <i class="bi bi-inbox"></i>
+                <h5>No Records</h5>
+                <p>Enter a date and click "View Requests" to load pending shutdown requests.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TAB 2: DEVICE POWER ON VERIFICATION ==================== -->
+    <div id="powerOnPane" class="tab-pane">
+        <div class="filter-row">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label required">Date (DD/MM/YYYY)</label>
+                    <input type="text" id="powerOnDate" class="form-control flatpickr-date" placeholder="DD/MM/YYYY">
+                </div>
+                <div class="col-md-2">
+                    <button id="viewPowerOnBtn" class="btn btn-primary-custom w-100">
+                        <i class="bi bi-search"></i> View Requests
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="powerOnStatusMsg" class="status-message"></div>
+        <div id="powerOnRecordsContainer">
+            <div class="no-data-message">
+                <i class="bi bi-inbox"></i>
+                <h5>No Records</h5>
+                <p>Enter a date and click "View Requests" to load pending power on verifications.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="footer-note">
+    <i class="bi bi-shield-lock"></i> Shutdown Management System
+</div>
+
+<!-- SCRIPTS -->
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script src="../js/select2.min.js"></script>
+<script src="../js/flatpickr.min.js"></script>
+<script src="../js/sweetalert2.min.js"></script>
+
+<script>
+// ============================================================
+//  CONFIGURATION
+// ============================================================
+
+// IMPORTANT: Replace this URL with your deployed Apps Script URL
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyTCjW0tn9vEoD8ms-YwBTPC6WW6OpcLeko7L9rkg4Iqs8J5u-buUsw8MLz_SpsJ9sI_A/exec";
+const SHEET_ID = "1dMKhs6mIicwqRIbakYp7mzI8CXGbJ-VXHkmNXDRT8wA";
+const SHEET_NAME = "Data";
+const API_KEY = "AIzaSyDc8tegwi2rgHyDFYm7uWBqVqQ7Fwb3uWM";
+
+// ============================================================
+//  HELPERS
+// ============================================================
+
+function getTodayDate() {
+    const now = new Date();
+    const d = String(now.getDate()).padStart(2, '0');
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const y = now.getFullYear();
+    return `${d}/${m}/${y}`;
+}
+
+function getCurrentTime24h() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
+}
+
+function getPreviousDate() {
+    const now = new Date();
+    now.setDate(now.getDate() - 1);
+    const d = String(now.getDate()).padStart(2, '0');
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const y = now.getFullYear();
+    return `${d}/${m}/${y}`;
+}
+
+function formatTimeDisplay(time24h) {
+    if (!time24h) return '';
+    try {
+        const parts = time24h.match(/(\d{1,2}):(\d{2})/);
+        if (!parts) return time24h;
+        let hours = parseInt(parts[1]);
+        const minutes = parts[2];
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        if (hours > 12) hours -= 12;
+        if (hours === 0) hours = 12;
+        return `${hours}:${minutes} ${ampm}`;
+    } catch (e) {
+        return time24h;
+    }
+}
+
+function isEmpty(value) {
+    if (value === null || value === undefined) return true;
+    if (typeof value === 'string') {
+        return value.trim() === '';
+    }
+    return false;
+}
+
+function isBlankOrEmpty(value) {
+    if (value === null || value === undefined) return true;
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        return trimmed === '' || trimmed === '\u00A0';
+    }
+    return false;
+}
+
+// ============================================================
+//  DATE CONVERSION FUNCTIONS
+// ============================================================
+
+function convertToDDMMYYYY(dateValue) {
+    if (!dateValue) return '';
+    
+    const str = dateValue.toString().trim();
+    
+    if (str.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+        return str;
+    }
+    
+    let match = str.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/);
+    if (match) {
+        const [, year, month, day] = match;
+        return `${day}/${month}/${year}`;
+    }
+    
+    match = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+        const [, year, month, day] = match;
+        return `${day}/${month}/${year}`;
+    }
+    
+    match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (match) {
+        const [, month, day, year] = match;
+        return `${day}/${month}/${year}`;
+    }
+    
+    try {
+        const date = new Date(str);
+        if (!isNaN(date.getTime())) {
+            const d = String(date.getDate()).padStart(2, '0');
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const y = date.getFullYear();
+            return `${d}/${m}/${y}`;
+        }
+    } catch (e) {}
+    
+    if (!isNaN(str) && Number(str) > 0) {
+        try {
+            const excelDate = new Date((Number(str) - 25569) * 86400 * 1000);
+            const d = String(excelDate.getDate()).padStart(2, '0');
+            const m = String(excelDate.getMonth() + 1).padStart(2, '0');
+            const y = excelDate.getFullYear();
+            if (y > 2000) {
+                return `${d}/${m}/${y}`;
+            }
+        } catch (e) {}
+    }
+    
+    return str;
+}
+
+// ============================================================
+//  READ DATA FROM GOOGLE SHEETS API
+// ============================================================
+
+async function readSheetData(range) {
+    try {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        return data;
+    } catch (err) {
+        console.error('Error reading sheet:', err);
+        throw err;
+    }
+}
+
+// ============================================================
+//  UPDATE DATA VIA APPS SCRIPT (no-cors - fire and forget)
+// ============================================================
+
+async function updateSheetViaAppsScript(action, data = {}) {
+    const payload = { action, ...data };
+    
+    try {
+        // Use no-cors mode - this will not return a response body
+        await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            cache: 'no-cache',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        // With no-cors, we can't read the response, so we assume success
+        return { status: 'success', message: 'Request sent successfully' };
+    } catch (err) {
+        console.error('Update error:', err);
+        throw err;
+    }
+}
+
+// ============================================================
+//  TAB SWITCHING
+// ============================================================
+
+function switchTab(tab) {
+    if (tab === 'confirm') {
+        $('#confirmPane').addClass('active-pane');
+        $('#powerOnPane').removeClass('active-pane');
+        $('#tabConfirmBtn').addClass('active');
+        $('#tabPowerOnBtn').removeClass('active');
+    } else {
+        $('#powerOnPane').addClass('active-pane');
+        $('#confirmPane').removeClass('active-pane');
+        $('#tabPowerOnBtn').addClass('active');
+        $('#tabConfirmBtn').removeClass('active');
+    }
+}
+
+$('#tabConfirmBtn').on('click', () => switchTab('confirm'));
+$('#tabPowerOnBtn').on('click', () => switchTab('powerOn'));
+
+// ============================================================
+//  FLATPICKR DATE PICKER
+// ============================================================
+
+flatpickr("#confirmDate", {
+    dateFormat: "d/m/Y",
+    defaultDate: getTodayDate(),
+    allowInput: true
+});
+
+flatpickr("#powerOnDate", {
+    dateFormat: "d/m/Y",
+    defaultDate: getPreviousDate(),
+    allowInput: true
+});
+
+// ============================================================
+//  LOADING OVERLAY
+// ============================================================
+
+function showLoading() {
+    $('#loadingOverlay').addClass('active');
+}
+
+function hideLoading() {
+    $('#loadingOverlay').removeClass('active');
+}
+
+// ============================================================
+//  TAB 1: SHUTDOWN CONFIRMATION
+// ============================================================
+
+$('#viewConfirmBtn').on('click', async function() {
+    const $btn = $(this);
+    const date = $('#confirmDate').val();
+    const $statusMsg = $('#confirmStatusMsg');
+    
+    if (!date) {
+        Swal.fire({ icon: 'warning', title: 'Date required', text: 'Please enter a date in DD/MM/YYYY format.' });
+        return;
+    }
+    
+    if (!date.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+        Swal.fire({ icon: 'warning', title: 'Invalid Date', text: 'Please use DD/MM/YYYY format (e.g., 18/07/2026).' });
+        return;
+    }
+    
+    $btn.html('<i class="bi bi-arrow-repeat"></i> Loading...');
+    $btn.prop('disabled', true);
+    $statusMsg.hide().removeClass('error success info');
+    showLoading();
+    
+    try {
+        const range = `${SHEET_NAME}!A:I`;
+        const data = await readSheetData(range);
+        
+        if (!data.values || data.values.length < 2) {
+            renderConfirmRecords([]);
+            $statusMsg.addClass('info').html('<i class="bi bi-info-circle"></i> No data found in sheet.').show();
+            return;
+        }
+        
+        const rows = data.values.slice(1);
+        const records = [];
+        
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0) continue;
+            
+            const branch = row[0] ? row[0].toString().trim() : '';
+            if (!branch) continue;
+            
+            const rawDate = row.length > 3 ? (row[3] || "").toString().trim() : "";
+            const convertedDate = convertToDDMMYYYY(rawDate);
+            const confirmVal = row.length > 5 ? (row[5] || "").toString().trim() : "";
+            
+            if (convertedDate === date && !confirmVal) {
+                records.push({
+                    rowIndex: i + 2,
+                    branch: branch,
+                    deviceType: row.length > 1 ? (row[1] || "").toString().trim() : "",
+                    serial: row.length > 2 ? (row[2] || "").toString().trim() : "",
+                    date: convertedDate,
+                    time: row.length > 4 ? (row[4] || "").toString().trim() : "",
+                    confirm: "Pending"
+                });
+            }
+        }
+        
+        renderConfirmRecords(records);
+        
+        if (records.length === 0) {
+            $statusMsg.addClass('info').html(`<i class="bi bi-info-circle"></i> No pending requests found for date: <strong>${date}</strong>.`).show();
+        } else {
+            $statusMsg.addClass('info').html(`<i class="bi bi-list"></i> Found ${records.length} pending request(s) for date: <strong>${date}</strong>.`).show();
+        }
+        
+    } catch (err) {
+        console.error('Error:', err);
+        $statusMsg.addClass('error').html('<i class="bi bi-exclamation-triangle"></i> Failed to load records. Check console for details.').show();
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    } finally {
+        $btn.html('<i class="bi bi-search"></i> View Requests');
+        $btn.prop('disabled', false);
+        hideLoading();
+    }
+});
+
+function renderConfirmRecords(records) {
+    const container = $('#confirmRecordsContainer');
+    
+    if (!records || records.length === 0) {
+        container.html(`
+            <div class="no-data-message">
+                <i class="bi bi-check-circle"></i>
+                <h5>No Pending Requests</h5>
+                <p>All requests for the selected date have been confirmed.</p>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Branch</th>
+                        <th>Device Type</th>
+                        <th>Serial</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    records.forEach((record, index) => {
+        html += `
+            <tr>
+                <td>${index + 1}</td>
+                <td><strong>${record.branch}</strong></td>
+                <td>${record.deviceType}</td>
+                <td>${record.serial}</td>
+                <td>${record.date}</td>
+                <td>${formatTimeDisplay(record.time)}</td>
+                <td><span class="badge-pending"><i class="bi bi-clock"></i> ${record.confirm}</span></td>
+                <td>
+                    <button class="btn btn-success-custom confirm-btn" data-row="${record.rowIndex}" data-branch="${record.branch}">
+                        <i class="bi bi-check2"></i> Confirm
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-2 text-muted small">Total: ${records.length} pending request(s)</div>
+    `;
+    
+    container.html(html);
+    
+    $('.confirm-btn').on('click', async function() {
+        const rowIndex = $(this).data('row');
+        const branch = $(this).data('branch');
+        const $btn = $(this);
+        const $statusMsg = $('#confirmStatusMsg');
+        
+        const confirmResult = await Swal.fire({
+            title: 'Confirm Shutdown?',
+            text: `Are you sure you want to confirm shutdown for ${branch}?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#059669',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, Confirm!'
+        });
+        
+        if (!confirmResult.isConfirmed) return;
+        
+        $btn.html('<i class="bi bi-arrow-repeat"></i>');
+        $btn.prop('disabled', true);
+        showLoading();
+        
+        try {
+            await updateSheetViaAppsScript('UPDATE_CONFIRM', { rowIndex: rowIndex });
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Confirmed!',
+                text: `Shutdown confirmation updated for ${branch}`,
+                timer: 2000,
+                showConfirmButton: false
+            });
+            
+            setTimeout(() => {
+                $('#viewConfirmBtn').click();
+            }, 1000);
+            
+        } catch (err) {
+            console.error('Error:', err);
+            $statusMsg.addClass('error').html('<i class="bi bi-exclamation-triangle"></i> Failed to update confirmation.').show();
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to update. Please try again.' });
+            $btn.html('<i class="bi bi-check2"></i> Confirm');
+            $btn.prop('disabled', false);
+        } finally {
+            hideLoading();
+        }
+    });
+}
+
+// ============================================================
+//  TAB 2: DEVICE POWER ON VERIFICATION
+// ============================================================
+
+$('#viewPowerOnBtn').on('click', async function() {
+    const $btn = $(this);
+    const date = $('#powerOnDate').val();
+    const $statusMsg = $('#powerOnStatusMsg');
+    
+    if (!date) {
+        Swal.fire({ icon: 'warning', title: 'Date required', text: 'Please enter a date in DD/MM/YYYY format.' });
+        return;
+    }
+    
+    if (!date.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+        Swal.fire({ icon: 'warning', title: 'Invalid Date', text: 'Please use DD/MM/YYYY format.' });
+        return;
+    }
+    
+    $btn.html('<i class="bi bi-arrow-repeat"></i> Loading...');
+    $btn.prop('disabled', true);
+    $statusMsg.hide().removeClass('error success info');
+    showLoading();
+    
+    try {
+        const range = `${SHEET_NAME}!A:I`;
+        const data = await readSheetData(range);
+        
+        if (!data.values || data.values.length < 2) {
+            renderPowerOnRecords([]);
+            $statusMsg.addClass('info').html('<i class="bi bi-info-circle"></i> No data found in sheet.').show();
+            return;
+        }
+        
+        const rows = data.values.slice(1);
+        const records = [];
+        
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0) continue;
+            
+            const branch = row[0] ? row[0].toString().trim() : '';
+            if (!branch) continue;
+            
+            const rawDate = row.length > 3 ? (row[3] || "").toString().trim() : "";
+            const convertedDate = convertToDDMMYYYY(rawDate);
+            const confirmVal = row.length > 5 ? (row[5] || "").toString().trim() : "";
+            const restartedVal = row.length > 6 ? (row[6] || "").toString().trim() : "";
+            
+            if (convertedDate === date && confirmVal === "Yes" && !restartedVal) {
+                records.push({
+                    rowIndex: i + 2,
+                    branch: branch,
+                    deviceType: row.length > 1 ? (row[1] || "").toString().trim() : "",
+                    serial: row.length > 2 ? (row[2] || "").toString().trim() : "",
+                    date: convertedDate,
+                    time: row.length > 4 ? (row[4] || "").toString().trim() : "",
+                    confirm: confirmVal,
+                    restarted: "Pending"
+                });
+            }
+        }
+        
+        renderPowerOnRecords(records);
+        
+        if (records.length === 0) {
+            $statusMsg.addClass('info').html(`<i class="bi bi-info-circle"></i> No pending power on verifications found for date: <strong>${date}</strong>.`).show();
+        } else {
+            $statusMsg.addClass('info').html(`<i class="bi bi-list"></i> Found ${records.length} pending power on verification(s) for date: <strong>${date}</strong>.`).show();
+        }
+        
+    } catch (err) {
+        console.error('Error:', err);
+        $statusMsg.addClass('error').html('<i class="bi bi-exclamation-triangle"></i> Failed to load records.').show();
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    } finally {
+        $btn.html('<i class="bi bi-search"></i> View Requests');
+        $btn.prop('disabled', false);
+        hideLoading();
+    }
+});
+
+function renderPowerOnRecords(records) {
+    const container = $('#powerOnRecordsContainer');
+    
+    if (!records || records.length === 0) {
+        container.html(`
+            <div class="no-data-message">
+                <i class="bi bi-power"></i>
+                <h5>No Pending Power On</h5>
+                <p>All confirmed requests for the selected date have been powered on.</p>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Branch</th>
+                        <th>Device Type</th>
+                        <th>Serial</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    records.forEach((record, index) => {
+        html += `
+            <tr>
+                <td>${index + 1}</td>
+                <td><strong>${record.branch}</strong></td>
+                <td>${record.deviceType}</td>
+                <td>${record.serial}</td>
+                <td>${record.date}</td>
+                <td>${formatTimeDisplay(record.time)}</td>
+                <td><span class="badge-confirmed"><i class="bi bi-check-circle-fill"></i> Confirmed</span></td>
+                <td>
+                    <button class="btn btn-success-custom power-on-btn" data-row="${record.rowIndex}" data-branch="${record.branch}">
+                        <i class="bi bi-power"></i> Power On
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-2 text-muted small">Total: ${records.length} pending power on verification(s)</div>
+    `;
+    
+    container.html(html);
+    
+    $('.power-on-btn').on('click', async function() {
+        const rowIndex = $(this).data('row');
+        const branch = $(this).data('branch');
+        const $btn = $(this);
+        const $statusMsg = $('#powerOnStatusMsg');
+        
+        const confirmResult = await Swal.fire({
+            title: 'Verify Power On?',
+            text: `Confirm that device at ${branch} has been powered on?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#059669',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, Power On!'
+        });
+        
+        if (!confirmResult.isConfirmed) return;
+        
+        $btn.html('<i class="bi bi-arrow-repeat"></i>');
+        $btn.prop('disabled', true);
+        showLoading();
+        
+        const restartDate = getTodayDate();
+        const restartTime = getCurrentTime24h();
+        
+        try {
+            await updateSheetViaAppsScript('UPDATE_POWER_ON', { 
+                rowIndex: rowIndex,
+                restartDate: restartDate,
+                restartTime: restartTime
+            });
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Power On Verified!',
+                text: `Device at ${branch} marked as powered on.`,
+                timer: 2000,
+                showConfirmButton: false
+            });
+            
+            setTimeout(() => {
+                $('#viewPowerOnBtn').click();
+            }, 1000);
+            
+        } catch (err) {
+            console.error('Error:', err);
+            $statusMsg.addClass('error').html('<i class="bi bi-exclamation-triangle"></i> Failed to update power on status.').show();
+            Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+            $btn.html('<i class="bi bi-power"></i> Power On');
+            $btn.prop('disabled', false);
+        } finally {
+            hideLoading();
+        }
+    });
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+
+$(document).ready(function() {
+    setTimeout(() => {
+        $('#viewConfirmBtn').click();
+    }, 500);
+});
+</script>
+</body>
+</html>
