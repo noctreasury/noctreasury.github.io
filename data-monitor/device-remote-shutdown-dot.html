@@ -82,6 +82,32 @@
             background-color: #f1f5f9;
             cursor: not-allowed;
         }
+        /* Select2 overrides */
+        .select2-container--default .select2-selection--single {
+            border-radius: 14px !important;
+            border: 1px solid #d1d9e6 !important;
+            height: 46px !important;
+            padding: 6px 12px !important;
+            background: white !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 32px !important;
+            color: #0f172a !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 44px !important;
+        }
+        .select2-container--default .select2-selection--single:focus {
+            border-color: #2563eb !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+        }
+        .select2-dropdown {
+            border-radius: 14px !important;
+            border: 1px solid #d1d9e6 !important;
+        }
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: #0b2b4a !important;
+        }
         .btn-primary-custom {
             background: #0b2b4a;
             border: none;
@@ -177,17 +203,17 @@
         <div class="row g-4">
             <div class="col-12">
                 <label class="form-label required">Branch ID</label>
-                <input type="text" id="branchId" class="form-control" readonly disabled placeholder="Detecting branch...">
+                <select id="branchSelect" class="form-control select2-branch" style="width:100%;"></select>
             </div>
 
             <div class="col-md-6">
                 <label class="form-label required">Device Type</label>
-                <input type="text" id="deviceType" class="form-control" readonly disabled placeholder="Fetching...">
+                <input type="text" id="deviceType" class="form-control" readonly disabled placeholder="Select branch first">
             </div>
 
             <div class="col-md-6">
                 <label class="form-label required">Serial No.</label>
-                <input type="text" id="deviceSerial" class="form-control" readonly disabled placeholder="Fetching...">
+                <input type="text" id="deviceSerial" class="form-control" readonly disabled placeholder="Select branch first">
             </div>
 
             <div class="col-md-6">
@@ -306,30 +332,34 @@ function convertTo24Hour(time12h) {
 }
 
 // ============================================================
-//  HELPER: get branch from storage
+//  FETCH BRANCH LIST FROM INSTALLATION SHEET (Column D)
 // ============================================================
-function getBranchFromStorage() {
-    let branch = null;
-    const sessionUser = sessionStorage.getItem('currentUser');
-    if (sessionUser) {
-        try {
-            const userData = JSON.parse(sessionUser);
-            branch = userData.username;
-        } catch (e) { /* ignore */ }
-    }
-    if (!branch) {
-        const localUser = localStorage.getItem('currentUser');
-        if (localUser) {
-            try {
-                const userData = JSON.parse(localUser);
-                branch = userData.username;
-            } catch (e) { /* ignore */ }
+async function fetchBranchList() {
+    try {
+        const range = `${INSTALL_SHEET_NAME}!D:D`;
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${INSTALL_SHEET_ID}/values/${range}?key=${INSTALL_API_KEY}`;
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
+        const data = await resp.json();
+        
+        if (!data.values || data.values.length < 2) return [];
+        
+        const branches = [];
+        // Skip header row (first row)
+        for (let i = 1; i < data.values.length; i++) {
+            const row = data.values[i];
+            if (row && row.length > 0) {
+                const branch = row[0].toString().trim();
+                if (branch && branch !== '') {
+                    branches.push(branch);
+                }
+            }
         }
+        return branches;
+    } catch (err) {
+        console.error('Error fetching branch list:', err);
+        return [];
     }
-    if (!branch) {
-        branch = localStorage.getItem('selectedBranch');
-    }
-    return branch;
 }
 
 // ============================================================
@@ -363,18 +393,18 @@ async function fetchDeviceInfo(branchId) {
 }
 
 // ============================================================
-//  UPDATE UI WITH BRANCH & DEVICE INFO
+//  UPDATE DEVICE INFO ON BRANCH SELECTION
 // ============================================================
-async function updateBranchAndDevice() {
-    const branch = getBranchFromStorage();
-    currentBranch = branch || null;
-    if (!branch) {
-        $('#branchId').val('No branch detected - login again');
-        $('#deviceType').val('—');
-        $('#deviceSerial').val('—');
+async function updateDeviceInfo(branch) {
+    if (!branch || branch === '') {
+        $('#deviceType').val('Select branch first');
+        $('#deviceSerial').val('Select branch first');
         return;
     }
-    $('#branchId').val(branch);
+    
+    $('#deviceType').val('Fetching...');
+    $('#deviceSerial').val('Fetching...');
+    
     const info = await fetchDeviceInfo(branch);
     $('#deviceType').val(info.type || '—');
     $('#deviceSerial').val(info.serial || '—');
@@ -541,16 +571,16 @@ function startConfirmCheck(branch, deviceType, serial, date, time) {
 async function submitShutdownRequest() {
     if (isSubmitting) return;
 
-    const branch = $('#branchId').val();
-    if (!branch || branch.includes('No branch')) {
-        Swal.fire({ icon: 'warning', title: 'Branch missing', text: 'Branch ID is required. Please login again.', confirmButtonColor: '#0b2b4a' });
+    const branch = $('#branchSelect').val();
+    if (!branch || branch === '') {
+        Swal.fire({ icon: 'warning', title: 'Branch required', text: 'Please select a Branch ID from the dropdown.', confirmButtonColor: '#0b2b4a' });
         return;
     }
 
     const deviceType = $('#deviceType').val();
     const serial = $('#deviceSerial').val();
-    if (!deviceType || deviceType === '—' || deviceType === 'Not found' || deviceType === 'Error') {
-        Swal.fire({ icon: 'error', title: 'Device info missing', text: 'Could not fetch Device Type.', confirmButtonColor: '#0b2b4a' });
+    if (!deviceType || deviceType === '—' || deviceType === 'Not found' || deviceType === 'Error' || deviceType === 'Select branch first' || deviceType === 'Fetching...') {
+        Swal.fire({ icon: 'error', title: 'Device info missing', text: 'Could not fetch Device Type. Please select a valid branch.', confirmButtonColor: '#0b2b4a' });
         return;
     }
 
@@ -615,24 +645,21 @@ async function submitShutdownRequest() {
             showConfirmButton: true
         });
 
-        // Disable button for 1 minute (60 seconds) - simple timer, no cooldown UI
+        // Disable button for 1 minute (60 seconds)
         $btn.prop('disabled', true);
         $btn.html('<i class="bi bi-clock"></i> Wait 60s');
 
-        // Clear any existing timer
         if (buttonDisableTimer) {
             clearTimeout(buttonDisableTimer);
             buttonDisableTimer = null;
         }
 
-        // Set timer to re-enable after 60 seconds
         buttonDisableTimer = setTimeout(function() {
             $btn.prop('disabled', false);
             $btn.html(originalHtml);
             buttonDisableTimer = null;
         }, 60000);
 
-        // Start confirmation check
         startConfirmCheck(branch, deviceType, serial, dateVal, timeVal);
 
     } catch (err) {
@@ -667,9 +694,46 @@ function closeWaitingModal() {
 // ============================================================
 //  INIT
 // ============================================================
+// ============================================================
+//  INIT
+// ============================================================
 $(document).ready(async function() {
     setDefaultDateTime();
-    await updateBranchAndDevice();
+
+    // Initialize Select2 for branch dropdown
+    $('#branchSelect').select2({
+        placeholder: 'Select Branch ID',
+        allowClear: true,
+        width: '100%'
+    });
+
+    // Load branches into select2
+    const branches = await fetchBranchList();
+    
+    if (branches.length === 0) {
+        $('#branchSelect').append('<option value="">No branches found</option>');
+    } else {
+        branches.forEach(function(branch) {
+            $('#branchSelect').append(new Option(branch, branch));
+        });
+        // DO NOT auto-select - let user choose
+        // Just set placeholder text
+        $('#branchSelect').val(null).trigger('change');
+    }
+
+    // Handle branch selection change
+    $('#branchSelect').on('change', function() {
+        const selectedBranch = $(this).val();
+        currentBranch = selectedBranch;
+        if (selectedBranch && selectedBranch !== '') {
+            updateDeviceInfo(selectedBranch);
+        } else {
+            $('#deviceType').val('Select branch first');
+            $('#deviceSerial').val('Select branch first');
+        }
+    });
+
+    // DO NOT trigger initial load - wait for user selection
 
     $('#submitShutdownBtn').on('click', submitShutdownRequest);
     $('#closeWaitingBtn').on('click', closeWaitingModal);
@@ -681,6 +745,8 @@ $(document).ready(async function() {
         }
     });
 });
+
+
 </script>
 </body>
 </html>

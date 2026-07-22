@@ -13,7 +13,7 @@
 
     <style>
         body {
-            background: #fff0;
+            background: #f4f7fc;
             font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
             padding: 20px 16px;
         }
@@ -63,6 +63,7 @@
             padding: 0 24px;
             border-radius: 28px 28px 0 0;
             margin: -30px -28px 20px -28px;
+            position: relative;
         }
         .tab-btn {
             padding: 16px 28px;
@@ -74,12 +75,35 @@
             transition: 0.2s;
             border-bottom: 3px solid transparent;
             cursor: pointer;
+            position: relative;
         }
         .tab-btn i { margin-right: 8px; font-size: 1.1rem; }
         .tab-btn.active {
             color: #1e4a76;
             border-bottom-color: #1e4a76;
             background: white;
+        }
+        .tab-btn .badge-notification {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #dc2626;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            min-width: 20px;
+            text-align: center;
+            display: none;
+        }
+        .tab-btn .badge-notification.show {
+            display: inline-block;
+            animation: pulse-badge 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse-badge {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
         .tab-pane {
             display: none;
@@ -147,6 +171,42 @@
             opacity: 0.6;
             cursor: not-allowed;
         }
+        .btn-warning-custom {
+            background: #d97706;
+            border: none;
+            padding: 6px 16px;
+            font-weight: 600;
+            border-radius: 30px;
+            transition: 0.2s;
+            color: white;
+            font-size: 0.85rem;
+        }
+        .btn-warning-custom:hover:not(:disabled) {
+            background: #b45309;
+            color: white;
+        }
+        .btn-warning-custom:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .btn-refresh-custom {
+            background: #6c757d;
+            border: none;
+            padding: 10px 20px;
+            font-weight: 600;
+            border-radius: 60px;
+            transition: 0.2s;
+            color: white;
+            font-size: 0.9rem;
+        }
+        .btn-refresh-custom:hover:not(:disabled) {
+            background: #5a6268;
+            color: white;
+        }
+        .btn-refresh-custom:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
         .footer-note {
             font-size: 12px;
             text-align: center;
@@ -166,6 +226,24 @@
             font-weight: 600;
             color: #1e293b;
             border-bottom: 2px solid #e2e8f0;
+        }
+        .table td {
+            vertical-align: middle;
+        }
+        .table .clickable-branch {
+            cursor: pointer;
+            color: #1e4a76;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+        .table .clickable-branch:hover {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+        .table .clickable-branch i {
+            font-size: 0.7rem;
+            opacity: 0.5;
+            margin-left: 4px;
         }
         .badge-pending {
             background: #fef3c7;
@@ -229,6 +307,12 @@
             border: 1px solid #bfdbfe;
             display: block;
         }
+        .status-message.waiting {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+            display: block;
+        }
         .flatpickr-input {
             background: white;
         }
@@ -252,18 +336,109 @@
         .loading-overlay.active {
             display: flex;
         }
-        .loading-spinner {
-            font-size: 3rem;
+        .custom-loader {
+            display: inline-block;
+            width: 3rem;
+            height: 3rem;
+            border: 0.35rem solid rgba(11, 43, 74, 0.15);
+            border-top-color: #0b2b4a;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .auto-refresh-indicator {
+            font-size: 0.85rem;
+            color: #6c757d;
+            padding: 5px 12px;
+            background: #f8f9fa;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .auto-refresh-indicator .pulse {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .auto-refresh-indicator .pulse.inactive {
+            background: #dc3545;
+            animation: none;
+        }
+        .filter-row .col-md-2 {
+            flex: 0 0 auto;
+            width: auto;
+        }
+        .filter-row .col-md-2 .form-control {
+            min-width: 180px;
+        }
+        .btn i.bi-arrow-repeat {
+            display: inline-block;
+        }
+        .bulk-actions {
+            background: #f8fafc;
+            padding: 12px 15px;
+            border-radius: 12px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .bulk-actions .form-check {
+            margin-bottom: 0;
+        }
+        .bulk-actions .form-check-input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .selected-count {
+            font-weight: 600;
             color: #0b2b4a;
+        }
+        .toast-copy {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0b2b4a;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .toast-copy.show {
+            opacity: 1;
         }
     </style>
 </head>
 <body>
 
+<!-- Toast for copy notification -->
+<div id="copyToast" class="toast-copy">✅ Copied to clipboard</div>
+
+<!-- LOADING OVERLAY -->
 <div class="loading-overlay" id="loadingOverlay">
-    <div class="loading-spinner">
-        <i class="bi bi-arrow-repeat spinner-border"></i>
-    </div>
+    <div class="custom-loader"></div>
 </div>
 
 <div class="page-header">
@@ -278,8 +453,13 @@
 
 <div class="app-card">
     <div class="tab-header">
-        <button class="tab-btn active" id="tabConfirmBtn"><i class="bi bi-check2-circle"></i> Shutdown Confirmation</button>
-        <button class="tab-btn" id="tabPowerOnBtn"><i class="bi bi-power"></i> Device Power On</button>
+        <button class="tab-btn active" id="tabConfirmBtn">
+            <i class="bi bi-check2-circle"></i> Shutdown Confirmation
+            <span class="badge-notification" id="pendingBadge">0</span>
+        </button>
+        <button class="tab-btn" id="tabPowerOnBtn">
+            <i class="bi bi-power"></i> Device Power On
+        </button>
     </div>
 
     <!-- ==================== TAB 1: SHUTDOWN CONFIRMATION ==================== -->
@@ -294,6 +474,17 @@
                     <button id="viewConfirmBtn" class="btn btn-primary-custom w-100">
                         <i class="bi bi-search"></i> View Requests
                     </button>
+                </div>
+                <div class="col-md-2">
+                    <button id="stopAutoRefreshBtn" class="btn btn-refresh-custom w-100" style="display:none;">
+                        <i class="bi bi-pause-circle"></i> Stop Auto-Check
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <span id="autoRefreshStatus" class="auto-refresh-indicator">
+                        <span class="pulse" id="pulseIndicator"></span>
+                        <span id="refreshStatusText">Auto-Check Active</span>
+                    </span>
                 </div>
             </div>
         </div>
@@ -323,6 +514,24 @@
             </div>
         </div>
         <div id="powerOnStatusMsg" class="status-message"></div>
+        
+        <!-- Bulk Actions Bar -->
+        <div id="bulkActions" class="bulk-actions" style="display:none;">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="selectAllPowerOn">
+                <label class="form-check-label" for="selectAllPowerOn">
+                    Select All
+                </label>
+            </div>
+            <span class="selected-count" id="selectedCount">0 selected</span>
+            <button id="bulkPowerOnBtn" class="btn btn-warning-custom">
+                <i class="bi bi-power"></i> Bulk Power On
+            </button>
+            <button id="clearSelectionBtn" class="btn btn-secondary btn-sm">
+                <i class="bi bi-x-circle"></i> Clear
+            </button>
+        </div>
+        
         <div id="powerOnRecordsContainer">
             <div class="no-data-message">
                 <i class="bi bi-inbox"></i>
@@ -333,9 +542,6 @@
     </div>
 </div>
 
-<div class="footer-note">
-    <i class="bi bi-shield-lock"></i> Shutdown Management System
-</div>
 
 <!-- SCRIPTS -->
 <script src="../js/jquery.min.js"></script>
@@ -349,11 +555,22 @@
 //  CONFIGURATION
 // ============================================================
 
-// IMPORTANT: Replace this URL with your deployed Apps Script URL
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyTCjW0tn9vEoD8ms-YwBTPC6WW6OpcLeko7L9rkg4Iqs8J5u-buUsw8MLz_SpsJ9sI_A/exec";
 const SHEET_ID = "1dMKhs6mIicwqRIbakYp7mzI8CXGbJ-VXHkmNXDRT8wA";
 const SHEET_NAME = "Data";
 const API_KEY = "AIzaSyDc8tegwi2rgHyDFYm7uWBqVqQ7Fwb3uWM";
+
+// ============================================================
+//  AUTO-CHECK VARIABLES
+// ============================================================
+
+let autoCheckInterval = null;
+let isAutoCheckActive = false;
+let checkCount = 0;
+let pendingCount = 0;
+
+// Bulk selection state
+let selectedPowerOnRows = new Set();
 
 // ============================================================
 //  HELPERS
@@ -399,21 +616,46 @@ function formatTimeDisplay(time24h) {
     }
 }
 
-function isEmpty(value) {
-    if (value === null || value === undefined) return true;
-    if (typeof value === 'string') {
-        return value.trim() === '';
+// ============================================================
+//  COPY TO CLIPBOARD
+// ============================================================
+
+function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            showCopyToast(text);
+        }).catch(() => {
+            fallbackCopy(text);
+        });
+    } else {
+        fallbackCopy(text);
     }
-    return false;
 }
 
-function isBlankOrEmpty(value) {
-    if (value === null || value === undefined) return true;
-    if (typeof value === 'string') {
-        const trimmed = value.trim();
-        return trimmed === '' || trimmed === '\u00A0';
+function fallbackCopy(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+        document.execCommand('copy');
+        showCopyToast(text);
+    } catch (err) {
+        console.error('Copy failed:', err);
     }
-    return false;
+    document.body.removeChild(textarea);
+}
+
+function showCopyToast(text) {
+    const toast = document.getElementById('copyToast');
+    toast.textContent = `✅ Copied: ${text}`;
+    toast.classList.add('show');
+    clearTimeout(toast._hideTimeout);
+    toast._hideTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+    }, 2000);
 }
 
 // ============================================================
@@ -494,14 +736,13 @@ async function readSheetData(range) {
 }
 
 // ============================================================
-//  UPDATE DATA VIA APPS SCRIPT (no-cors - fire and forget)
+//  UPDATE DATA VIA APPS SCRIPT
 // ============================================================
 
 async function updateSheetViaAppsScript(action, data = {}) {
     const payload = { action, ...data };
     
     try {
-        // Use no-cors mode - this will not return a response body
         await fetch(APPS_SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
@@ -512,7 +753,6 @@ async function updateSheetViaAppsScript(action, data = {}) {
             body: JSON.stringify(payload)
         });
         
-        // With no-cors, we can't read the response, so we assume success
         return { status: 'success', message: 'Request sent successfully' };
     } catch (err) {
         console.error('Update error:', err);
@@ -530,11 +770,17 @@ function switchTab(tab) {
         $('#powerOnPane').removeClass('active-pane');
         $('#tabConfirmBtn').addClass('active');
         $('#tabPowerOnBtn').removeClass('active');
+        if (!isAutoCheckActive) {
+            startAutoCheck();
+        }
     } else {
         $('#powerOnPane').addClass('active-pane');
         $('#confirmPane').removeClass('active-pane');
         $('#tabPowerOnBtn').addClass('active');
         $('#tabConfirmBtn').removeClass('active');
+        if (isAutoCheckActive) {
+            stopAutoCheck();
+        }
     }
 }
 
@@ -548,7 +794,14 @@ $('#tabPowerOnBtn').on('click', () => switchTab('powerOn'));
 flatpickr("#confirmDate", {
     dateFormat: "d/m/Y",
     defaultDate: getTodayDate(),
-    allowInput: true
+    allowInput: true,
+    onChange: function(selectedDates, dateStr) {
+        // Restart auto-check with new date
+        if (isAutoCheckActive) {
+            stopAutoCheck();
+            startAutoCheck();
+        }
+    }
 });
 
 flatpickr("#powerOnDate", {
@@ -567,6 +820,111 @@ function showLoading() {
 
 function hideLoading() {
     $('#loadingOverlay').removeClass('active');
+}
+
+// ============================================================
+//  AUTO-CHECK FUNCTIONS
+// ============================================================
+
+function startAutoCheck() {
+    if (autoCheckInterval) {
+        clearInterval(autoCheckInterval);
+    }
+    
+    isAutoCheckActive = true;
+    checkCount = 0;
+    
+    $('#stopAutoRefreshBtn').show();
+    $('#pulseIndicator').removeClass('inactive').addClass('pulse');
+    $('#refreshStatusText').text('Auto-Check Active');
+    
+    // Do initial check immediately
+    performAutoCheck();
+    
+    // Then check every 10 seconds
+    autoCheckInterval = setInterval(performAutoCheck, 10000);
+}
+
+function stopAutoCheck() {
+    if (autoCheckInterval) {
+        clearInterval(autoCheckInterval);
+        autoCheckInterval = null;
+    }
+    isAutoCheckActive = false;
+    $('#stopAutoRefreshBtn').hide();
+    $('#pulseIndicator').removeClass('pulse').addClass('inactive');
+    $('#refreshStatusText').text('Stopped');
+}
+
+async function performAutoCheck() {
+    checkCount++;
+    const date = $('#confirmDate').val();
+    
+    if (!date || !date.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+        $('#refreshStatusText').text('Invalid date');
+        return;
+    }
+    
+    try {
+        const range = `${SHEET_NAME}!A:I`;
+        const data = await readSheetData(range);
+        
+        if (!data.values || data.values.length < 2) {
+            updatePendingBadge(0);
+            $('#refreshStatusText').text(`No data (${checkCount})`);
+            return;
+        }
+        
+        const rows = data.values.slice(1);
+        let count = 0;
+        
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0) continue;
+            
+            const branch = row[0] ? row[0].toString().trim() : '';
+            if (!branch) continue;
+            
+            const rawDate = row.length > 3 ? (row[3] || "").toString().trim() : "";
+            const convertedDate = convertToDDMMYYYY(rawDate);
+            const confirmVal = row.length > 5 ? (row[5] || "").toString().trim() : "";
+            
+            if (convertedDate === date && !confirmVal) {
+                count++;
+            }
+        }
+        
+        updatePendingBadge(count);
+        
+        // If count changed from previous, refresh the view
+        if (count !== pendingCount) {
+            pendingCount = count;
+            // Only auto-refresh if on confirm tab
+            if ($('#confirmPane').hasClass('active-pane')) {
+                $('#viewConfirmBtn').click();
+            }
+        }
+        
+        $('#refreshStatusText').text(`Checked (${checkCount}) · ${count} pending`);
+        
+    } catch (err) {
+        console.error('Auto-check error:', err);
+        $('#refreshStatusText').text('Error checking');
+    }
+}
+
+function updatePendingBadge(count) {
+    const $badge = $('#pendingBadge');
+    if (count > 0) {
+        $badge.text(count);
+        $badge.addClass('show');
+        // Update the badge on the tab button
+        $('#tabConfirmBtn .badge-notification').text(count).addClass('show');
+    } else {
+        $badge.removeClass('show');
+        $('#tabConfirmBtn .badge-notification').removeClass('show');
+    }
+    pendingCount = count;
 }
 
 // ============================================================
@@ -632,10 +990,18 @@ $('#viewConfirmBtn').on('click', async function() {
         
         renderConfirmRecords(records);
         
+        // Update pending badge with actual count from this view
+        updatePendingBadge(records.length);
+        
         if (records.length === 0) {
             $statusMsg.addClass('info').html(`<i class="bi bi-info-circle"></i> No pending requests found for date: <strong>${date}</strong>.`).show();
         } else {
             $statusMsg.addClass('info').html(`<i class="bi bi-list"></i> Found ${records.length} pending request(s) for date: <strong>${date}</strong>.`).show();
+        }
+        
+        // Ensure auto-check is running
+        if (!isAutoCheckActive) {
+            startAutoCheck();
         }
         
     } catch (err) {
@@ -649,6 +1015,17 @@ $('#viewConfirmBtn').on('click', async function() {
     }
 });
 
+$('#stopAutoRefreshBtn').on('click', function() {
+    stopAutoCheck();
+    Swal.fire({
+        icon: 'info',
+        title: 'Auto-Check Stopped',
+        text: 'Auto-check has been stopped. Click "View Requests" to check manually.',
+        timer: 2000,
+        showConfirmButton: false
+    });
+});
+
 function renderConfirmRecords(records) {
     const container = $('#confirmRecordsContainer');
     
@@ -658,6 +1035,7 @@ function renderConfirmRecords(records) {
                 <i class="bi bi-check-circle"></i>
                 <h5>No Pending Requests</h5>
                 <p>All requests for the selected date have been confirmed.</p>
+                <p class="text-muted small">Auto-check is running every 10 seconds.</p>
             </div>
         `);
         return;
@@ -685,7 +1063,7 @@ function renderConfirmRecords(records) {
         html += `
             <tr>
                 <td>${index + 1}</td>
-                <td><strong>${record.branch}</strong></td>
+                <td><span class="clickable-branch" data-branch="${record.branch}" title="Click to copy"><i class="bi bi-clipboard"></i> ${record.branch}</span></td>
                 <td>${record.deviceType}</td>
                 <td>${record.serial}</td>
                 <td>${record.date}</td>
@@ -708,6 +1086,12 @@ function renderConfirmRecords(records) {
     `;
     
     container.html(html);
+    
+    // Click-to-copy for branch
+    $('.clickable-branch').on('click', function() {
+        const branch = $(this).data('branch');
+        copyToClipboard(branch);
+    });
     
     $('.confirm-btn').on('click', async function() {
         const rowIndex = $(this).data('row');
@@ -759,7 +1143,7 @@ function renderConfirmRecords(records) {
 }
 
 // ============================================================
-//  TAB 2: DEVICE POWER ON VERIFICATION
+//  TAB 2: DEVICE POWER ON VERIFICATION (with Bulk)
 // ============================================================
 
 $('#viewPowerOnBtn').on('click', async function() {
@@ -781,6 +1165,10 @@ $('#viewPowerOnBtn').on('click', async function() {
     $btn.prop('disabled', true);
     $statusMsg.hide().removeClass('error success info');
     showLoading();
+    
+    // Clear selections
+    selectedPowerOnRows.clear();
+    $('#bulkActions').hide();
     
     try {
         const range = `${SHEET_NAME}!A:I`;
@@ -825,8 +1213,12 @@ $('#viewPowerOnBtn').on('click', async function() {
         
         if (records.length === 0) {
             $statusMsg.addClass('info').html(`<i class="bi bi-info-circle"></i> No pending power on verifications found for date: <strong>${date}</strong>.`).show();
+            $('#bulkActions').hide();
         } else {
             $statusMsg.addClass('info').html(`<i class="bi bi-list"></i> Found ${records.length} pending power on verification(s) for date: <strong>${date}</strong>.`).show();
+            $('#bulkActions').show();
+            $('#selectAllPowerOn').prop('checked', false);
+            updateSelectedCount();
         }
         
     } catch (err) {
@@ -859,6 +1251,9 @@ function renderPowerOnRecords(records) {
             <table class="table table-hover">
                 <thead>
                     <tr>
+                        <th style="width:40px;">
+                            <input class="form-check-input" type="checkbox" id="selectAllPowerOn">
+                        </th>
                         <th>#</th>
                         <th>Branch</th>
                         <th>Device Type</th>
@@ -873,10 +1268,14 @@ function renderPowerOnRecords(records) {
     `;
     
     records.forEach((record, index) => {
+        const isChecked = selectedPowerOnRows.has(record.rowIndex);
         html += `
             <tr>
+                <td>
+                    <input class="form-check-input power-on-checkbox" type="checkbox" data-row="${record.rowIndex}" ${isChecked ? 'checked' : ''}>
+                </td>
                 <td>${index + 1}</td>
-                <td><strong>${record.branch}</strong></td>
+                <td><span class="clickable-branch" data-branch="${record.branch}" title="Click to copy"><i class="bi bi-clipboard"></i> ${record.branch}</span></td>
                 <td>${record.deviceType}</td>
                 <td>${record.serial}</td>
                 <td>${record.date}</td>
@@ -900,69 +1299,226 @@ function renderPowerOnRecords(records) {
     
     container.html(html);
     
+    // Click-to-copy for branch
+    $('.clickable-branch').on('click', function() {
+        const branch = $(this).data('branch');
+        copyToClipboard(branch);
+    });
+    
+    // Individual checkbox handler
+    $('.power-on-checkbox').on('change', function() {
+        const rowIndex = parseInt($(this).data('row'));
+        if ($(this).is(':checked')) {
+            selectedPowerOnRows.add(rowIndex);
+        } else {
+            selectedPowerOnRows.delete(rowIndex);
+        }
+        updateSelectedCount();
+        const totalCheckboxes = $('.power-on-checkbox').length;
+        const checkedCheckboxes = $('.power-on-checkbox:checked').length;
+        $('#selectAllPowerOn').prop('checked', totalCheckboxes > 0 && checkedCheckboxes === totalCheckboxes);
+    });
+    
+    // "Select All" handler
+    $('#selectAllPowerOn').off('change').on('change', function() {
+        const isChecked = $(this).is(':checked');
+        $('.power-on-checkbox').prop('checked', isChecked);
+        selectedPowerOnRows.clear();
+        if (isChecked) {
+            $('.power-on-checkbox').each(function() {
+                selectedPowerOnRows.add(parseInt($(this).data('row')));
+            });
+        }
+        updateSelectedCount();
+    });
+    
+    // Individual power on button
     $('.power-on-btn').on('click', async function() {
         const rowIndex = $(this).data('row');
         const branch = $(this).data('branch');
-        const $btn = $(this);
-        const $statusMsg = $('#powerOnStatusMsg');
-        
-        const confirmResult = await Swal.fire({
-            title: 'Verify Power On?',
-            text: `Confirm that device at ${branch} has been powered on?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#059669',
-            cancelButtonColor: '#64748b',
-            confirmButtonText: 'Yes, Power On!'
+        await handleSinglePowerOn(rowIndex, branch);
+    });
+    
+    const totalCheckboxes = $('.power-on-checkbox').length;
+    const checkedCheckboxes = $('.power-on-checkbox:checked').length;
+    $('#selectAllPowerOn').prop('checked', totalCheckboxes > 0 && checkedCheckboxes === totalCheckboxes);
+}
+
+function updateSelectedCount() {
+    const count = selectedPowerOnRows.size;
+    $('#selectedCount').text(`${count} selected`);
+}
+
+async function handleSinglePowerOn(rowIndex, branch) {
+    const $btn = $(`.power-on-btn[data-row="${rowIndex}"]`);
+    const $statusMsg = $('#powerOnStatusMsg');
+    
+    const confirmResult = await Swal.fire({
+        title: 'Verify Power On?',
+        text: `Confirm that device at ${branch} has been powered on?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#059669',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Yes, Power On!'
+    });
+    
+    if (!confirmResult.isConfirmed) return;
+    
+    $btn.html('<i class="bi bi-arrow-repeat"></i>');
+    $btn.prop('disabled', true);
+    showLoading();
+    
+    const restartDate = getTodayDate();
+    const restartTime = getCurrentTime24h();
+    
+    try {
+        await updateSheetViaAppsScript('UPDATE_POWER_ON', { 
+            rowIndex: rowIndex,
+            restartDate: restartDate,
+            restartTime: restartTime
         });
         
-        if (!confirmResult.isConfirmed) return;
+        Swal.fire({
+            icon: 'success',
+            title: 'Power On Verified!',
+            text: `Device at ${branch} marked as powered on.`,
+            timer: 1500,
+            showConfirmButton: false
+        });
         
-        $btn.html('<i class="bi bi-arrow-repeat"></i>');
-        $btn.prop('disabled', true);
-        showLoading();
+        setTimeout(() => {
+            $('#viewPowerOnBtn').click();
+        }, 1500);
         
-        const restartDate = getTodayDate();
-        const restartTime = getCurrentTime24h();
-        
-        try {
-            await updateSheetViaAppsScript('UPDATE_POWER_ON', { 
-                rowIndex: rowIndex,
-                restartDate: restartDate,
-                restartTime: restartTime
-            });
-            
-            Swal.fire({
-                icon: 'success',
-                title: 'Power On Verified!',
-                text: `Device at ${branch} marked as powered on.`,
-                timer: 2000,
-                showConfirmButton: false
-            });
-            
-            setTimeout(() => {
-                $('#viewPowerOnBtn').click();
-            }, 1000);
-            
-        } catch (err) {
-            console.error('Error:', err);
-            $statusMsg.addClass('error').html('<i class="bi bi-exclamation-triangle"></i> Failed to update power on status.').show();
-            Swal.fire({ icon: 'error', title: 'Error', text: err.message });
-            $btn.html('<i class="bi bi-power"></i> Power On');
-            $btn.prop('disabled', false);
-        } finally {
-            hideLoading();
-        }
-    });
+    } catch (err) {
+        console.error('Error:', err);
+        $statusMsg.addClass('error').html('<i class="bi bi-exclamation-triangle"></i> Failed to update power on status.').show();
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+        $btn.html('<i class="bi bi-power"></i> Power On');
+        $btn.prop('disabled', false);
+    } finally {
+        hideLoading();
+    }
 }
+
+// Bulk Power On handler
+$('#bulkPowerOnBtn').on('click', async function() {
+    const selectedRows = Array.from(selectedPowerOnRows);
+    if (selectedRows.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'No Selection',
+            text: 'Please select at least one device to power on.',
+            confirmButtonColor: '#0b2b4a'
+        });
+        return;
+    }
+    
+    const branchNames = [];
+    selectedRows.forEach(rowIndex => {
+        const branch = $(`.power-on-btn[data-row="${rowIndex}"]`).data('branch');
+        if (branch) branchNames.push(branch);
+    });
+    
+    const result = await Swal.fire({
+        title: `Bulk Power On (${selectedRows.length} devices)`,
+        html: `Are you sure you want to verify power on for these devices?<br><small>${branchNames.join(', ')}</small>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#d97706',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Yes, Bulk Power On!'
+    });
+    
+    if (!result.isConfirmed) return;
+    
+    const $btn = $(this);
+    $btn.html('<i class="bi bi-arrow-repeat"></i> Processing...');
+    $btn.prop('disabled', true);
+    showLoading();
+    
+    const restartDate = getTodayDate();
+    const restartTime = getCurrentTime24h();
+    let successCount = 0;
+    let failCount = 0;
+    
+    try {
+        for (const rowIndex of selectedRows) {
+            try {
+                await updateSheetViaAppsScript('UPDATE_POWER_ON', { 
+                    rowIndex: rowIndex,
+                    restartDate: restartDate,
+                    restartTime: restartTime
+                });
+                successCount++;
+            } catch (err) {
+                console.error(`Failed for row ${rowIndex}:`, err);
+                failCount++;
+            }
+        }
+        
+        let message = `✅ ${successCount} device(s) powered on successfully.`;
+        if (failCount > 0) {
+            message += `\n⚠️ ${failCount} device(s) failed.`;
+        }
+        
+        Swal.fire({
+            icon: successCount > 0 ? 'success' : 'error',
+            title: 'Bulk Power On Complete',
+            text: message,
+            confirmButtonColor: '#0b2b4a'
+        });
+        
+        setTimeout(() => {
+            selectedPowerOnRows.clear();
+            $('#viewPowerOnBtn').click();
+        }, 1500);
+        
+    } catch (err) {
+        console.error('Bulk error:', err);
+        Swal.fire({
+            icon: 'error',
+            title: 'Bulk Operation Failed',
+            text: err.message,
+            confirmButtonColor: '#0b2b4a'
+        });
+    } finally {
+        $btn.html('<i class="bi bi-power"></i> Bulk Power On');
+        $btn.prop('disabled', false);
+        hideLoading();
+    }
+});
+
+$('#clearSelectionBtn').on('click', function() {
+    selectedPowerOnRows.clear();
+    $('.power-on-checkbox').prop('checked', false);
+    $('#selectAllPowerOn').prop('checked', false);
+    updateSelectedCount();
+});
 
 // ============================================================
 //  INIT
 // ============================================================
 
 $(document).ready(function() {
+    // Set initial date
+    flatpickr("#confirmDate", {
+        dateFormat: "d/m/Y",
+        defaultDate: getTodayDate(),
+        allowInput: true,
+        onChange: function(selectedDates, dateStr) {
+            if (isAutoCheckActive) {
+                stopAutoCheck();
+                startAutoCheck();
+            }
+        }
+    });
+    
+    // Load initial data and start auto-check
     setTimeout(() => {
         $('#viewConfirmBtn').click();
+        startAutoCheck();
     }, 500);
 });
 </script>

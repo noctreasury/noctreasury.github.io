@@ -1,0 +1,567 @@
+
+// =====================================================
+// SHUTDOWN MANAGEMENT API - Fixed Date Handling
+// Deploy as Web App (Execute as: "Me", Access: "Anyone")
+// =====================================================
+
+const SPREADSHEET_ID = "1dMKhs6mIicwqRIbakYp7mzI8CXGbJ-VXHkmNXDRT8wA";
+const SHEET_NAME = "Data";
+
+// ==================== DO POST ====================
+function doPost(e) {
+  try {
+    let requestData = JSON.parse(e.postData.contents);
+    const action = requestData.action;
+    
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let sheet = ss.getSheetByName(SHEET_NAME);
+    
+    // Create sheet if it doesn't exist
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_NAME);
+      sheet.appendRow(["Branch ID", "Device Type", "Serial No.", "Date", "Time", 
+                       "Confirm", "Restarted", "Restart-Date", "Restart-Time"]);
+    }
+    
+    let result;
+    switch(action) {
+      case "GET_PENDING_REQUESTS":
+        result = handleGetPendingRequests(sheet, requestData);
+        break;
+      case "UPDATE_CONFIRM":
+        result = handleUpdateConfirm(sheet, requestData);
+        break;
+      case "GET_PENDING_POWER_ON":
+        result = handleGetPendingPowerOn(sheet, requestData);
+        break;
+      case "UPDATE_POWER_ON":
+        result = handleUpdatePowerOn(sheet, requestData);
+        break;
+      default:
+        result = { status: "error", error: "Unknown action. Supported: GET_PENDING_REQUESTS, UPDATE_CONFIRM, GET_PENDING_POWER_ON, UPDATE_POWER_ON" };
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch(error) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", error: error.toString() })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ==================== DO GET ====================
+function doGet(e) {
+  return ContentService.createTextOutput(JSON.stringify({ 
+    status: "success", 
+    message: "Shutdown Management API is running",
+    operations: ["GET_PENDING_REQUESTS", "UPDATE_CONFIRM", "GET_PENDING_POWER_ON", "UPDATE_POWER_ON"],
+    spreadsheetId: SPREADSHEET_ID,
+    sheetName: SHEET_NAME
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ==================== GET PENDING REQUESTS ====================
+// Fetches rows where Column F (Confirm) is BLANK/EMPTY and matches the date
+function handleGetPendingRequests(sheet, data) {
+  try {
+    if (!data) {
+      return { status: "error", error: "No data object provided" };
+    }
+    
+    const date = data.date || "";
+    if (!date) {
+      return { status: "error", error: "Date is required" };
+    }
+    
+    const rangeData = sheet.getDataRange().getValues();
+    
+    if (!rangeData || rangeData.length < 2) {
+      return { status: "success", records: [], total: 0 };
+    }
+    
+    const records = [];
+    
+    for (let i = 1; i < rangeData.length; i++) {
+      const row = rangeData[i];
+      if (row.length < 6) continue;
+      
+      // Skip empty rows
+      if (!row[0] || row[0].toString().trim() === "") continue;
+      
+      const rowDate = (row[3] || "").toString().trim();
+      const confirmVal = (row[5] || "").toString().trim();
+      
+      // Log for debugging
+      Logger.log(`Row ${i}: Date='${rowDate}' vs '${date}', Confirm='${confirmVal}'`);
+      
+      // ONLY include rows where:
+      // 1. Date matches (exact string comparison)
+      // 2. Confirm column is BLANK/EMPTY
+      if (rowDate === date && confirmVal === "") {
+        records.push({
+          rowIndex: i,  // 0-indexed row number
+          branch: (row[0] || "").toString().trim(),
+          deviceType: (row[1] || "").toString().trim(),
+          serial: (row[2] || "").toString().trim(),
+          date: rowDate,
+          time: (row[4] || "").toString().trim(),
+          confirm: "Pending"  // Display as "Pending" in UI
+        });
+      }
+    }
+    
+    Logger.log(`Found ${records.length} pending records for date: ${date}`);
+    
+    return { 
+      status: "success", 
+      records: records, 
+      total: records.length,
+      date: date
+    };
+    
+  } catch (error) {
+    Logger.log("Error in handleGetPendingRequests: " + error.toString());
+    return { status: "error", error: error.toString() };
+  }
+}
+
+// ==================== UPDATE CONFIRM ====================
+function handleUpdateConfirm(sheet, data) {
+  try {
+    const rowId = data.rowIndex;
+    if (rowId === undefined || rowId === null) {
+      return { status: "error", error: "Row index missing for update" };
+    }
+    
+    const rangeData = sheet.getDataRange().getValues();
+    let rowNumber = -1;
+    
+    for (let i = 1; i < rangeData.length; i++) {
+      if (i === rowId) {
+        rowNumber = i + 1;
+        break;
+      }
+    }
+    
+    if (rowNumber === -1) {
+      return { status: "error", error: "Record not found with ID: " + rowId };
+    }
+    
+    // Update Column F (index 6) to "Yes"
+    sheet.getRange(rowNumber, 6).setValue("Yes");
+    
+    Logger.log(`Updated Confirm to "Yes" for row ${rowNumber}`);
+    
+    return { 
+      status: "success", 
+      message: "Confirmation updated to Yes", 
+      rowId: rowId 
+    };
+    
+  } catch (error) {
+    Logger.log("Error in handleUpdateConfirm: " + error.toString());
+    return { status: "error", error: error.toString() };
+  }
+}
+
+// ==================== GET PENDING POWER ON ====================
+function handleGetPendingPowerOn(sheet, data) {
+  try {
+    if (!data) {
+      return { status: "error", error: "No data object provided" };
+    }
+    
+    const date = data.date || "";
+    if (!date) {
+      return { status: "error", error: "Date is required" };
+    }
+    
+    const rangeData = sheet.getDataRange().getValues();
+    
+    if (!rangeData || rangeData.length < 2) {
+      return { status: "success", records: [], total: 0 };
+    }
+    
+    const records = [];
+    
+    for (let i = 1; i < rangeData.length; i++) {
+      const row = rangeData[i];
+      if (row.length < 7) continue;
+      
+      // Skip empty rows
+      if (!row[0] || row[0].toString().trim() === "") continue;
+      
+      const rowDate = (row[3] || "").toString().trim();
+      const confirmVal = (row[5] || "").toString().trim();
+      const restartedVal = (row[6] || "").toString().trim();
+      
+      Logger.log(`Row ${i}: Date='${rowDate}' vs '${date}', Confirm='${confirmVal}', Restarted='${restartedVal}'`);
+      
+      // ONLY include rows where:
+      // 1. Date matches
+      // 2. Confirm is "Yes"
+      // 3. Restarted column is BLANK/EMPTY
+      if (rowDate === date && confirmVal === "Yes" && restartedVal === "") {
+        records.push({
+          rowIndex: i,
+          branch: (row[0] || "").toString().trim(),
+          deviceType: (row[1] || "").toString().trim(),
+          serial: (row[2] || "").toString().trim(),
+          date: rowDate,
+          time: (row[4] || "").toString().trim(),
+          confirm: confirmVal,
+          restarted: "Pending"
+        });
+      }
+    }
+    
+    Logger.log(`Found ${records.length} pending power on records for date: ${date}`);
+    
+    return { 
+      status: "success", 
+      records: records, 
+      total: records.length,
+      date: date
+    };
+    
+  } catch (error) {
+    Logger.log("Error in handleGetPendingPowerOn: " + error.toString());
+    return { status: "error", error: error.toString() };
+  }
+}
+
+// ==================== UPDATE POWER ON ====================
+function handleUpdatePowerOn(sheet, data) {
+  try {
+    const rowId = data.rowIndex;
+    const restartDate = data.restartDate || "";
+    const restartTime = data.restartTime || "";
+    
+    if (rowId === undefined || rowId === null) {
+      return { status: "error", error: "Row index missing for update" };
+    }
+    
+    const rangeData = sheet.getDataRange().getValues();
+    let rowNumber = -1;
+    
+    for (let i = 1; i < rangeData.length; i++) {
+      if (i === rowId) {
+        rowNumber = i + 1;
+        break;
+      }
+    }
+    
+    if (rowNumber === -1) {
+      return { status: "error", error: "Record not found with ID: " + rowId };
+    }
+    
+    // Update Column G (index 7) to "Yes" - Restarted
+    sheet.getRange(rowNumber, 7).setValue("Yes");
+    // Update Column H (index 8) - Restart-Date
+    sheet.getRange(rowNumber, 8).setValue(restartDate);
+    // Update Column I (index 9) - Restart-Time
+    sheet.getRange(rowNumber, 9).setValue(restartTime);
+    
+    Logger.log(`Updated Power On for row ${rowNumber}: Date=${restartDate}, Time=${restartTime}`);
+    
+    return { 
+      status: "success", 
+      message: "Power On verification updated successfully",
+      rowId: rowId,
+      restartDate: restartDate,
+      restartTime: restartTime
+    };
+    
+  } catch (error) {
+    Logger.log("Error in handleUpdatePowerOn: " + error.toString());
+    return { status: "error", error: error.toString() };
+  }
+}
+
+// ==================== INITIALIZE SHEET ====================
+function initializeSheet() {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let sheet = ss.getSheetByName(SHEET_NAME);
+    
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_NAME);
+      const headers = ["Branch ID", "Device Type", "Serial No.", "Date", "Time", 
+                       "Confirm", "Restarted", "Restart-Date", "Restart-Time"];
+      sheet.appendRow(headers);
+      sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+      sheet.setFrozenRows(1);
+      Logger.log("Sheet initialized successfully!");
+      return "Sheet initialized successfully!";
+    }
+    
+    Logger.log("Sheet already exists.");
+    return "Sheet already exists.";
+    
+  } catch (error) {
+    Logger.log("Error initializing sheet: " + error.toString());
+    return "Error: " + error.toString();
+  }
+}
+
+// ==================== ADD TEST DATA ====================
+function addTestData() {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(SHEET_NAME);
+    
+    if (!sheet) {
+      Logger.log("Sheet not found! Run initializeSheet() first.");
+      return;
+    }
+    
+    // Get today's date in DD/MM/YYYY format
+    const date = new Date();
+    const d = String(date.getDate()).padStart(2, '0');
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const y = date.getFullYear();
+    const today = `${d}/${m}/${y}`;
+    
+    // Add test rows with blank Confirm column
+    const testData = [
+      ["BR001", "Router", "SN12345", today, "09:30", "", "", "", ""],
+      ["BR002", "Switch", "SN67890", today, "10:15", "", "", "", ""],
+      ["BR003", "Firewall", "SN11223", today, "11:45", "", "", "", ""],
+      ["BR004", "Router", "SN44556", today, "14:20", "", "", "", ""]
+    ];
+    
+    for (let i = 0; i < testData.length; i++) {
+      sheet.appendRow(testData[i]);
+    }
+    
+    Logger.log(`Added ${testData.length} test records with today's date (${today})`);
+    Logger.log("Test data added successfully!");
+    
+    // Show what was added
+    viewAllSheetData();
+    
+  } catch (error) {
+    Logger.log("Error adding test data: " + error.toString());
+  }
+}
+
+// ==================== VIEW ALL SHEET DATA ====================
+function viewAllSheetData() {
+  try {
+    Logger.log("=== VIEWING ALL SHEET DATA ===");
+    
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(SHEET_NAME);
+    
+    if (!sheet) {
+      Logger.log("Sheet not found! Run initializeSheet() first.");
+      return;
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    
+    if (!data || data.length === 0) {
+      Logger.log("Sheet is empty.");
+      return;
+    }
+    
+    // Log headers
+    Logger.log("Headers: " + data[0].join(" | "));
+    Logger.log("---");
+    
+    let rowCount = 0;
+    let blankConfirmCount = 0;
+    
+    // Log data rows
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (row && row.length > 0 && row[0] && row[0].toString().trim() !== "") {
+        rowCount++;
+        const confirmVal = (row[5] || "").toString().trim();
+        const dateVal = (row[3] || "").toString().trim();
+        const timeVal = (row[4] || "").toString().trim();
+        
+        Logger.log(`Row ${i}: Branch=${row[0]}, Device=${row[1]}, Serial=${row[2]}, Date=${dateVal}, Time=${timeVal}, Confirm="${confirmVal}"`);
+        
+        if (confirmVal === "") {
+          blankConfirmCount++;
+        }
+      }
+    }
+    
+    Logger.log("---");
+    Logger.log(`Total rows: ${rowCount}`);
+    Logger.log(`Rows with blank Confirm: ${blankConfirmCount}`);
+    
+    return {
+      totalRows: rowCount,
+      blankConfirmCount: blankConfirmCount
+    };
+    
+  } catch (error) {
+    Logger.log("Error viewing sheet data: " + error.toString());
+  }
+}
+
+// ==================== DEBUG TEST FUNCTIONS ====================
+function testGetPendingRequests() {
+  try {
+    // Get today's date in DD/MM/YYYY format
+    const date = new Date();
+    const d = String(date.getDate()).padStart(2, '0');
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const y = date.getFullYear();
+    const today = `${d}/${m}/${y}`;
+    
+    Logger.log("=== TESTING GET_PENDING_REQUESTS ===");
+    Logger.log(`Searching for date: "${today}"`);
+    
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(SHEET_NAME);
+    
+    if (!sheet) {
+      Logger.log("Sheet not found! Run initializeSheet() first.");
+      return;
+    }
+    
+    const result = handleGetPendingRequests(sheet, { date: today });
+    
+    if (result.status === "success") {
+      Logger.log(`Found ${result.total} pending records`);
+      if (result.records && result.records.length > 0) {
+        for (let i = 0; i < result.records.length; i++) {
+          Logger.log(`Record ${i+1}: ${JSON.stringify(result.records[i])}`);
+        }
+      } else {
+        Logger.log("No pending records found for this date.");
+        Logger.log("Make sure you have rows with:");
+        Logger.log("1. Date column = " + today);
+        Logger.log("2. Confirm column is BLANK/EMPTY");
+      }
+    } else {
+      Logger.log("Error: " + result.error);
+    }
+    
+  } catch (error) {
+    Logger.log("Test error: " + error.toString());
+  }
+}
+
+function testGetPendingPowerOn() {
+  try {
+    // Get yesterday's date in DD/MM/YYYY format
+    const date = new Date();
+    date.setDate(date.getDate() - 1);
+    const d = String(date.getDate()).padStart(2, '0');
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const y = date.getFullYear();
+    const yesterday = `${d}/${m}/${y}`;
+    
+    Logger.log("=== TESTING GET_PENDING_POWER_ON ===");
+    Logger.log(`Searching for date: "${yesterday}"`);
+    
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(SHEET_NAME);
+    
+    if (!sheet) {
+      Logger.log("Sheet not found! Run initializeSheet() first.");
+      return;
+    }
+    
+    const result = handleGetPendingPowerOn(sheet, { date: yesterday });
+    
+    if (result.status === "success") {
+      Logger.log(`Found ${result.total} pending power on records`);
+      if (result.records && result.records.length > 0) {
+        for (let i = 0; i < result.records.length; i++) {
+          Logger.log(`Record ${i+1}: ${JSON.stringify(result.records[i])}`);
+        }
+      } else {
+        Logger.log("No pending power on records found for this date.");
+        Logger.log("Make sure you have rows with:");
+        Logger.log("1. Date column = " + yesterday);
+        Logger.log("2. Confirm column = 'Yes'");
+        Logger.log("3. Restarted column is BLANK/EMPTY");
+      }
+    } else {
+      Logger.log("Error: " + result.error);
+    }
+    
+  } catch (error) {
+    Logger.log("Test error: " + error.toString());
+  }
+}
+
+function testUpdateConfirm() {
+  try {
+    Logger.log("=== TESTING UPDATE_CONFIRM ===");
+    Logger.log("NOTE: This will update row index 1 (second row in sheet)");
+    
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(SHEET_NAME);
+    
+    if (!sheet) {
+      Logger.log("Sheet not found! Run initializeSheet() first.");
+      return;
+    }
+    
+    const result = handleUpdateConfirm(sheet, { rowIndex: 1 });
+    Logger.log("Result:");
+    Logger.log(JSON.stringify(result, null, 2));
+    
+  } catch (error) {
+    Logger.log("Test error: " + error.toString());
+  }
+}
+
+function testUpdatePowerOn() {
+  try {
+    Logger.log("=== TESTING UPDATE_POWER_ON ===");
+    Logger.log("NOTE: This will update row index 1 (second row in sheet)");
+    
+    const date = new Date();
+    const d = String(date.getDate()).padStart(2, '0');
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const y = date.getFullYear();
+    const today = `${d}/${m}/${y}`;
+    const time = "15:30";
+    
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(SHEET_NAME);
+    
+    if (!sheet) {
+      Logger.log("Sheet not found! Run initializeSheet() first.");
+      return;
+    }
+    
+    const result = handleUpdatePowerOn(sheet, { 
+      rowIndex: 1, 
+      restartDate: today, 
+      restartTime: time 
+    });
+    Logger.log("Result:");
+    Logger.log(JSON.stringify(result, null, 2));
+    
+  } catch (error) {
+    Logger.log("Test error: " + error.toString());
+  }
+}
+
+// ==================== RUN ALL TESTS ====================
+function runAllTests() {
+  Logger.log("=== RUNNING ALL TESTS ===");
+  Logger.log("");
+  
+  // First, show what's in the sheet
+  viewAllSheetData();
+  Logger.log("");
+  
+  // Test pending requests
+  testGetPendingRequests();
+  Logger.log("");
+  
+  // Test pending power on
+  testGetPendingPowerOn();
+  Logger.log("");
+  
+  Logger.log("=== TESTS COMPLETE ===");
+}
