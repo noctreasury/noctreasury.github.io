@@ -8,56 +8,8 @@
     <!-- LOCAL CSS & JS (using ./css and ./js paths with fallbacks) -->
     <link rel="stylesheet" href="./css/bootstrap.min.css">
     <link rel="stylesheet" href="./css/bootstrap-icons.min.css">
-    
+             <link rel="stylesheet" href="./css/all-in-one.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: #fff0;
-            font-family: 'Segoe UI', system-ui, 'Helvetica Neue', sans-serif;
-            padding: 20px 16px;
-            color: #1e293b;
-        }
-
-        .page-header {
-    padding: 15px 2px !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 12px !important;
-    flex-wrap: wrap !important;
-    justify-content: space-between !important;
- 
-}
-.page-header-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.page-header-left i {
-    font-size: 1.8rem !important;
-    background: rgb(56 143 251 / 15%) !important;
-    padding: 10px !important;
-    border-radius: 12px !important;
-    color: #184f83 !important;
-}
-
-
-.page-header-left h1 {
-    margin: 0 !important;
-    font-size: 1.8rem !important;
-    font-weight: 700 !important;
-    color: #184f83!important;
-}
- .page-header-left p {
-            margin: 2px 0 0;
-            opacity: 0.7;
-            font-size: 0.75rem;
- }
 
         .hide-zero-toggle {
             display: flex;
@@ -179,67 +131,6 @@
             justify-content: flex-end;
         }
 
-        .footer-link-btn {
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 5px 14px;
-            border-radius: 40px;
-            background: rgba(0, 0, 0, 0.05);
-            transition: 0.2s;
-            color: #1e293b;
-            font-weight: 500;
-            font-size: 0.8rem;
-        }
-
-        .footer-link-btn i {
-            font-size: 0.85rem;
-        }
-
-        .footer-link-btn:hover {
-            background: rgba(0, 0, 0, 0.12);
-            transform: translateX(2px);
-        }
-
-        .error-banner {
-            background: #fff1f0;
-            border-left: 5px solid #e53e3e;
-            padding: 16px 22px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            flex-wrap: wrap;
-            grid-column: 1 / -1;
-        }
-
-        .empty-state {
-            text-align: center;
-            background: white;
-            padding: 40px 20px;
-            border-radius: 32px;
-            color: #5b6f8c;
-            grid-column: 1 / -1;
-        }
-
-        .loader-overlay {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 320px;
-            grid-column: 1 / -1;
-        }
-
-        .spinner-small {
-            width: 32px;
-            height: 32px;
-            border: 3px solid #e2e8f0;
-            border-top-color: #0f5b9c;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            display: inline-block;
-        }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
