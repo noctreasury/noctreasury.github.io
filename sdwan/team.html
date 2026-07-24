@@ -9,58 +9,9 @@
     <link rel="stylesheet" href="../css/bootstrap.min.css">
     <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
     <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
-    
+    <link rel="stylesheet" href="../css/all-in-one.css">
     <style>
-        :root {
-            --primary: #0f5b9c;
-            --primary-dark: #1a4b7a;
-            --primary-light: #e8f0fe;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --info: #3b82f6;
-            --dark: #1e293b;
-            --light: #f8fafc;
-            --border: #e9ecef;
-        }
-        
-        body {
-             background: #fff0;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            padding: 20px 16px;
-            color: var(--dark);
-        }
-        
-        .dashboard-container {
-            max-width: 100%;
-            margin: 0 auto;
-        }
-        
-      
-        /* Refresh indicator */
-        .refresh-indicator {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: var(--light);
-            padding: 8px 16px;
-            border-radius: 40px;
-            border: 1px solid var(--border);
-        }
-        
-        .refresh-spinner {
-            width: 16px;
-            height: 16px;
-            border: 2px solid var(--primary-light);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        .last-updated {
-            font-size: 0.85rem;
-            color: #64748b;
-        }
+       
         
         /* Stats Cards */
         .stats-row {
@@ -70,91 +21,7 @@
             margin-bottom: 30px;
         }
         
-        .stat-card {
-            background: white;
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            transition: transform 0.2s;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-        }
-        
-        .stat-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-        }
-        
-        .stat-icon.total {
-            background: #e8f0fe;
-            color: var(--primary);
-        }
-        
-        .stat-icon.active {
-            background: #e8f7ed;
-            color: var(--success);
-        }
-        
-        .stat-icon.inactive {
-            background: #fee9e7;
-            color: var(--danger);
-        }
-        
-        .stat-icon.offices {
-            background: #e8f0fe;
-            color: var(--info);
-        }
-        
-        .stat-info h3 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 0;
-            line-height: 1.2;
-        }
-        
-        .stat-info p {
-            margin: 5px 0 0;
-            color: #64748b;
-            font-size: 0.9rem;
-        }
-        
-        /* Section Title */
-        .section-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: var(--dark);
-            margin: 30px 0 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .section-title i {
-            color: var(--primary);
-            font-size: 1.5rem;
-        }
-        
-        .section-title .badge {
-            background: var(--primary-light);
-            color: var(--primary);
-            padding: 5px 15px;
-            border-radius: 30px;
-            font-size: 0.9rem;
-            margin-left: 10px;
-        }
-        
+      
         /* Team Member Cards - Similar to statsContainer style */
         .team-grid {
             display: grid;
@@ -439,41 +306,7 @@
                 text-align: center;
             }
         }
-.page-header {
-    padding: 15px 2px !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 12px !important;
-    flex-wrap: wrap !important;
-    justify-content: space-between !important;
- 
-}
-.page-header-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
 
-.page-header-left i {
-    font-size: 1.8rem !important;
-    background: rgb(56 143 251 / 15%) !important;
-    padding: 10px !important;
-    border-radius: 12px !important;
-    color: #184f83 !important;
-}
-
-
-.page-header-left h1 {
-    margin: 0 !important;
-    font-size: 1.8rem !important;
-    font-weight: 700 !important;
-    color: #184f83!important;
-}
- .page-header-left p {
-            margin: 2px 0 0;
-            opacity: 0.7;
-            font-size: 0.75rem;
- }
     </style>
 </head>
 <body>
@@ -499,10 +332,7 @@
         </div>
             </div>
     <div class="dashboard-container">
-        <!-- Header -->
-        <div class="branch-header">
-          
-           </div>
+
 
         <!-- Stats Cards -->
         <div class="stats-row" id="statsContainer">
