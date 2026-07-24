@@ -1759,7 +1759,7 @@ body {
 }
 
 .branch-selector-container .btn-apply {
-    background: #0f3b5f;
+    background: var(--primary);
     color: #fff;
     border: none;
     border-radius: 40px;
