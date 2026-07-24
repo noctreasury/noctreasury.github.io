@@ -164,7 +164,7 @@ body {
     position: relative;
     width: 60px;
     border-radius: 50px;
-  border: solid 1px var(--text-primary) !important;
+ 
 }
 
 .theme-switch input { 
