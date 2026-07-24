@@ -1,0 +1,235 @@
+// ==================== FATIPIE DEVICE MANAGEMENT API ====================
+// Deploy as Web App (Execute as: "Me", Access: "Anyone")
+// Main Spreadsheet ID: 1MpftwfNIe82kORjP6xeLo1qUh3v6Cr8HHo0oSW2grYA
+// Installation Status Spreadsheet ID: 1HvCqLHC8IyllKskBXX1MtMfjQMGUyhMP7KuTuJxDhmU
+
+const SPREADSHEET_ID = "1MpftwfNIe82kORjP6xeLo1qUh3v6Cr8HHo0oSW2grYA";
+const MOVEMENT_SHEET = "Movement_Data";
+const INSTALLATION_SHEET_ID = "1HvCqLHC8IyllKskBXX1MtMfjQMGUyhMP7KuTuJxDhmU";
+const INSTALLATION_SHEET_NAME = "Installation Status";
+
+function doPost(e) {
+  try {
+    let requestData = JSON.parse(e.postData.contents);
+    const action = requestData.action;
+    
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let sheet = ss.getSheetByName(MOVEMENT_SHEET);
+    
+    if (!sheet) {
+      sheet = ss.insertSheet(MOVEMENT_SHEET);
+      sheet.appendRow(["Reference ID", "Treasury", "Serial No.", "Device Type", "From Branch", 
+                       "Complaint Remarks", "Complaint Date", "Sent to address", "Sent Date", 
+                       "Received Date", "Date of Movement to OEM", "Date of return from OEM", 
+                       "To Branch", "Date of Transfer", "Remarks"]);
+    }
+    
+    let result;
+    switch(action) {
+      case "ADD":
+        result = handleAdd(sheet, requestData);
+        break;
+      case "UPDATE_REGISTER":
+        result = handleUpdateRegister(sheet, requestData);
+        break;
+      case "UPDATE_PROCESSING":
+        result = handleUpdateProcessing(sheet, requestData);
+        break;
+      case "DELETE":
+        result = handleDelete(sheet, requestData);
+        break;
+      default:
+        result = { status: "error", error: "Unknown action. Supported: ADD, UPDATE_REGISTER, UPDATE_PROCESSING, DELETE" };
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch(error) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", error: error.toString() })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function handleAdd(sheet, data) {
+  sheet.appendRow([
+    data.referenceId || "",
+    data.treasury || "",
+    data.serialNo || "",
+    data.deviceType || "",
+    data.fromBranch || "",
+    data.complaintRemarks || "",
+    data.complaintDate || "",
+    data.sentToAddress || "",
+    data.sentDate || "",
+    "", "", "", "", "", ""
+  ]);
+  
+  return { status: "success", message: "Record added", referenceId: data.referenceId };
+}
+
+function handleUpdateRegister(sheet, data) {
+  const rowId = data.rowId;
+  if (!rowId) {
+    throw new Error("Row ID missing for update");
+  }
+  
+  const rangeData = sheet.getDataRange().getValues();
+  let rowNumber = -1;
+  
+  for (let i = 1; i < rangeData.length; i++) {
+    if (i === rowId) {
+      rowNumber = i + 1;
+      break;
+    }
+  }
+  
+  if (rowNumber === -1) {
+    throw new Error("Record not found with ID: " + rowId);
+  }
+  
+  // Update columns F, H, I (Complaint Remarks, Sent To Address, Sent Date)
+  if (data.complaintRemarks !== undefined) sheet.getRange(rowNumber, 6).setValue(data.complaintRemarks);
+  if (data.sentToAddress !== undefined) sheet.getRange(rowNumber, 8).setValue(data.sentToAddress);
+  if (data.sentDate !== undefined) sheet.getRange(rowNumber, 9).setValue(data.sentDate);
+  
+  return { status: "success", message: "Register section updated", rowId: rowId };
+}
+
+function handleUpdateProcessing(sheet, data) {
+  const rowId = data.rowId;
+  if (!rowId) {
+    throw new Error("Row ID missing for update");
+  }
+  
+  const rangeData = sheet.getDataRange().getValues();
+  let rowNumber = -1;
+  
+  for (let i = 1; i < rangeData.length; i++) {
+    if (i === rowId) {
+      rowNumber = i + 1;
+      break;
+    }
+  }
+  
+  if (rowNumber === -1) {
+    throw new Error("Record not found with ID: " + rowId);
+  }
+  
+  // Update columns E (Branch), J to O (10 to 15)
+  if (data.branch !== undefined) sheet.getRange(rowNumber, 5).setValue(data.branch);
+  if (data.receivedDate !== undefined) sheet.getRange(rowNumber, 10).setValue(data.receivedDate);
+  if (data.moveToOem !== undefined) sheet.getRange(rowNumber, 11).setValue(data.moveToOem);
+  if (data.returnFromOem !== undefined) sheet.getRange(rowNumber, 12).setValue(data.returnFromOem);
+  if (data.toBranch !== undefined) sheet.getRange(rowNumber, 13).setValue(data.toBranch);
+  if (data.transferDate !== undefined) sheet.getRange(rowNumber, 14).setValue(data.transferDate);
+  if (data.remarks !== undefined) sheet.getRange(rowNumber, 15).setValue(data.remarks);
+  
+  // Update Installation Status sheet if requested
+  if (data.updateMasterSheet === true && data.toBranch) {
+    try {
+      updateInstallationStatus(data.deviceSerialNo, data.deviceType, data.toBranch);
+      Logger.log(`Master sheet update triggered for branch: ${data.toBranch} with Serial No: ${data.deviceSerialNo} and Device Type: ${data.deviceType}`);
+    } catch (e) {
+      Logger.log(`Failed to update Installation Status sheet: ${e.toString()}`);
+      // Don't throw error for main update if master sheet update fails
+    }
+  }
+  
+  return { status: "success", message: "Processing details updated", rowId: rowId };
+}
+
+// UPDATED: This function now updates BOTH Device Serial Number (Column E) AND Device Type (Column C)
+function updateInstallationStatus(deviceSerialNo, deviceType, targetBranch) {
+  const ss = SpreadsheetApp.openById(INSTALLATION_SHEET_ID);
+  let sheet = ss.getSheetByName(INSTALLATION_SHEET_NAME);
+  
+  if (!sheet) {
+    throw new Error(`Sheet "${INSTALLATION_SHEET_NAME}" not found in the installation status spreadsheet.`);
+  }
+  
+  const dataRange = sheet.getDataRange();
+  const values = dataRange.getValues();
+  let rowToUpdate = -1;
+  
+  // Find the row where column D (Branch ID) matches the targetBranch
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i];
+    if (row[3] === targetBranch) { // Column D (index 3) contains Branch ID
+      rowToUpdate = i + 1;
+      break;
+    }
+  }
+  
+  if (rowToUpdate === -1) {
+    throw new Error(`Branch "${targetBranch}" not found in the Installation Status sheet.`);
+  }
+  
+  // Update Column C (index 3) with Device Type
+  if (deviceType && deviceType !== "") {
+    sheet.getRange(rowToUpdate, 3).setValue(deviceType);
+    Logger.log(`Updated Device Type for branch ${targetBranch} to: ${deviceType}`);
+  }
+  
+  // Update Column E (index 5) with Device Serial Number
+  if (deviceSerialNo && deviceSerialNo !== "") {
+    sheet.getRange(rowToUpdate, 5).setValue(deviceSerialNo);
+    Logger.log(`Updated Device Serial Number for branch ${targetBranch} to: ${deviceSerialNo}`);
+  }
+}
+
+function handleDelete(sheet, data) {
+  const rowId = data.rowId;
+  if (!rowId) {
+    throw new Error("Row ID missing for deletion");
+  }
+  
+  const rangeData = sheet.getDataRange().getValues();
+  let rowNumber = -1;
+  
+  for (let i = 1; i < rangeData.length; i++) {
+    if (i === rowId) {
+      rowNumber = i + 1;
+      break;
+    }
+  }
+  
+  if (rowNumber === -1) {
+    throw new Error("Record not found with ID: " + rowId);
+  }
+  
+  sheet.deleteRow(rowNumber);
+  
+  return { status: "success", message: "Record deleted", rowId: rowId };
+}
+
+function doGet(e) {
+  return ContentService.createTextOutput(JSON.stringify({ 
+    status: "success", 
+    message: "Fatpipe Device Management API is running",
+    operations: ["ADD", "UPDATE_REGISTER", "UPDATE_PROCESSING", "DELETE"],
+    sheets: {
+      main: MOVEMENT_SHEET,
+      installation: INSTALLATION_SHEET_NAME
+    }
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function initializeSheet() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(MOVEMENT_SHEET);
+  
+  if (!sheet) {
+    sheet = ss.insertSheet(MOVEMENT_SHEET);
+  }
+  
+  const headers = ["Reference ID", "Treasury", "Serial No.", "Device Type", "From Branch", 
+                   "Complaint Remarks", "Complaint Date", "Sent to address", "Sent Date", 
+                   "Received Date", "Date of Movement to OEM", "Date of return from OEM", 
+                   "To Branch", "Date of Transfer", "Remarks"];
+  
+  if (sheet.getLastRow() === 0) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    Logger.log("Headers initialized for sheet: " + MOVEMENT_SHEET);
+  }
+  
+  return "Sheet initialized successfully!";
+}
