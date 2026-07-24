@@ -85,7 +85,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: #fff0;
+    background: #fff0 !important;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -110,6 +110,7 @@ body {
     border-radius: 28px;
     box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
     overflow: hidden;
+	padding:20px;
 }
 
 /* ============================================================
@@ -122,6 +123,7 @@ body {
     box-shadow: 0 10px 25px -8px rgba(0,0,0,0.1);
     border: 1px solid var(--border);
     overflow: hidden;
+	padding:20px;
 }
 
 .report-container,
@@ -951,7 +953,7 @@ body {
 
 .tab-pane {
     display: none;
-    padding: 30px 32px;
+   /* padding: 30px 32px;*/
     background: #fff;
 }
 
@@ -1022,10 +1024,25 @@ body {
 }
 
 .tab-content {
-    background: #fff;
-    padding: 28px !important;
+   /* background: #fff;*/
+ /*   padding: 28px !important;*/
 }
-
+.export-buttons {
+	display: inline-flex;
+}
+.export-btn {
+    background: #6dc981;
+    border: 1px solid var(--border);
+    color: #ffffff;
+    padding: 8px 20px;
+    border-radius: 40px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
 /* ============================================================
    TABLES
    ============================================================ */
@@ -1066,9 +1083,9 @@ body {
 }
 
 .table-responsive {
-    border-radius: 16px;
+  /*  border-radius: 16px;*/
     overflow: hidden;
-    border: 1px solid #e2e8f0;
+   /* border: 1px solid #e2e8f0;*/
 }
 
 /* ============================================================
@@ -1114,10 +1131,10 @@ body {
 }
 
 .dataTables_paginate .paginate_button {
-    padding: 5px 12px;
+   /* padding: 5px 12px;*/
     border-radius: 20px;
     margin: 0 3px;
-    border: 1px solid #e2e8f0;
+   /* border: 1px solid #e2e8f0;*/
     color: #1e293b !important;
 }
 
