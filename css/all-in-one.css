@@ -270,7 +270,7 @@ body {
 }
 
 .btn-primary-custom:hover:not(:disabled) {
-    background: linear-gradient(135deg, #1a4b7a 0%, #0f5b9c 100%);
+    background: linear-gradient(135deg, #1a4b7a 0%, var(--primary)100%);
     transform: translateY(-2px);
     box-shadow: 0 6px 14px rgba(15, 91, 156, 0.3);
     color: #fff;
@@ -408,7 +408,7 @@ body {
 }
 
 .btn-view:hover {
-    background: linear-gradient(135deg, #1a4b7a 0%, #0f5b9c 100%);
+    background: linear-gradient(135deg, #1a4b7a 0%, var(--primary)100%);
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(15,91,156,0.3);
     color: #fff;
@@ -1140,15 +1140,15 @@ body {
 }
 
 .dataTables_paginate .paginate_button.current {
-    background: #0f5b9c !important;
-    border-color: #0f5b9c !important;
+    background: var(--primary)!important;
+    border-color: var(--primary)!important;
     color: #fff !important;
 }
 
 .dataTables_paginate .paginate_button:hover {
     background: #f1f5f9 !important;
     border-color: #cbd5e1 !important;
-    color: #0f5b9c !important;
+    color: var(--primary)!important;
 }
 
 .dataTables_info {
@@ -3613,7 +3613,7 @@ body {
 }
 
 .select2-container--bootstrap-5 .select2-selection__choice {
-    background-color: #0f5b9c !important;
+    background-color: var(--primary)!important;
     color: #fff !important;
     border: none !important;
     border-radius: 30px !important;
