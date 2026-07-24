@@ -3,7 +3,7 @@
    ============================================================ */
 :root {
    /* --primary: #0f5b9c;*/
-    --primary: #007bff !important
+    --primary: #007bff !important;
     --primary-dark: #1a4b7a;
     --primary-light: #e8f0fe;
     --success: #10b981;
@@ -256,7 +256,7 @@ body {
    BUTTONS
    ============================================================ */
 .btn-primary-custom {
-    background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+    background: var(--primary) !important;
     border: none;
     padding: 10px 24px;
     font-weight: 600;
@@ -923,8 +923,8 @@ body {
 }
 
 .tab-btn.active {
-    color: #1e4a76;
-    border-bottom-color: #1e4a76;
+    color: var(--primary) !important;
+    border-bottom-color: var(--primary) !important;
     background: #fff;
 }
 
