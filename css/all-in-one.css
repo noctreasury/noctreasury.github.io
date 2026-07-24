@@ -393,7 +393,7 @@ body {
 }
 
 .btn-view {
-    background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
+    background: var(--primary) !important;
     border: none;
     padding: 12px 32px;
     font-weight: 500;
@@ -1055,7 +1055,7 @@ body {
 }
 
 .table thead th {
-    background: linear-gradient(135deg, #1a4b7a 0%, #1a4b7a 100%);
+    background: var(--primary) !important;
     color: #fff;
     font-weight: 500;
     font-size: 0.85rem;
