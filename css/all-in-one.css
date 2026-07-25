@@ -37,7 +37,10 @@ body {
     min-height: 100vh;
     color: var(--dark);
 }
-
+.bg-dark {
+    --bs-bg-opacity: 1;
+    background-color: var(--primary) !important;
+}
 /* ============================================================
    PAGE HEADER (UNIFIED)
    ============================================================ */
@@ -3666,7 +3669,7 @@ body {
 
 .modal-header {
     border-bottom: 1px solid var(--border);
-    background: var(--primary-light);
+    background: var(--primary);
     border-radius: 24px 24px 0 0;
 }
 
