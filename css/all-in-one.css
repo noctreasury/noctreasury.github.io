@@ -1102,7 +1102,7 @@ body {
 
 .table-responsive {
   /*  border-radius: 16px;*/
-    overflow: hidden;
+   overflow-x: auto;
    /* border: 1px solid #e2e8f0;*/
 }
 

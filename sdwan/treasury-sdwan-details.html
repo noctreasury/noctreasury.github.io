@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="../css/select2.min.css">
     <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
-     <link rel="stylesheet" href="../css/all-in-one.css">
+    	<link rel="stylesheet" href="../css/all-in-one.css">
     <!-- LOCAL JS - Using resources from parent folder -->
     <script src="../js/jquery.min.js"></script>
     <script src="../js/bootstrap.bundle.min.js"></script>
@@ -19,25 +19,7 @@
     <script src="../js/select2.min.js"></script>
     <style>
 
-        .main-container {
-            max-width: 100%;
-            margin: 0 auto;
-        }
-       
-        .card {
-            border-radius: 12px;
-            border: none;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            margin-bottom: 24px;
-        }
-        
-        .card-header {
-            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
-            color: white;
-            border-radius: 12px 12px 0 0 !important;
-            padding: 16px 24px;
-            font-weight: 600;
-        }
+
         
         .filter-card {
             background: white;
@@ -51,25 +33,7 @@
             gap: 30px;
         }
         
-        .btn-primary {
-            background: linear-gradient(135deg, #0f5b9c 0%, #1a4b7a 100%);
-            border: none;
-            padding: 10px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(15, 91, 156, 0.3);
-        }
-        
-        .btn-primary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
+       
         .btn-copy-apikey {
             background-color: #e9ecef;
             border: 1px solid #ced4da;
@@ -89,207 +53,7 @@
             border-color: #0f5b9c;
         }
         
-        .table-container {
-            overflow-x: auto;
-            border-radius: 8px;
-        }
-        
-        .table th {
-            background-color: #f8f9fa;
-            color: #1a4b7a;
-            font-weight: 600;
-            font-size: 0.9rem;
-            white-space: nowrap;
-            padding: 16px;
-        }
-        
-        .table td {
-            padding: 14px 16px;
-            vertical-align: middle;
-            font-size: 0.9rem;
-        }
-        
-        .status-badge-working {
-            background: #d4edda;
-            color: #155724;
-            padding: 6px 16px;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            display: inline-block;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .status-badge-notworking {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 6px 16px;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            display: inline-block;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .status-badge-linkdown {
-            background: #fff3cd;
-            color: #856404;
-            padding: 6px 16px;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            display: inline-block;
-            border: 1px solid #ffeeba;
-        }
-        
-        .status-badge-other {
-            background: #e2e3e5;
-            color: #383d41;
-            padding: 6px 16px;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            display: inline-block;
-            border: 1px solid #d6d8db;
-        }
-        
-        .status-badge-blank {
-            background: #cce5ff;
-            color: #004085;
-            padding: 6px 16px;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            display: inline-block;
-            border: 1px solid #b8daff;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-        }
-        
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(15, 91, 156, 0.2);
-            border-radius: 50%;
-            border-top-color: #0f5b9c;
-            animation: spin 1s ease-in-out infinite;
-            margin: 0 auto 15px;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #6c757d;
-        }
-        
-        .empty-state i {
-            font-size: 48px;
-            color: #cbd5e1;
-            margin-bottom: 15px;
-        }
-        
-        .section-title {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin: 32px 0 16px 0;
-            color: #1a4b7a;
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
-        
-        .select2-container--bootstrap-5 .select2-selection {
-            min-height: 46px;
-            padding: 8px;
-        }
-        
-        .info-footer {
-            background: #e8f4fd;
-            border-left: 4px solid #0f5b9c;
-            padding: 16px 24px;
-            border-radius: 8px;
-            margin-top: 16px;
-            font-size: 0.9rem;
-            color: #1a4b7a;
-        }
-        
-        .data-summary {
-            background: #f8f9fa;
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #e9ecef;
-        }
-        
-        .mpls-badge {
-            background: #e0f2fe;
-            color: #0369a1;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            display: inline-block;
-            border: 1px solid #bae6fd;
-        }
-        
-        .gateway-ip {
-            font-family: monospace;
-            font-weight: 600;
-            color: #0f5b9c;
-            background: #e8f0fe;
-            padding: 4px 10px;
-            border-radius: 30px;
-            display: inline-block;
-            font-size: 0.85rem;
-        }
-        
-        .lan-pool {
-            font-family: monospace;
-            font-size: 0.85rem;
-            background: #f1f5f9;
-            padding: 4px 8px;
-            border-radius: 6px;
-            display: inline-block;
-        }
-        
-        .plain-value {
-            font-family: monospace;
-            font-size: 0.85rem;
-        }
-        
-        .api-key-wrapper {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-        
-        .instance-id-text {
-            font-family: monospace;
-            background: #f8f9fa;
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-        
-        .encap-ip-text {
-            font-family: monospace;
-            background: #f1f5f9;
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-        
-        /* Section loading state */
-        .section-loading {
-            opacity: 0.5;
-            pointer-events: none;
-        }
+      
     </style>
 </head>
 <body>
