@@ -62,7 +62,7 @@ body {
 
 .page-header-left i {
     font-size: 1.8rem !important;
-    background: rgba(56, 143, 251, 0.15) !important;
+    background: var(--active-bg) !important;
     padding: 10px !important;
     border-radius: 12px !important;
     color: var(--primary) !important;
