@@ -942,7 +942,7 @@ body {
 .tab-btn.active {
     color: var(--primary) !important;
     border-bottom-color: var(--primary) !important;
-    background: #fff;
+    background: var(--dropdown-hover) !important;
 }
 
 .tab-btn .badge-notification {
