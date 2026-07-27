@@ -18,6 +18,7 @@
     --railtel-light: #f3e8ff;
     --vpn: #f59e0b;
     --vpn-light: #fef3c7;
+    --active-bg: rgba(56, 143, 251, 0.15) !important;
 }
 
 /* ============================================================
@@ -942,7 +943,7 @@ body {
 .tab-btn.active {
     color: var(--primary) !important;
     border-bottom-color: var(--primary) !important;
-    background: var(--dropdown-hover) !important;
+    background: var(--active-bg) !important;
 }
 
 .tab-btn .badge-notification {
