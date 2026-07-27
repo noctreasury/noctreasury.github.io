@@ -19,6 +19,7 @@
     --vpn: #f59e0b;
     --vpn-light: #fef3c7;
     --active-bg: #dbeafe !important;
+	--scrollbar-track: #e9ecef;
 }
 
 /* ============================================================
@@ -4102,25 +4103,29 @@ body {
 /* ============================================================
    SCROLLBAR
    ============================================================ */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+/* Scrollbar Styles - Updated to use --primary variable */
+::-webkit-scrollbar { 
+    width: 6px; 
 }
 
-::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 8px;
+::-webkit-scrollbar-track { 
+    background: var(--scrollbar-track); 
 }
 
-::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb { 
     background: var(--primary);
-    border-radius: 8px;
+    border-radius: 6px; 
 }
 
-::-webkit-scrollbar-thumb:hover {
+::-webkit-scrollbar-thumb:hover { 
     background: var(--primary);
 }
 
+/* Firefox scrollbar */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) var(--scrollbar-track);
+}
 /* ============================================================
    MISCELLANEOUS FIXES
    ============================================================ */
