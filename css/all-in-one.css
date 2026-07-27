@@ -1033,12 +1033,12 @@ body {
 
 .nav-tabs .nav-link:hover {
     color: var(--primary);
-    background: var(--primary-light);
+    background: var(--active-bg);
 }
 
 .nav-tabs .nav-link.active {
     color: var(--primary);
-    background: #fff;
+    background: var(--active-bg);
     border-bottom: 3px solid var(--primary);
 }
 
