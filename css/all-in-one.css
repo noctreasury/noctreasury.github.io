@@ -29,9 +29,7 @@
     margin: 0;
     padding: 0;
 }
-html {
-  scrollbar-color: var(--primary) #1a1a1a; /* thumb color | track color */
-}
+
 body {
     background: #fff0;
     font-family: 'Segoe UI', Roboto, 'Helvetica Neue', system-ui, sans-serif;
@@ -4111,12 +4109,12 @@ body {
 
 ::-webkit-scrollbar-track {
     background: #f1f5f9;
-    border-radius: 10px;
+    border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 10px;
+    background: var(--primary);
+    border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
