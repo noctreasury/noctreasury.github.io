@@ -4,7 +4,7 @@
 
 /* Light Theme Variables */
 body.light-theme {
-
+    --primary: #007bff;
     --bg-primary: #f5f7ff;
     --bg-secondary: #ffffff;
     --bg-tertiary: #f8f9fa;
@@ -30,7 +30,9 @@ body.light-theme {
     --sidebar-border: #cbd5e1;
     --card-bg: #ffffff;
 }
-
+html {
+  scrollbar-color: var(--primary) #1a1a1a; /* thumb color | track color */
+}
 /* Dark Theme Variables */
 body.dark-theme {
     --bg-primary: #0a0c10;
@@ -823,7 +825,7 @@ body.dark-theme .logout-icon-btn:hover {
     }
 }
 
-/* Scrollbar Styles */
+/* Scrollbar Styles - Updated to use --primary variable */
 ::-webkit-scrollbar { 
     width: 6px; 
 }
@@ -833,12 +835,18 @@ body.dark-theme .logout-icon-btn:hover {
 }
 
 ::-webkit-scrollbar-thumb { 
-    background: var(--scrollbar-thumb); 
+    background: var(--primary);
     border-radius: 10px; 
 }
 
 ::-webkit-scrollbar-thumb:hover { 
     background: var(--scrollbar-thumb-hover); 
+}
+
+/* Firefox scrollbar */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) var(--scrollbar-track);
 }
 
 /* Responsive Adjustments */

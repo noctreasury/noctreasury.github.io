@@ -29,7 +29,9 @@
     margin: 0;
     padding: 0;
 }
-
+html {
+  scrollbar-color: var(--primary) #1a1a1a; /* thumb color | track color */
+}
 body {
     background: #fff0;
     font-family: 'Segoe UI', Roboto, 'Helvetica Neue', system-ui, sans-serif;
