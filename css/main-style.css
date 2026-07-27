@@ -35,6 +35,7 @@ html {
 }
 /* Dark Theme Variables */
 body.dark-theme {
+	--primary: #007bff;
     --bg-primary: #0a0c10;
     --bg-secondary: #1e293b;
     --bg-tertiary: #0f172a;
@@ -107,7 +108,7 @@ body {
 }
 
 .brand-text h1 {
-    color: #0d6efd;
+    color: var(--primary)!important;
     font-size: 1.4rem;
     font-weight: 600;
     margin: 0;
