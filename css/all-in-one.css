@@ -944,7 +944,7 @@ body {
     color: var(--primary) !important;
     border-bottom-color: var(--primary) !important;
     background: var(--active-bg) !important;
-
+    border-radius: 12px 12px 0 0;
 }
 
 .tab-btn .badge-notification {
