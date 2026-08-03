@@ -829,7 +829,10 @@
             });
         }
 
-        // Update notifications (fetch + render)
+     // Add this variable at the top with other variables
+let isFirstLoad = true;
+
+// Update notifications (fetch + render)
 async function updateNotifications() {
     const items = await fetchNotifications();
     const previousCount = notifItems ? notifItems.length : 0;
@@ -841,8 +844,9 @@ async function updateNotifications() {
     
     // Play sound if:
     // 1. There are new notifications (count increased)
-    // 2. AND it's not the first load (previousCount > 0 to avoid sound on page load)
-    if (currentCount > previousCount && previousCount > 0) {
+    // 2. AND it's not the first load (to avoid sound on page load)
+    //    This now plays for 0->1, 1->2, 2->3, etc.
+    if (currentCount > previousCount && !isFirstLoad) {
         playNotificationSound();
         
         // Animate badge for new notifications
@@ -855,9 +859,13 @@ async function updateNotifications() {
         }
     }
     
+    // Mark first load as complete after first fetch
+    if (isFirstLoad) {
+        isFirstLoad = false;
+    }
+    
     renderNotifications(items);
 }
-
         // Escape HTML
         function escapeHtml(str) {
             if (!str) return '';
