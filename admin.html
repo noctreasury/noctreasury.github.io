@@ -673,7 +673,10 @@
             </div>
         </div>
     </div>
-
+<!-- Notification Sound -->
+<audio id="notificationSound" preload="auto">
+    <source src="notification.mp3" type="audio/mpeg">
+</audio>
     <!-- Local JS resources -->
     <script src="./js/bootstrap.bundle.min.js?v=20250102"></script>
     <script src="./js/main-script.js?v=20250102"></script>
@@ -827,11 +830,33 @@
         }
 
         // Update notifications (fetch + render)
-        async function updateNotifications() {
-            const items = await fetchNotifications();
-            notifItems = items;
-            renderNotifications(items);
+async function updateNotifications() {
+    const items = await fetchNotifications();
+    const previousCount = notifItems ? notifItems.length : 0;
+    const currentCount = items.length;
+    
+    // Store previous items for comparison
+    const previousItems = notifItems;
+    notifItems = items;
+    
+    // Play sound if:
+    // 1. There are new notifications (count increased)
+    // 2. AND it's not the first load (previousCount > 0 to avoid sound on page load)
+    if (currentCount > previousCount && previousCount > 0) {
+        playNotificationSound();
+        
+        // Animate badge for new notifications
+        const badge = document.getElementById('notifBadge');
+        if (badge) {
+            badge.style.animation = 'none';
+            setTimeout(() => {
+                badge.style.animation = 'pulse-red 0.5s ease 3';
+            }, 10);
         }
+    }
+    
+    renderNotifications(items);
+}
 
         // Escape HTML
         function escapeHtml(str) {
@@ -1024,19 +1049,40 @@
             hideUserPopup();
             hideNotifPopup();
         };
+// ======================== NOTIFICATION SOUND FUNCTIONS ========================
+let lastNotifCount = 0;
 
-        // ======================== INIT NOTIFICATION SYSTEM ========================
-        function initNotifSystem() {
-            // Fetch initial notifications
-            updateNotifications();
-            // Set interval every 60 seconds
-            if (notifInterval) clearInterval(notifInterval);
-            notifInterval = setInterval(() => {
-                if (isAuthenticated) {
-                    updateNotifications();
-                }
-            }, 60000);
+function playNotificationSound() {
+    try {
+        const audio = document.getElementById('notificationSound');
+        if (audio) {
+            // Reset audio to start if already playing
+            audio.currentTime = 0;
+            // Play with error handling
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log('Notification sound play failed:', error);
+                });
+            }
         }
+    } catch (e) {
+        console.log('Error playing notification sound:', e);
+    }
+}
+      // ======================== INIT NOTIFICATION SYSTEM ========================
+function initNotifSystem() {
+    // Fetch initial notifications
+    updateNotifications();
+    
+    // Set interval every 30 seconds (for quicker notification detection)
+    if (notifInterval) clearInterval(notifInterval);
+    notifInterval = setInterval(() => {
+        if (isAuthenticated) {
+            updateNotifications();
+        }
+    }, 30000);
+}
 
         // ======================== INITIALIZATION ========================
         document.addEventListener('DOMContentLoaded', function() {
