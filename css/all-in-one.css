@@ -438,7 +438,7 @@ body {
 }
 
 .btn-export {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: var(--primary);
     border: none;
     padding: 12px 32px;
     font-weight: 500;
@@ -452,9 +452,9 @@ body {
 }
 
 .btn-export:hover {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+   
     transform: translateY(-2px);
-    color: #fff;
+    box-shadow: 0 4px 12px rgba(15, 91, 156, 0.3);
 }
 
 .btn-export i {
@@ -462,7 +462,7 @@ body {
 }
 
 .btn-export-pdf {
-    background: #dc2626;
+    background: var(--primary);
     border: none;
     padding: 10px 25px;
     font-weight: 600;
@@ -472,12 +472,12 @@ body {
 }
 
 .btn-export-pdf:hover {
-    background: #b91c1c;
-    transform: translateY(-2px);
+       transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(15, 91, 156, 0.3);
 }
 
 .btn-export-csv {
-    background: #10b981;
+    background: var(--primary);
     border: none;
     padding: 10px 24px;
     font-weight: 600;
@@ -487,7 +487,8 @@ body {
 }
 
 .btn-export-csv:hover {
-    background: #059669;
+         transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(15, 91, 156, 0.3);
 }
 
 .btn-refresh-custom {
