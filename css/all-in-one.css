@@ -1650,8 +1650,8 @@ body {
     background: #fee2e2;
     border: none;
     color: #dc2626;
-    font-size: 1.2rem;
-    width: 32px;
+   /* font-size: 1.2rem;*/
+  /*  width: 32px; */
     height: 32px;
     border-radius: 40px;
     display: flex;
