@@ -1053,7 +1053,7 @@ body {
 	display: inline-flex;
 }
 .export-btn {
-    background: #6dc981;
+    background: var(--primary);
     border: 1px solid var(--border);
     color: #ffffff;
     padding: 8px 20px;
