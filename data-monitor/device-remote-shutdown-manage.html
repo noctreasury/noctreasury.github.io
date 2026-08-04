@@ -63,6 +63,28 @@
         .filter-row .col-md-2 .form-control {
             min-width: 180px;
         }
+
+        .badge-pending-branch {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-requested {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+		.table-responsive {
+    border-radius: 16px;
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+}
       
     </style>
 </head>
@@ -101,6 +123,10 @@
         <button class="tab-btn" id="tabPowerOnBtn">
             <i class="bi bi-power"></i> Device Power On
             <span class="badge-notification poweron-badge" id="powerOnBadge">0</span>
+        </button>
+        <button class="tab-btn" id="tabPendingBranchesBtn">
+            <i class="bi bi-clock-history"></i> Pending Branches
+            <span class="badge-notification" id="pendingBranchesBadge">0</span>
         </button>
     </div>
 
@@ -158,7 +184,6 @@
                         <i class="bi bi-search"></i> View Requests
                     </button>
                 </div>
-                <!-- NEW: Export CSV button -->
                 <div class="col-md-2">
                     <button id="exportPowerOnCsvBtn" class="btn btn-export-custom w-100 export-btn">
                         <i class="bi bi-download"></i> Export CSV
@@ -204,6 +229,42 @@
                 <i class="bi bi-inbox"></i>
                 <h5>No Records</h5>
                 <p>Enter a date and click "View Requests" to load pending power on verifications.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TAB 3: PENDING BRANCHES ==================== -->
+    <div id="pendingBranchesPane" class="tab-pane">
+        <div class="filter-row">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label required">Date (DD/MM/YYYY)</label>
+                    <input type="text" id="pendingBranchesDate" class="form-control flatpickr-date"  disabled readonly placeholder="DD/MM/YYYY">
+                </div>
+                <div class="col-md-2">
+                    <button id="viewPendingBranchesBtn" class="btn btn-primary-custom w-100">
+                        <i class="bi bi-search"></i> View Pending
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <button id="exportPendingBranchesCsvBtn" class="btn btn-export-custom w-100 export-btn">
+                        <i class="bi bi-download"></i> Export CSV
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <span class="pending-status-static">
+                        <i class="bi bi-info-circle"></i>
+                        <span id="pendingBranchesStatusText">Branches that haven't requested shutdown</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div id="pendingBranchesStatusMsg" class="status-message"></div>
+        <div id="pendingBranchesContainer">
+            <div class="no-data-message">
+                <i class="bi bi-clock-history"></i>
+                <h5>No Data</h5>
+                <p>Enter a date and click "View Pending" to see branches that haven't requested shutdown.</p>
             </div>
         </div>
     </div>
@@ -297,6 +358,9 @@ let selectedPowerOnRows = new Set();
 
 // Cache for power on records
 let powerOnRecordsCache = [];
+
+// Cache for pending branches
+let pendingBranchesCache = [];
 
 // ============================================================
 //  HELPERS
@@ -494,28 +558,46 @@ function switchTab(tab) {
     if (tab === 'confirm') {
         $('#confirmPane').addClass('active-pane');
         $('#powerOnPane').removeClass('active-pane');
+        $('#pendingBranchesPane').removeClass('active-pane');
         $('#tabConfirmBtn').addClass('active');
         $('#tabPowerOnBtn').removeClass('active');
+        $('#tabPendingBranchesBtn').removeClass('active');
         if (!isAutoCheckActive) {
             startAutoCheck();
         }
-    } else {
+    } else if (tab === 'powerOn') {
         $('#powerOnPane').addClass('active-pane');
         $('#confirmPane').removeClass('active-pane');
+        $('#pendingBranchesPane').removeClass('active-pane');
         $('#tabPowerOnBtn').addClass('active');
         $('#tabConfirmBtn').removeClass('active');
+        $('#tabPendingBranchesBtn').removeClass('active');
         if (isAutoCheckActive) {
             stopAutoCheck();
         }
-        // If power on badge not set yet, fetch initial count
         if (!powerOnBadgeSet) {
             fetchInitialPowerOnCount();
+        }
+    } else if (tab === 'pendingBranches') {
+        $('#pendingBranchesPane').addClass('active-pane');
+        $('#confirmPane').removeClass('active-pane');
+        $('#powerOnPane').removeClass('active-pane');
+        $('#tabPendingBranchesBtn').addClass('active');
+        $('#tabConfirmBtn').removeClass('active');
+        $('#tabPowerOnBtn').removeClass('active');
+        if (isAutoCheckActive) {
+            stopAutoCheck();
+        }
+        // Load pending branches if not loaded yet
+        if (pendingBranchesCache.length === 0) {
+            $('#viewPendingBranchesBtn').click();
         }
     }
 }
 
 $('#tabConfirmBtn').on('click', () => switchTab('confirm'));
 $('#tabPowerOnBtn').on('click', () => switchTab('powerOn'));
+$('#tabPendingBranchesBtn').on('click', () => switchTab('pendingBranches'));
 
 // ============================================================
 //  FLATPICKR DATE PICKER
@@ -536,6 +618,12 @@ flatpickr("#confirmDate", {
 flatpickr("#powerOnDate", {
     dateFormat: "d/m/Y",
     defaultDate: getPreviousDate(),
+    allowInput: true
+});
+
+flatpickr("#pendingBranchesDate", {
+    dateFormat: "d/m/Y",
+    defaultDate: getTodayDate(),
     allowInput: true
 });
 
@@ -925,7 +1013,6 @@ function renderConfirmRecords(records) {
 
 // ============================================================
 //  TAB 2: DEVICE POWER ON VERIFICATION (No auto-check)
-//  UPDATED: Fetch from both "Data" AND "Backup" sheets when "Show confirmed rows" is checked
 // ============================================================
 
 $('#viewPowerOnBtn').on('click', async function() {
@@ -957,7 +1044,6 @@ $('#viewPowerOnBtn').on('click', async function() {
         let sheetsUsed = [];
         
         if (showConfirmed) {
-            // Fetch from BOTH sheets when "Show confirmed rows" is checked
             const sheetsToFetch = [SHEET_NAME, BACKUP_SHEET_NAME];
             
             for (const sheetName of sheetsToFetch) {
@@ -980,7 +1066,6 @@ $('#viewPowerOnBtn').on('click', async function() {
                             const confirmVal = row.length > 5 ? (row[5] || "").toString().trim() : "";
                             const restartedVal = row.length > 6 ? (row[6] || "").toString().trim() : "";
                             
-                            // Only include rows that match date and are confirmed
                             if (convertedDate === date && confirmVal === "Yes") {
                                 allRecords.push({
                                     rowIndex: i + 2,
@@ -991,7 +1076,7 @@ $('#viewPowerOnBtn').on('click', async function() {
                                     time: row.length > 4 ? (row[4] || "").toString().trim() : "",
                                     confirm: confirmVal,
                                     restarted: restartedVal || "Pending",
-                                    sheet: sheetName // Track which sheet the record came from
+                                    sheet: sheetName
                                 });
                             }
                         }
@@ -1003,7 +1088,6 @@ $('#viewPowerOnBtn').on('click', async function() {
                 }
             }
         } else {
-            // Default: Fetch only from Data sheet (pending only)
             const range = `${SHEET_NAME}!A:I`;
             const data = await readSheetData(range);
             
@@ -1022,7 +1106,6 @@ $('#viewPowerOnBtn').on('click', async function() {
                     const confirmVal = row.length > 5 ? (row[5] || "").toString().trim() : "";
                     const restartedVal = row.length > 6 ? (row[6] || "").toString().trim() : "";
                     
-                    // Only include rows that match date and are confirmed
                     if (convertedDate === date && confirmVal === "Yes") {
                         allRecords.push({
                             rowIndex: i + 2,
@@ -1044,7 +1127,6 @@ $('#viewPowerOnBtn').on('click', async function() {
         powerOnRecordsCache = allRecords;
         renderPowerOnRecords(allRecords, showConfirmed);
         
-        // Update badge and status
         if (!showConfirmed) {
             const pendingCount = allRecords.filter(r => r.restarted === "Pending").length;
             powerOnInitialCount = pendingCount;
@@ -1052,7 +1134,6 @@ $('#viewPowerOnBtn').on('click', async function() {
             updatePowerOnBadge(pendingCount);
             $('#powerOnStatusText').text(`Pending: ${pendingCount}`);
         } else {
-            // When showing confirmed, show total count from both sheets
             updatePowerOnBadge(allRecords.length);
             const sheetsList = sheetsUsed.join(' & ');
             $('#powerOnStatusText').text(`Total: ${allRecords.length} (from ${sheetsList})`);
@@ -1065,7 +1146,6 @@ $('#viewPowerOnBtn').on('click', async function() {
             const sheetsList = sheetsUsed.join(' & ');
             $statusMsg.addClass('info').html(`<i class="bi bi-list"></i> Found ${allRecords.length} record(s) from ${sheetsList} for date: <strong>${date}</strong>.`).show();
             
-            // Show bulk actions only if there are pending rows
             const hasPending = allRecords.some(r => r.restarted === "Pending");
             if (hasPending) {
                 $('#bulkActions').show();
@@ -1087,18 +1167,13 @@ $('#viewPowerOnBtn').on('click', async function() {
     }
 });
 
-// Re-run view when checkbox changes
 $('#showConfirmedRows').on('change', function() {
-    // Fetch fresh data from the appropriate sheet
     $('#viewPowerOnBtn').click();
 });
 
 function renderPowerOnRecords(records, showConfirmed) {
     const container = $('#powerOnRecordsContainer');
     
-    // Filter based on showConfirmed: 
-    // if false, only show pending (restarted === "Pending")
-    // if true, show ALL records (both pending and already powered on)
     let displayRecords = records;
     if (!showConfirmed) {
         displayRecords = records.filter(r => r.restarted === "Pending");
@@ -1175,7 +1250,6 @@ function renderPowerOnRecords(records, showConfirmed) {
     
     container.html(html);
     
-    // Re-bind events
     $('.clickable-branch').on('click', function() {
         const branch = $(this).data('branch');
         copyToClipboard(branch);
@@ -1275,7 +1349,6 @@ async function handleSinglePowerOn(rowIndex, branch) {
     }
 }
 
-// Bulk Power On handler
 $('#bulkPowerOnBtn').on('click', async function() {
     const selectedRows = Array.from(selectedPowerOnRows);
     if (selectedRows.length === 0) {
@@ -1371,7 +1444,7 @@ $('#clearSelectionBtn').on('click', function() {
 });
 
 // ============================================================
-//  EXPORT CSV
+//  EXPORT CSV FOR POWER ON
 // ============================================================
 $('#exportPowerOnCsvBtn').on('click', function() {
     const records = powerOnRecordsCache;
@@ -1385,7 +1458,6 @@ $('#exportPowerOnCsvBtn').on('click', function() {
         return;
     }
     
-    // Build CSV rows
     const headers = ['Branch', 'Device Type', 'Serial', 'Date', 'Time', 'Confirm', 'Restarted', 'Sheet'];
     const rows = records.map(r => [
         r.branch,
@@ -1403,12 +1475,272 @@ $('#exportPowerOnCsvBtn').on('click', function() {
         csvContent += row.join(',') + '\n';
     });
     
-    // Create download
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
     link.setAttribute('download', `power_on_${$('#powerOnDate').val()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+});
+
+// ============================================================
+//  TAB 3: PENDING BRANCHES
+//  Calculates branches from Backup sheet that haven't requested in Data sheet
+// ============================================================
+
+$('#viewPendingBranchesBtn').on('click', async function() {
+    const $btn = $(this);
+    const $statusMsg = $('#pendingBranchesStatusMsg');
+    
+    $btn.html('<i class="bi bi-arrow-repeat"></i> Loading...');
+    $btn.prop('disabled', true);
+    $statusMsg.hide().removeClass('error success info');
+    showLoading();
+    
+    try {
+        // Fetch from Backup sheet (source of all branches)
+        const backupRange = `${BACKUP_SHEET_NAME}!A:I`;
+        const backupData = await readSheetData(backupRange);
+        
+        // Fetch from Data sheet (branches that have requested)
+        const dataRange = `${SHEET_NAME}!A:I`;
+        const dataData = await readSheetData(dataRange);
+        
+        console.log('=== PENDING BRANCHES DEBUG ===');
+        console.log('Backup Data rows:', backupData.values ? backupData.values.length - 1 : 0);
+        console.log('Data Data rows:', dataData.values ? dataData.values.length - 1 : 0);
+        
+        // STEP 1: Get ALL UNIQUE branches from Backup sheet (NO DATE FILTER)
+        const backupBranchSet = new Set();
+        const backupRecords = [];
+        
+        if (backupData.values && backupData.values.length >= 2) {
+            const rows = backupData.values.slice(1); // Skip header row
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+                
+                const branch = row[0] ? row[0].toString().trim() : '';
+                if (!branch) continue;
+                
+                console.log(`Backup Row ${i+2}: Branch=${branch}`);
+                
+                // Add to Set (automatically removes duplicates) - NO DATE CHECK
+                backupBranchSet.add(branch);
+                
+                // Store the first occurrence for device details
+                if (!backupRecords.find(r => r.branch === branch)) {
+                    backupRecords.push({
+                        branch: branch,
+                        deviceType: row.length > 1 ? (row[1] || "").toString().trim() : "",
+                        serial: row.length > 2 ? (row[2] || "").toString().trim() : "",
+                        status: "Pending - Not Requested"
+                    });
+                }
+            }
+        }
+        
+        const uniqueBackupBranches = Array.from(backupBranchSet);
+        console.log(`ALL UNIQUE Backup branches:`, uniqueBackupBranches);
+        console.log(`Total unique branches in Backup: ${uniqueBackupBranches.length}`);
+        
+        // STEP 2: Get ALL UNIQUE branches from Data sheet (NO DATE FILTER, NO CONDITION)
+        const dataBranchSet = new Set();
+        
+        if (dataData.values && dataData.values.length >= 2) {
+            const rows = dataData.values.slice(1); // Skip header row
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+                
+                const branch = row[0] ? row[0].toString().trim() : '';
+                if (!branch) continue;
+                
+                console.log(`Data Row ${i+2}: Branch=${branch}`);
+                
+                // Add to Set (automatically removes duplicates) - NO DATE CHECK, NO CONDITION
+                dataBranchSet.add(branch);
+            }
+        }
+        
+        const uniqueDataBranches = Array.from(dataBranchSet);
+        console.log(`ALL UNIQUE Data branches:`, uniqueDataBranches);
+        console.log(`Total unique branches in Data: ${uniqueDataBranches.length}`);
+        
+        // STEP 3: Find pending branches = ALL Backup - ALL Data
+        const pendingBranchesList = [];
+        for (const branch of uniqueBackupBranches) {
+            // Check if this branch exists in Data sheet
+            if (!dataBranchSet.has(branch)) {
+                // Find the branch details from backup records
+                const branchInfo = backupRecords.find(r => r.branch === branch);
+                if (branchInfo) {
+                    pendingBranchesList.push({
+                        branch: branch,
+                        deviceType: branchInfo.deviceType,
+                        serial: branchInfo.serial,
+                        status: "Pending - Not Requested"
+                    });
+                } else {
+                    // Fallback if details not found
+                    pendingBranchesList.push({
+                        branch: branch,
+                        deviceType: "N/A",
+                        serial: "N/A",
+                        status: "Pending - Not Requested"
+                    });
+                }
+            }
+        }
+        
+        console.log(`PENDING branches found: ${pendingBranchesList.length}`);
+        console.log('Pending branches list:', pendingBranchesList);
+        console.log('=== END DEBUG ===');
+        
+        pendingBranchesCache = pendingBranchesList;
+        
+        // Update badge count on tab
+        updatePendingBranchesBadge(pendingBranchesList.length);
+        
+        // Render the table
+        renderPendingBranches(pendingBranchesList);
+        
+        // Show detailed status message with counts
+        let statusHtml = `
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> 
+                <strong>Summary (All Time):</strong><br>
+                • Branches Requested (all dates): ${uniqueBackupBranches.length}<br>
+                • Already requested (Today): ${uniqueDataBranches.length}<br>
+                • Pending branches: ${pendingBranchesList.length}
+            </div>
+        `;
+        $statusMsg.html(statusHtml).show();
+        
+        if (pendingBranchesList.length === 0 && uniqueBackupBranches.length === 0) {
+            $statusMsg.append('<div class="alert alert-warning mt-2"><i class="bi bi-exclamation-triangle"></i> No branches found in Backup sheet. Please check if the Backup sheet has data.</div>');
+        } else if (pendingBranchesList.length === 0 && uniqueBackupBranches.length > 0) {
+            $statusMsg.append('<div class="alert alert-success mt-2"><i class="bi bi-check-circle"></i> All branches from Backup sheet are also present in Data sheet.</div>');
+        } else {
+            $statusMsg.append(`<div class="alert alert-warning mt-2"><i class="bi bi-clock-history"></i> ${pendingBranchesList.length} branch(es) were pending for shutdown.</div>`);
+        }
+        
+    } catch (err) {
+        console.error('Error:', err);
+        $statusMsg.html(`<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Failed to load data: ${err.message}</div>`).show();
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    } finally {
+        $btn.html('<i class="bi bi-search"></i> View Pending');
+        $btn.prop('disabled', false);
+        hideLoading();
+    }
+});
+
+function updatePendingBranchesBadge(count) {
+    const $badge = $('#pendingBranchesBadge');
+    if (count > 0) {
+        $badge.text(count);
+        $badge.addClass('show');
+        $('#tabPendingBranchesBtn .badge-notification').text(count).addClass('show');
+    } else {
+        $badge.removeClass('show');
+        $('#tabPendingBranchesBtn .badge-notification').removeClass('show');
+    }
+}
+
+function renderPendingBranches(branches) {
+    const container = $('#pendingBranchesContainer');
+    
+    if (!branches || branches.length === 0) {
+        container.html(`
+            <div class="no-data-message">
+                <i class="bi bi-check-circle"></i>
+                <h5>All Branches Have Requested</h5>
+                <p>Every branch has submitted a shutdown request for the selected date.</p>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Branch</th>
+                        <th>Device Type</th>
+                        <th>Serial</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    branches.forEach((item, index) => {
+        html += `
+            <tr>
+                <td>${index + 1}</td>
+                <td><span class="clickable-branch" data-branch="${item.branch}" title="Click to copy"><i class="bi bi-clipboard"></i> ${item.branch}</span></td>
+                <td>${item.deviceType}</td>
+                <td>${item.serial}</td>
+                <td>${item.date}</td>
+                <td><span class="badge-pending-branch"><i class="bi bi-clock"></i> ${item.status}</span></td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-2 text-muted small">Total: ${branches.length} pending branch(es)</div>
+    `;
+    
+    container.html(html);
+    
+    $('.clickable-branch').on('click', function() {
+        const branch = $(this).data('branch');
+        copyToClipboard(branch);
+    });
+}
+
+// Export CSV for Pending Branches
+$('#exportPendingBranchesCsvBtn').on('click', function() {
+    const branches = pendingBranchesCache;
+    if (!branches || branches.length === 0) {
+        Swal.fire({
+            icon: 'info',
+            title: 'No Data',
+            text: 'Please load data first using "View Pending".',
+            confirmButtonColor: '#0b2b4a'
+        });
+        return;
+    }
+    
+    const headers = ['Branch', 'Device Type', 'Serial', 'Date', 'Status'];
+    const rows = branches.map(r => [
+        r.branch,
+        r.deviceType,
+        r.serial,
+        r.date,
+        r.status
+    ]);
+    
+    let csvContent = headers.join(',') + '\n';
+    rows.forEach(row => {
+        csvContent += row.join(',') + '\n';
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `pending_branches_${$('#pendingBranchesDate').val()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1422,12 +1754,6 @@ $('#exportPowerOnCsvBtn').on('click', function() {
 $(document).ready(function() {
     initSound();
     
-    flatpickr("#powerOnDate", {
-        dateFormat: "d/m/Y",
-        defaultDate: getPreviousDate(),
-        allowInput: true
-    });
-    
     setTimeout(() => {
         $('#viewConfirmBtn').click();
         startAutoCheck();
@@ -1439,6 +1765,8 @@ $(document).ready(function() {
                 fetchInitialPowerOnCount();
                 $('#viewPowerOnBtn').click();
             }
+            // Load pending branches data on init
+            $('#viewPendingBranchesBtn').click();
         }, 1000);
     }, 500);
 });

@@ -10,8 +10,8 @@
     <link rel="stylesheet" href="../css/select2.min.css">
     <link rel="stylesheet" href="../css/flatpickr.min.css">
     <link rel="stylesheet" href="../css/sweetalert2.min.css">
-     <link rel="stylesheet" href="../css/all-in-one.css">
-    <style>
+    <link rel="stylesheet" href="../css/all-in-one.css">
+ <style>
      
         .filter-row {
             background: #f8fafc;
@@ -45,7 +45,7 @@
             width: 3rem;
             height: 3rem;
             border: 0.35rem solid rgba(11, 43, 74, 0.15);
-            border-top-color: #0b2b4a;
+            border-top-color: var(--primary);
             border-radius: 50%;
             animation: spin 0.9s linear infinite;
             background: transparent !important;
@@ -158,7 +158,21 @@
                         <i class="bi bi-search"></i> View Requests
                     </button>
                 </div>
-                <div class="col-md-4">
+                <!-- NEW: Export CSV button -->
+                <div class="col-md-2">
+                    <button id="exportPowerOnCsvBtn" class="btn btn-export-custom w-100 export-btn">
+                        <i class="bi bi-download"></i> Export CSV
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-check" style="margin-top: 8px;">
+                        <input class="form-check-input" type="checkbox" id="showConfirmedRows">
+                        <label class="form-check-label" for="showConfirmedRows">
+                            Show confirmed rows
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-2">
                     <span class="poweron-status-static">
                         <i class="bi bi-info-circle"></i>
                         <span id="powerOnStatusText">Pending count shown on tab</span>
@@ -211,6 +225,7 @@
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyTCjW0tn9vEoD8ms-YwBTPC6WW6OpcLeko7L9rkg4Iqs8J5u-buUsw8MLz_SpsJ9sI_A/exec";
 const SHEET_ID = "1dMKhs6mIicwqRIbakYp7mzI8CXGbJ-VXHkmNXDRT8wA";
 const SHEET_NAME = "Data";
+const BACKUP_SHEET_NAME = "Backup";
 const API_KEY = "AIzaSyDc8tegwi2rgHyDFYm7uWBqVqQ7Fwb3uWM";
 
 // ============================================================
@@ -279,6 +294,9 @@ let powerOnBadgeSet = false;
 
 // Bulk selection state
 let selectedPowerOnRows = new Set();
+
+// Cache for power on records
+let powerOnRecordsCache = [];
 
 // ============================================================
 //  HELPERS
@@ -907,12 +925,14 @@ function renderConfirmRecords(records) {
 
 // ============================================================
 //  TAB 2: DEVICE POWER ON VERIFICATION (No auto-check)
+//  UPDATED: Fetch from both "Data" AND "Backup" sheets when "Show confirmed rows" is checked
 // ============================================================
 
 $('#viewPowerOnBtn').on('click', async function() {
     const $btn = $(this);
     const date = $('#powerOnDate').val();
     const $statusMsg = $('#powerOnStatusMsg');
+    const showConfirmed = $('#showConfirmedRows').is(':checked');
     
     if (!date) {
         Swal.fire({ icon: 'warning', title: 'Date required', text: 'Please enter a date in DD/MM/YYYY format.' });
@@ -933,58 +953,125 @@ $('#viewPowerOnBtn').on('click', async function() {
     $('#bulkActions').hide();
     
     try {
-        const range = `${SHEET_NAME}!A:I`;
-        const data = await readSheetData(range);
+        let allRecords = [];
+        let sheetsUsed = [];
         
-        if (!data.values || data.values.length < 2) {
-            renderPowerOnRecords([]);
-            $statusMsg.addClass('info').html('<i class="bi bi-info-circle"></i> No data found.').show();
-            return;
-        }
-        
-        const rows = data.values.slice(1);
-        const records = [];
-        
-        for (let i = 0; i < rows.length; i++) {
-            const row = rows[i];
-            if (!row || row.length === 0) continue;
+        if (showConfirmed) {
+            // Fetch from BOTH sheets when "Show confirmed rows" is checked
+            const sheetsToFetch = [SHEET_NAME, BACKUP_SHEET_NAME];
             
-            const branch = row[0] ? row[0].toString().trim() : '';
-            if (!branch) continue;
+            for (const sheetName of sheetsToFetch) {
+                try {
+                    const range = `${sheetName}!A:I`;
+                    const data = await readSheetData(range);
+                    
+                    if (data.values && data.values.length >= 2) {
+                        const rows = data.values.slice(1);
+                        
+                        for (let i = 0; i < rows.length; i++) {
+                            const row = rows[i];
+                            if (!row || row.length === 0) continue;
+                            
+                            const branch = row[0] ? row[0].toString().trim() : '';
+                            if (!branch) continue;
+                            
+                            const rawDate = row.length > 3 ? (row[3] || "").toString().trim() : "";
+                            const convertedDate = convertToDDMMYYYY(rawDate);
+                            const confirmVal = row.length > 5 ? (row[5] || "").toString().trim() : "";
+                            const restartedVal = row.length > 6 ? (row[6] || "").toString().trim() : "";
+                            
+                            // Only include rows that match date and are confirmed
+                            if (convertedDate === date && confirmVal === "Yes") {
+                                allRecords.push({
+                                    rowIndex: i + 2,
+                                    branch: branch,
+                                    deviceType: row.length > 1 ? (row[1] || "").toString().trim() : "",
+                                    serial: row.length > 2 ? (row[2] || "").toString().trim() : "",
+                                    date: convertedDate,
+                                    time: row.length > 4 ? (row[4] || "").toString().trim() : "",
+                                    confirm: confirmVal,
+                                    restarted: restartedVal || "Pending",
+                                    sheet: sheetName // Track which sheet the record came from
+                                });
+                            }
+                        }
+                        
+                        sheetsUsed.push(sheetName);
+                    }
+                } catch (err) {
+                    console.warn(`Error fetching from ${sheetName}:`, err);
+                }
+            }
+        } else {
+            // Default: Fetch only from Data sheet (pending only)
+            const range = `${SHEET_NAME}!A:I`;
+            const data = await readSheetData(range);
             
-            const rawDate = row.length > 3 ? (row[3] || "").toString().trim() : "";
-            const convertedDate = convertToDDMMYYYY(rawDate);
-            const confirmVal = row.length > 5 ? (row[5] || "").toString().trim() : "";
-            const restartedVal = row.length > 6 ? (row[6] || "").toString().trim() : "";
-            
-            if (convertedDate === date && confirmVal === "Yes" && !restartedVal) {
-                records.push({
-                    rowIndex: i + 2,
-                    branch: branch,
-                    deviceType: row.length > 1 ? (row[1] || "").toString().trim() : "",
-                    serial: row.length > 2 ? (row[2] || "").toString().trim() : "",
-                    date: convertedDate,
-                    time: row.length > 4 ? (row[4] || "").toString().trim() : "",
-                    confirm: confirmVal,
-                    restarted: "Pending"
-                });
+            if (data.values && data.values.length >= 2) {
+                const rows = data.values.slice(1);
+                
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length === 0) continue;
+                    
+                    const branch = row[0] ? row[0].toString().trim() : '';
+                    if (!branch) continue;
+                    
+                    const rawDate = row.length > 3 ? (row[3] || "").toString().trim() : "";
+                    const convertedDate = convertToDDMMYYYY(rawDate);
+                    const confirmVal = row.length > 5 ? (row[5] || "").toString().trim() : "";
+                    const restartedVal = row.length > 6 ? (row[6] || "").toString().trim() : "";
+                    
+                    // Only include rows that match date and are confirmed
+                    if (convertedDate === date && confirmVal === "Yes") {
+                        allRecords.push({
+                            rowIndex: i + 2,
+                            branch: branch,
+                            deviceType: row.length > 1 ? (row[1] || "").toString().trim() : "",
+                            serial: row.length > 2 ? (row[2] || "").toString().trim() : "",
+                            date: convertedDate,
+                            time: row.length > 4 ? (row[4] || "").toString().trim() : "",
+                            confirm: confirmVal,
+                            restarted: restartedVal || "Pending",
+                            sheet: SHEET_NAME
+                        });
+                    }
+                }
+                sheetsUsed.push(SHEET_NAME);
             }
         }
         
-        renderPowerOnRecords(records);
+        powerOnRecordsCache = allRecords;
+        renderPowerOnRecords(allRecords, showConfirmed);
         
-        // Update badge with current count
-        powerOnInitialCount = records.length;
-        powerOnBadgeSet = true;
-        updatePowerOnBadge(records.length);
-        $('#powerOnStatusText').text(`Count: ${records.length} pending`);
+        // Update badge and status
+        if (!showConfirmed) {
+            const pendingCount = allRecords.filter(r => r.restarted === "Pending").length;
+            powerOnInitialCount = pendingCount;
+            powerOnBadgeSet = true;
+            updatePowerOnBadge(pendingCount);
+            $('#powerOnStatusText').text(`Pending: ${pendingCount}`);
+        } else {
+            // When showing confirmed, show total count from both sheets
+            updatePowerOnBadge(allRecords.length);
+            const sheetsList = sheetsUsed.join(' & ');
+            $('#powerOnStatusText').text(`Total: ${allRecords.length} (from ${sheetsList})`);
+        }
         
-        if (records.length === 0) {
-            $statusMsg.addClass('info').html(`<i class="bi bi-info-circle"></i> No pending power on verifications found for date: <strong>${date}</strong>.`).show();
+        if (allRecords.length === 0) {
+            $statusMsg.addClass('info').html(`<i class="bi bi-info-circle"></i> No records found for date: <strong>${date}</strong>.`).show();
             $('#bulkActions').hide();
         } else {
-            $statusMsg.addClass('info').html(`<i class="bi bi-list"></i> Found ${records.length} pending power on verification(s) for date: <strong>${date}</strong>.`).show();
-            $('#bulkActions').show();
+            const sheetsList = sheetsUsed.join(' & ');
+            $statusMsg.addClass('info').html(`<i class="bi bi-list"></i> Found ${allRecords.length} record(s) from ${sheetsList} for date: <strong>${date}</strong>.`).show();
+            
+            // Show bulk actions only if there are pending rows
+            const hasPending = allRecords.some(r => r.restarted === "Pending");
+            if (hasPending) {
+                $('#bulkActions').show();
+            } else {
+                $('#bulkActions').hide();
+            }
             $('#selectAllPowerOn').prop('checked', false);
             updateSelectedCount();
         }
@@ -1000,15 +1087,29 @@ $('#viewPowerOnBtn').on('click', async function() {
     }
 });
 
-function renderPowerOnRecords(records) {
+// Re-run view when checkbox changes
+$('#showConfirmedRows').on('change', function() {
+    // Fetch fresh data from the appropriate sheet
+    $('#viewPowerOnBtn').click();
+});
+
+function renderPowerOnRecords(records, showConfirmed) {
     const container = $('#powerOnRecordsContainer');
     
-    if (!records || records.length === 0) {
+    // Filter based on showConfirmed: 
+    // if false, only show pending (restarted === "Pending")
+    // if true, show ALL records (both pending and already powered on)
+    let displayRecords = records;
+    if (!showConfirmed) {
+        displayRecords = records.filter(r => r.restarted === "Pending");
+    }
+    
+    if (!displayRecords || displayRecords.length === 0) {
         container.html(`
             <div class="no-data-message">
                 <i class="bi bi-power"></i>
-                <h5>No Pending Power On</h5>
-                <p>All confirmed requests for the selected date have been powered on.</p>
+                <h5>No Records</h5>
+                <p>${showConfirmed ? 'No confirmed records found in Data or Backup sheets for this date.' : 'No pending power on verifications found for this date.'}</p>
             </div>
         `);
         return;
@@ -1029,18 +1130,24 @@ function renderPowerOnRecords(records) {
                         <th>Date</th>
                         <th>Time</th>
                         <th>Status</th>
+                        ${showConfirmed ? '<th>Sheet</th>' : ''}
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
     `;
     
-    records.forEach((record, index) => {
+    displayRecords.forEach((record, index) => {
+        const isPending = record.restarted === "Pending";
         const isChecked = selectedPowerOnRows.has(record.rowIndex);
+        const statusBadge = isPending 
+            ? `<span class="badge-confirmed"><i class="bi bi-check-circle-fill"></i> Confirmed</span>`
+            : `<span class="badge-success"><i class="bi bi-check-circle-fill"></i> Powered On</span>`;
+        
         html += `
             <tr>
                 <td>
-                    <input class="form-check-input power-on-checkbox" type="checkbox" data-row="${record.rowIndex}" ${isChecked ? 'checked' : ''}>
+                    ${isPending ? `<input class="form-check-input power-on-checkbox" type="checkbox" data-row="${record.rowIndex}" ${isChecked ? 'checked' : ''}>` : ''}
                 </td>
                 <td>${index + 1}</td>
                 <td><span class="clickable-branch" data-branch="${record.branch}" title="Click to copy"><i class="bi bi-clipboard"></i> ${record.branch}</span></td>
@@ -1048,11 +1155,12 @@ function renderPowerOnRecords(records) {
                 <td>${record.serial}</td>
                 <td>${record.date}</td>
                 <td>${formatTimeDisplay(record.time)}</td>
-                <td><span class="badge-confirmed"><i class="bi bi-check-circle-fill"></i> Confirmed</span></td>
+                <td>${statusBadge}</td>
+                ${showConfirmed ? `<td><span class="badge bg-secondary">${record.sheet || 'Data'}</span></td>` : ''}
                 <td>
-                    <button class="btn btn-success-custom power-on-btn" data-row="${record.rowIndex}" data-branch="${record.branch}">
+                    ${isPending ? `<button class="btn btn-success-custom power-on-btn" data-row="${record.rowIndex}" data-branch="${record.branch}">
                         <i class="bi bi-power"></i> Power On
-                    </button>
+                    </button>` : `<span class="text-muted">Done</span>`}
                 </td>
             </tr>
         `;
@@ -1062,11 +1170,12 @@ function renderPowerOnRecords(records) {
                 </tbody>
             </table>
         </div>
-        <div class="mt-2 text-muted small">Total: ${records.length} pending power on verification(s)</div>
+        <div class="mt-2 text-muted small">Total: ${displayRecords.length} record(s)</div>
     `;
     
     container.html(html);
     
+    // Re-bind events
     $('.clickable-branch').on('click', function() {
         const branch = $(this).data('branch');
         copyToClipboard(branch);
@@ -1259,6 +1368,51 @@ $('#clearSelectionBtn').on('click', function() {
     $('.power-on-checkbox').prop('checked', false);
     $('#selectAllPowerOn').prop('checked', false);
     updateSelectedCount();
+});
+
+// ============================================================
+//  EXPORT CSV
+// ============================================================
+$('#exportPowerOnCsvBtn').on('click', function() {
+    const records = powerOnRecordsCache;
+    if (!records || records.length === 0) {
+        Swal.fire({
+            icon: 'info',
+            title: 'No Data',
+            text: 'Please load records first using "View Requests".',
+            confirmButtonColor: '#0b2b4a'
+        });
+        return;
+    }
+    
+    // Build CSV rows
+    const headers = ['Branch', 'Device Type', 'Serial', 'Date', 'Time', 'Confirm', 'Restarted', 'Sheet'];
+    const rows = records.map(r => [
+        r.branch,
+        r.deviceType,
+        r.serial,
+        r.date,
+        r.time,
+        r.confirm,
+        r.restarted,
+        r.sheet || 'Data'
+    ]);
+    
+    let csvContent = headers.join(',') + '\n';
+    rows.forEach(row => {
+        csvContent += row.join(',') + '\n';
+    });
+    
+    // Create download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `power_on_${$('#powerOnDate').val()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 });
 
 // ============================================================
