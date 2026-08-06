@@ -86,6 +86,63 @@
     border: 1px solid #e2e8f0;
 }
       
+        /* Search bar styles */
+        .table-search-bar {
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .table-search-bar .search-input {
+            max-width: 300px;
+            border-radius: 20px;
+            padding: 6px 15px;
+            border: 1px solid #d1d5db;
+            background: #f9fafb;
+            transition: all 0.3s ease;
+        }
+        .table-search-bar .search-input:focus {
+            border-color: #0b2b4a;
+            box-shadow: 0 0 0 3px rgba(11, 43, 74, 0.1);
+            background: #ffffff;
+        }
+        .table-search-bar .search-clear {
+            cursor: pointer;
+            color: #6b7280;
+            padding: 4px 8px;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        .table-search-bar .search-clear:hover {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        .table-search-bar .search-info {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        /* Treasury Name badge */
+        .treasury-badge {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* Date filter badge */
+        .date-filter-active {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -239,7 +296,7 @@
             <div class="row g-3 align-items-end">
                 <div class="col-md-2">
                     <label class="form-label required">Date (DD/MM/YYYY)</label>
-                    <input type="text" id="pendingBranchesDate" class="form-control flatpickr-date"  disabled readonly placeholder="DD/MM/YYYY">
+                    <input type="text" id="pendingBranchesDate" class="form-control flatpickr-date" placeholder="DD/MM/YYYY">
                 </div>
                 <div class="col-md-2">
                     <button id="viewPendingBranchesBtn" class="btn btn-primary-custom w-100">
@@ -362,9 +419,13 @@ let powerOnRecordsCache = [];
 
 // Cache for pending branches
 let pendingBranchesCache = [];
+let pendingBranchesFilteredCache = [];
 
-// Cache for admin details
+// Cache for admin details (includes Treasury Name from column D)
 let adminDetailsCache = {};
+
+// Cache for backup data with last requested dates (bottom-up approach)
+let backupDataCache = {};
 
 // ============================================================
 //  HELPERS
@@ -625,10 +686,12 @@ flatpickr("#powerOnDate", {
     allowInput: true
 });
 
+// Pending Branches Date Picker - ENABLED, BLANK by default
 flatpickr("#pendingBranchesDate", {
     dateFormat: "d/m/Y",
-    defaultDate: getTodayDate(),
-    allowInput: true
+    defaultDate: "", // BLANK by default
+    allowInput: true,
+    placeholder: "DD/MM/YYYY"
 });
 
 // ============================================================
@@ -805,6 +868,45 @@ function updatePowerOnBadge(count) {
 }
 
 // ============================================================
+//  SEARCH FUNCTIONALITY FOR ALL TABLES
+// ============================================================
+
+function applyTableSearch(tableSelector, searchInputSelector) {
+    const $searchInput = $(searchInputSelector);
+    const $table = $(tableSelector);
+    
+    if (!$searchInput.length || !$table.length) return;
+    
+    $searchInput.on('keyup', function() {
+        const searchTerm = $(this).val().toLowerCase().trim();
+        const $rows = $table.find('tbody tr');
+        let visibleCount = 0;
+        
+        $rows.each(function() {
+            const $row = $(this);
+            const rowText = $row.text().toLowerCase();
+            if (rowText.indexOf(searchTerm) > -1) {
+                $row.show();
+                visibleCount++;
+            } else {
+                $row.hide();
+            }
+        });
+        
+        // Update search info
+        const $info = $(searchInputSelector + '-info');
+        if ($info.length) {
+            $info.text(`Showing ${visibleCount} of ${$rows.length}`);
+        }
+    });
+    
+    // Clear search
+    $(searchInputSelector + '-clear').on('click', function() {
+        $searchInput.val('').trigger('keyup');
+    });
+}
+
+// ============================================================
 //  TAB 1: SHUTDOWN CONFIRMATION
 // ============================================================
 
@@ -916,8 +1018,13 @@ function renderConfirmRecords(records) {
     }
     
     let html = `
+        <div class="table-search-bar">
+            <input type="text" class="form-control search-input" id="confirmSearchInput" placeholder="🔍 Search table...">
+            <span class="search-clear" id="confirmSearchClear">✕</span>
+            <span class="search-info" id="confirmSearchInfo">Showing ${records.length} of ${records.length}</span>
+        </div>
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover" id="confirmTable">
                 <thead>
                     <tr>
                         <th>#</th>
@@ -1013,6 +1120,9 @@ function renderConfirmRecords(records) {
             hideLoading();
         }
     });
+    
+    // Apply search
+    applyTableSearch('#confirmTable', '#confirmSearchInput');
 }
 
 // ============================================================
@@ -1195,8 +1305,13 @@ function renderPowerOnRecords(records, showConfirmed) {
     }
     
     let html = `
+        <div class="table-search-bar">
+            <input type="text" class="form-control search-input" id="powerOnSearchInput" placeholder="🔍 Search table...">
+            <span class="search-clear" id="powerOnSearchClear">✕</span>
+            <span class="search-info" id="powerOnSearchInfo">Showing ${displayRecords.length} of ${displayRecords.length}</span>
+        </div>
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover" id="powerOnTable">
                 <thead>
                     <tr>
                         <th style="width:40px;">
@@ -1293,6 +1408,9 @@ function renderPowerOnRecords(records, showConfirmed) {
     const totalCheckboxes = $('.power-on-checkbox').length;
     const checkedCheckboxes = $('.power-on-checkbox:checked').length;
     $('#selectAllPowerOn').prop('checked', totalCheckboxes > 0 && checkedCheckboxes === totalCheckboxes);
+    
+    // Apply search
+    applyTableSearch('#powerOnTable', '#powerOnSearchInput');
 }
 
 function updateSelectedCount() {
@@ -1493,13 +1611,16 @@ $('#exportPowerOnCsvBtn').on('click', function() {
 // ============================================================
 //  TAB 3: PENDING BRANCHES
 //  Calculates branches from Backup sheet that haven't requested in Data sheet
-//  Fetches Admin Name and Contact from "Branch Admin Details" sheet
+//  Fetches Admin Name, Treasury Name from "Branch Admin Details" sheet (columns B, D)
+//  Fetches Last Requested Date from Backup sheet (column D) - BOTTOM-UP approach
+//  Date filter: Filter by Last Requested Date
 // ============================================================
 
 // Function to fetch admin details from the Branch Admin Details sheet
 async function fetchAdminDetails() {
     try {
-        const range = `${ADMIN_SHEET_NAME}!A:C`;
+        // Fetch columns A, B, C, D (Branch, Admin Name, Contact, Treasury Name)
+        const range = `${ADMIN_SHEET_NAME}!A:D`;
         const data = await readSheetData(range);
         
         if (data.values && data.values.length >= 2) {
@@ -1513,22 +1634,128 @@ async function fetchAdminDetails() {
                 const branch = row[0] ? row[0].toString().trim() : '';
                 const adminName = row.length > 1 ? (row[1] || "").toString().trim() : '';
                 const contact = row.length > 2 ? (row[2] || "").toString().trim() : '';
+                const treasuryName = row.length > 3 ? (row[3] || "").toString().trim() : '';
                 
                 if (branch) {
                     adminMap[branch] = {
                         adminName: adminName || 'N/A',
-                        contact: contact || 'N/A'
+                        contact: contact || 'N/A',
+                        treasuryName: treasuryName || 'N/A'
                     };
                 }
             }
             
             adminDetailsCache = adminMap;
             console.log('Admin details loaded:', adminMap);
+            console.log('Treasury names loaded for', Object.keys(adminMap).length, 'branches');
         }
     } catch (err) {
         console.warn('Error fetching admin details:', err);
         adminDetailsCache = {};
     }
+}
+
+// Function to fetch last requested date from Backup sheet (column D) - BOTTOM-UP
+// This ensures we get the LATEST/MOST RECENT entry for each branch
+async function fetchBackupData() {
+    try {
+        const range = `${BACKUP_SHEET_NAME}!A:D`;
+        const data = await readSheetData(range);
+        const backupMap = {};
+        
+        if (data.values && data.values.length >= 2) {
+            const rows = data.values.slice(1);
+            
+            // IMPORTANT: Process from BOTTOM to TOP (reverse order)
+            // This way the first occurrence we find for each branch is the LATEST one
+            for (let i = rows.length - 1; i >= 0; i--) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+                
+                const branch = row[0] ? row[0].toString().trim() : '';
+                if (!branch) continue;
+                
+                // Column D (index 3) contains the date
+                const rawDate = row.length > 3 ? (row[3] || "").toString().trim() : '';
+                const convertedDate = convertToDDMMYYYY(rawDate);
+                
+                // Only store if we haven't already found a date for this branch
+                // Since we're going bottom-up, the first one we find is the LATEST
+                if (convertedDate && !backupMap[branch]) {
+                    backupMap[branch] = convertedDate;
+                }
+            }
+        }
+        
+        backupDataCache = backupMap;
+        console.log('Backup data loaded (bottom-up, latest dates):', backupMap);
+    } catch (err) {
+        console.warn('Error fetching backup data:', err);
+        backupDataCache = {};
+    }
+}
+
+// Function to filter pending branches by date
+function filterPendingBranchesByDate(date) {
+    const container = $('#pendingBranchesContainer');
+    
+    if (!pendingBranchesCache || pendingBranchesCache.length === 0) {
+        container.html(`
+            <div class="no-data-message">
+                <i class="bi bi-clock-history"></i>
+                <h5>No Data</h5>
+                <p>Please load pending branches first using "View Pending".</p>
+            </div>
+        `);
+        return;
+    }
+    
+    let filteredBranches = pendingBranchesCache;
+    
+    // If date is provided and valid, filter by Last Requested Date
+    if (date && date.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+        filteredBranches = pendingBranchesCache.filter(item => item.lastRequestedDate === date);
+        
+        // Show filter status
+        $('#pendingBranchesStatusText').html(`Filtered by date: <strong>${date}</strong> (${filteredBranches.length} branches)`);
+        
+        // Update status message
+        const $statusMsg = $('#pendingBranchesStatusMsg');
+        if (filteredBranches.length === 0) {
+            $statusMsg.html(`
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> 
+                    No pending branches found with Last Requested Date = <strong>${date}</strong>.
+                </div>
+            `).show();
+        } else {
+            $statusMsg.html(`
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle"></i> 
+                    Found <strong>${filteredBranches.length}</strong> pending branch(es) with Last Requested Date = <strong>${date}</strong>.
+                </div>
+            `).show();
+        }
+    } else {
+        // No date filter - show all
+        $('#pendingBranchesStatusText').html(`All pending branches (${pendingBranchesCache.length})`);
+        
+        // Show all branches in status
+        const $statusMsg = $('#pendingBranchesStatusMsg');
+        $statusMsg.html(`
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> 
+                Showing all <strong>${pendingBranchesCache.length}</strong> pending branch(es). 
+                Select a date to filter by Last Requested Date.
+            </div>
+        `).show();
+    }
+    
+    // Render the filtered branches
+    renderPendingBranches(filteredBranches, date);
+    
+    // Update badge with filtered count
+    updatePendingBranchesBadge(filteredBranches.length);
 }
 
 $('#viewPendingBranchesBtn').on('click', async function() {
@@ -1541,27 +1768,31 @@ $('#viewPendingBranchesBtn').on('click', async function() {
     showLoading();
     
     try {
-        // First, fetch admin details
+        // Fetch admin details (including Treasury Name)
         await fetchAdminDetails();
         
-        // Fetch from Backup sheet (source of all branches)
-        const backupRange = `${BACKUP_SHEET_NAME}!A:I`;
+        // Fetch backup data (for last requested date - bottom-up)
+        await fetchBackupData();
+        
+        // Fetch from Backup sheet (source of all branches) - for branch list
+        const backupRange = `${BACKUP_SHEET_NAME}!A:A`;
         const backupData = await readSheetData(backupRange);
         
         // Fetch from Data sheet (branches that have requested)
-        const dataRange = `${SHEET_NAME}!A:I`;
+        const dataRange = `${SHEET_NAME}!A:A`;
         const dataData = await readSheetData(dataRange);
         
         console.log('=== PENDING BRANCHES DEBUG ===');
         console.log('Backup Data rows:', backupData.values ? backupData.values.length - 1 : 0);
         console.log('Data Data rows:', dataData.values ? dataData.values.length - 1 : 0);
         console.log('Admin details loaded:', Object.keys(adminDetailsCache).length, 'branches');
+        console.log('Backup data cache (latest dates):', backupDataCache);
         
-        // STEP 1: Get ALL UNIQUE branches from Backup sheet (NO DATE FILTER)
+        // STEP 1: Get ALL UNIQUE branches from Backup sheet
         const backupBranchSet = new Set();
         
         if (backupData.values && backupData.values.length >= 2) {
-            const rows = backupData.values.slice(1); // Skip header row
+            const rows = backupData.values.slice(1);
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
@@ -1569,9 +1800,6 @@ $('#viewPendingBranchesBtn').on('click', async function() {
                 const branch = row[0] ? row[0].toString().trim() : '';
                 if (!branch) continue;
                 
-                console.log(`Backup Row ${i+2}: Branch=${branch}`);
-                
-                // Add to Set (automatically removes duplicates) - NO DATE CHECK
                 backupBranchSet.add(branch);
             }
         }
@@ -1580,11 +1808,11 @@ $('#viewPendingBranchesBtn').on('click', async function() {
         console.log(`ALL UNIQUE Backup branches:`, uniqueBackupBranches);
         console.log(`Total unique branches in Backup: ${uniqueBackupBranches.length}`);
         
-        // STEP 2: Get ALL UNIQUE branches from Data sheet (NO DATE FILTER, NO CONDITION)
+        // STEP 2: Get ALL UNIQUE branches from Data sheet
         const dataBranchSet = new Set();
         
         if (dataData.values && dataData.values.length >= 2) {
-            const rows = dataData.values.slice(1); // Skip header row
+            const rows = dataData.values.slice(1);
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
@@ -1592,9 +1820,6 @@ $('#viewPendingBranchesBtn').on('click', async function() {
                 const branch = row[0] ? row[0].toString().trim() : '';
                 if (!branch) continue;
                 
-                console.log(`Data Row ${i+2}: Branch=${branch}`);
-                
-                // Add to Set (automatically removes duplicates) - NO DATE CHECK, NO CONDITION
                 dataBranchSet.add(branch);
             }
         }
@@ -1608,13 +1833,22 @@ $('#viewPendingBranchesBtn').on('click', async function() {
         for (const branch of uniqueBackupBranches) {
             // Check if this branch exists in Data sheet
             if (!dataBranchSet.has(branch)) {
-                // Get admin details from cache
-                const adminInfo = adminDetailsCache[branch] || { adminName: 'N/A', contact: 'N/A' };
+                // Get admin details from cache (includes Treasury Name and Contact)
+                const adminInfo = adminDetailsCache[branch] || { 
+                    adminName: 'N/A', 
+                    contact: 'N/A', 
+                    treasuryName: 'N/A' 
+                };
+                
+                // Get last requested date from backup cache (already latest date)
+                const lastRequestedDate = backupDataCache[branch] || 'N/A';
                 
                 pendingBranchesList.push({
                     branch: branch,
+                    treasuryName: adminInfo.treasuryName,
                     adminName: adminInfo.adminName,
                     contact: adminInfo.contact,
+                    lastRequestedDate: lastRequestedDate,
                     status: "Pending - Not Requested"
                 });
             }
@@ -1626,13 +1860,13 @@ $('#viewPendingBranchesBtn').on('click', async function() {
         
         pendingBranchesCache = pendingBranchesList;
         
-        // Update badge count on tab
-        updatePendingBranchesBadge(pendingBranchesList.length);
+        // Get the date filter value
+        const filterDate = $('#pendingBranchesDate').val();
         
-        // Render the table
-        renderPendingBranches(pendingBranchesList);
+        // Filter and render based on date
+        filterPendingBranchesByDate(filterDate);
         
-        // Show detailed status message with counts
+        // Show summary status
         let statusHtml = `
             <div class="alert alert-info">
                 <i class="bi bi-info-circle"></i> 
@@ -1642,15 +1876,25 @@ $('#viewPendingBranchesBtn').on('click', async function() {
                 • Pending branches: ${pendingBranchesList.length}
             </div>
         `;
-        $statusMsg.html(statusHtml).show();
         
-        if (pendingBranchesList.length === 0 && uniqueBackupBranches.length === 0) {
-            $statusMsg.append('<div class="alert alert-warning mt-2"><i class="bi bi-exclamation-triangle"></i> No branches found in Backup sheet. Please check if the Backup sheet has data.</div>');
-        } else if (pendingBranchesList.length === 0 && uniqueBackupBranches.length > 0) {
-            $statusMsg.append('<div class="alert alert-success mt-2"><i class="bi bi-check-circle"></i> All branches from Backup sheet are also present in Data sheet.</div>');
+        if (filterDate && filterDate.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+            const filteredCount = pendingBranchesList.filter(item => item.lastRequestedDate === filterDate).length;
+            statusHtml += `
+                <div class="alert alert-warning mt-2">
+                    <i class="bi bi-funnel"></i> 
+                    Filtered by date <strong>${filterDate}</strong>: ${filteredCount} branch(es) with this Last Requested Date.
+                </div>
+            `;
         } else {
-            $statusMsg.append(`<div class="alert alert-warning mt-2"><i class="bi bi-clock-history"></i> ${pendingBranchesList.length} branch(es) are pending for shutdown.</div>`);
+            statusHtml += `
+                <div class="alert alert-secondary mt-2">
+                    <i class="bi bi-info-circle"></i> 
+                    <strong>Tip:</strong> Enter a date in the Date field and click "View Pending" to filter branches by Last Requested Date.
+                </div>
+            `;
         }
+        
+        $statusMsg.html(statusHtml).show();
         
     } catch (err) {
         console.error('Error:', err);
@@ -1660,6 +1904,22 @@ $('#viewPendingBranchesBtn').on('click', async function() {
         $btn.html('<i class="bi bi-search"></i> View Pending');
         $btn.prop('disabled', false);
         hideLoading();
+    }
+});
+
+// Listen for date changes on pending branches date picker
+$('#pendingBranchesDate').on('change', function() {
+    const date = $(this).val();
+    if (date && date.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+        // If data is already loaded, filter it
+        if (pendingBranchesCache && pendingBranchesCache.length > 0) {
+            filterPendingBranchesByDate(date);
+        }
+    } else if (date === '') {
+        // If date is cleared, show all
+        if (pendingBranchesCache && pendingBranchesCache.length > 0) {
+            filterPendingBranchesByDate('');
+        }
     }
 });
 
@@ -1675,43 +1935,61 @@ function updatePendingBranchesBadge(count) {
     }
 }
 
-function renderPendingBranches(branches) {
+function renderPendingBranches(branches, filterDate) {
     const container = $('#pendingBranchesContainer');
     
     if (!branches || branches.length === 0) {
+        let message = 'No pending branches found.';
+        if (filterDate && filterDate.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+            message = `No pending branches found with Last Requested Date = <strong>${filterDate}</strong>.`;
+        }
         container.html(`
             <div class="no-data-message">
                 <i class="bi bi-check-circle"></i>
-                <h5>All Branches Have Requested</h5>
-                <p>Every branch from the Backup sheet is also present in the Data sheet.</p>
+                <h5>No Records</h5>
+                <p>${message}</p>
             </div>
         `);
         return;
     }
     
     let html = `
+        <div class="table-search-bar">
+            <input type="text" class="form-control search-input" id="pendingBranchesSearchInput" placeholder="🔍 Search table...">
+            <span class="search-clear" id="pendingBranchesSearchClear">✕</span>
+            <span class="search-info" id="pendingBranchesSearchInfo">Showing ${branches.length} of ${branches.length}</span>
+            ${filterDate && filterDate.match(/^\d{2}\/\d{2}\/\d{4}$/) ? `<span class="date-filter-active"><i class="bi bi-funnel"></i> ${filterDate}</span>` : ''}
+        </div>
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover" id="pendingBranchesTable">
                 <thead>
                     <tr>
                         <th>#</th>
                         <th>Branch</th>
+                        <th>Treasury Name</th>
                         <th>Admin Name</th>
                         <th>Contact</th>
                         <th>Status</th>
+                        <th>Last Requested Date</th>
                     </tr>
                 </thead>
                 <tbody>
     `;
     
     branches.forEach((item, index) => {
+        const treasuryDisplay = item.treasuryName && item.treasuryName !== 'N/A' 
+            ? `<span class="treasury-badge"><i class="bi bi-bank"></i> ${item.treasuryName}</span>`
+            : '<span class="text-muted">N/A</span>';
+        
         html += `
             <tr>
                 <td>${index + 1}</td>
                 <td><span class="clickable-branch" data-branch="${item.branch}" title="Click to copy"><i class="bi bi-clipboard"></i> ${item.branch}</span></td>
+                <td>${treasuryDisplay}</td>
                 <td>${item.adminName}</td>
                 <td>${item.contact}</td>
                 <td><span class="badge-pending-branch"><i class="bi bi-clock"></i> ${item.status}</span></td>
+                <td>${item.lastRequestedDate}</td>
             </tr>
         `;
     });
@@ -1729,9 +2007,12 @@ function renderPendingBranches(branches) {
         const branch = $(this).data('branch');
         copyToClipboard(branch);
     });
+    
+    // Apply search
+    applyTableSearch('#pendingBranchesTable', '#pendingBranchesSearchInput');
 }
 
-// Export CSV for Pending Branches
+// Export CSV for Pending Branches (updated with Contact column)
 $('#exportPendingBranchesCsvBtn').on('click', function() {
     const branches = pendingBranchesCache;
     if (!branches || branches.length === 0) {
@@ -1744,12 +2025,14 @@ $('#exportPendingBranchesCsvBtn').on('click', function() {
         return;
     }
     
-    const headers = ['Branch', 'Admin Name', 'Contact', 'Status'];
+    const headers = ['Branch', 'Treasury Name', 'Admin Name', 'Contact', 'Status', 'Last Requested Date'];
     const rows = branches.map(r => [
         r.branch,
-        r.adminName,
-        r.contact,
-        r.status
+        r.treasuryName || 'N/A',
+        r.adminName || 'N/A',
+        r.contact || 'N/A',
+        r.status,
+        r.lastRequestedDate || 'N/A'
     ]);
     
     let csvContent = headers.join(',') + '\n';
@@ -1774,6 +2057,9 @@ $('#exportPendingBranchesCsvBtn').on('click', function() {
 
 $(document).ready(function() {
     initSound();
+    
+    // Set pending branches date to blank
+    $('#pendingBranchesDate').val('');
     
     setTimeout(() => {
         $('#viewConfirmBtn').click();
