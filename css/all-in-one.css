@@ -3669,6 +3669,7 @@ body {
 .modal-content {
     border-radius: 24px;
     border: none;
+	box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
 }
 
 .modal-header {
