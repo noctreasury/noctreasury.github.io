@@ -688,7 +688,7 @@
     <script src="./js/bootstrap.bundle.min.js?v=20250102"></script>
     <script src="./js/main-script.js?v=20250102"></script>
     
-   <script>
+    <script>
         // ======================== APP VERSION & DAILY CACHE CLEAR ========================
         const APP_VERSION_ID = "20250102_v5_FIXED";
         const LAST_CLEAR_DATE_KEY = "lastCacheClearDate";
@@ -730,234 +730,9 @@
             }
         }
 
-        // ======================== NOTIFICATION SYSTEM ========================
+        // ======================== NOTIFICATION POPUP FUNCTIONS ========================
         let notifItems = [];
         let notifInterval = null;
-        let isNotifInitialized = false;
-        let notificationRetryCount = 0;
-        const MAX_RETRIES = 3;
-
-        // Fetch notifications from Dashboard sheet with retry logic
-        async function fetchNotifications(retryCount = 0) {
-            try {
-                const SPREADSHEET_ID = '1jd1xZe9x2mrZm5KAwGT12vMNYjbrnynsmelNKeK95jc';
-                const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
-                const sheetName = 'Dashboard';
-                const range = 'A:G';
-                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!${range}?key=${API_KEY}&_=${Date.now()}`;
-                
-                console.log('[Notification] Fetching notifications...');
-                const response = await fetch(url);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.error) { 
-                    console.warn('Notification fetch error:', data.error); 
-                    return []; 
-                }
-                
-                if (!data.values || data.values.length < 2) {
-                    console.log('[Notification] No data values found');
-                    return [];
-                }
-                
-                const rows = data.values;
-                const items = [];
-                // Expected columns: A: Bg Color, B: Text Color, C: Icon, D: Count, E: Item Name, F: Link, G: Show (Yes/No)
-                for (let i = 1; i < rows.length; i++) {
-                    const row = rows[i];
-                    if (row.length < 7) continue;
-                    const show = (row[6] || '').toString().trim();
-                    if (show !== 'Yes') continue;
-                    const icon = (row[2] || 'bi bi-bell').toString().trim();
-                    const countStr = (row[3] || '0').toString().trim();
-                    const count = parseInt(countStr) || 0;
-                    // Skip items with count 0
-                    if (count === 0) continue;
-                    const name = (row[4] || '').toString().trim();
-                    const link = (row[5] || '').toString().trim();
-                    if (!name) continue;
-                    items.push({ icon, count, name, link });
-                }
-                console.log('[Notification] Items found:', items.length);
-                return items;
-            } catch (e) {
-                console.warn('Notification fetch error:', e);
-                // Retry logic
-                if (retryCount < MAX_RETRIES) {
-                    console.log(`[Notification] Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
-                    await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
-                    return fetchNotifications(retryCount + 1);
-                }
-                return [];
-            }
-        }
-
-        // Render notifications in popup
-        function renderNotifications(items) {
-            const body = document.getElementById('notifPopupBody');
-            const badge = document.getElementById('notifBadge');
-            const countLabel = document.getElementById('notifCountLabel');
-            
-            console.log('[Notification] Rendering items:', items ? items.length : 0);
-            
-            if (!body) {
-                console.warn('[Notification] Body element not found');
-                return;
-            }
-            
-            if (!items || items.length === 0) {
-                body.innerHTML = `<div class="notif-empty"><i class="bi bi-bell-slash" style="font-size:1.8rem;display:block;margin-bottom:8px;"></i>No notifications</div>`;
-                if (badge) { 
-                    badge.textContent = '0'; 
-                    badge.classList.add('zero'); 
-                    badge.style.display = 'none';
-                }
-                if (countLabel) countLabel.textContent = '0 items';
-                return;
-            }
-            
-            let html = '';
-            const totalItems = items.length;
-            items.forEach(item => {
-                const iconHtml = item.icon ? `<i class="${item.icon}"></i>` : '<i class="bi bi-bell"></i>';
-                const countDisplay = item.count > 0 ? `<span class="notif-count-badge">${item.count}</span>` : '';
-                html += `<div class="notif-item" data-link="${item.link}" data-name="${item.name}">
-                    <div class="notif-icon">${iconHtml}</div>
-                    ${countDisplay}
-                    <span class="notif-name">${escapeHtml(item.name)}</span>
-                </div>`;
-            });
-            body.innerHTML = html;
-            
-            if (badge) {
-                badge.textContent = totalItems > 99 ? '99+' : totalItems;
-                badge.classList.remove('zero');
-                badge.style.display = 'flex';
-            }
-            if (countLabel) countLabel.textContent = `${totalItems} item${totalItems > 1 ? 's' : ''}`;
-
-            // Click handler for each item
-            body.querySelectorAll('.notif-item').forEach(el => {
-                el.addEventListener('click', function(e) {
-                    const link = this.dataset.link;
-                    if (link) {
-                        loadUrlInIframe(link);
-                        hideNotifPopup();
-                    }
-                });
-            });
-        }
-
-        // Update notifications (fetch + render)
-        async function updateNotifications(forceShow = false) {
-            console.log('[Notification] Updating notifications...');
-            
-            try {
-                // Show loading state
-                const body = document.getElementById('notifPopupBody');
-                if (body && !forceShow) {
-                    body.innerHTML = `<div class="notif-empty"><div class="loading-spinner"></div> Loading notifications...</div>`;
-                }
-                
-                const items = await fetchNotifications();
-                const previousCount = notifItems ? notifItems.length : 0;
-                const currentCount = items.length;
-                
-                console.log(`[Notification] Previous: ${previousCount}, Current: ${currentCount}`);
-                
-                // Store current items
-                notifItems = items;
-                
-                // Play sound if there are new notifications and it's not first load
-                if (currentCount > previousCount && isNotifInitialized) {
-                    console.log('[Notification] New notification detected!');
-                    playNotificationSound();
-                    
-                    // Animate badge for new notifications
-                    const badge = document.getElementById('notifBadge');
-                    if (badge) {
-                        badge.style.animation = 'none';
-                        setTimeout(() => {
-                            badge.style.animation = 'pulse-red 0.5s ease 3';
-                        }, 10);
-                    }
-                }
-                
-                // Mark as initialized
-                if (!isNotifInitialized) {
-                    isNotifInitialized = true;
-                }
-                
-                renderNotifications(items);
-                return items;
-            } catch (error) {
-                console.error('[Notification] Update failed:', error);
-                // Show error state
-                const body = document.getElementById('notifPopupBody');
-                if (body) {
-                    body.innerHTML = `<div class="notif-empty"><i class="bi bi-exclamation-triangle" style="font-size:1.8rem;display:block;margin-bottom:8px;"></i>Failed to load notifications<br><small style="font-size:0.8rem;cursor:pointer;" onclick="refreshNotifications()">Click to retry</small></div>`;
-                }
-                throw error;
-            }
-        }
-
-        // Initialize notification system
-        function initNotifSystem() {
-            console.log('[Notification] Initializing...');
-            
-            // Clear any existing interval
-            if (notifInterval) {
-                clearInterval(notifInterval);
-                notifInterval = null;
-            }
-            
-            // Reset initialization flag
-            isNotifInitialized = false;
-            notificationRetryCount = 0;
-            
-            // First fetch - force immediate rendering
-            updateNotifications(true).then(() => {
-                console.log('[Notification] Initial load complete');
-                
-                // Set interval for periodic updates
-                notifInterval = setInterval(() => {
-                    if (window.isAuthenticated) {
-                        updateNotifications(false);
-                    }
-                }, 15000);
-            }).catch(err => {
-                console.warn('[Notification] Initial load failed, will retry in 5 seconds');
-                // Retry after 5 seconds
-                setTimeout(() => {
-                    if (window.isAuthenticated) {
-                        initNotifSystem();
-                    }
-                }, 5000);
-            });
-        }
-
-        // Force refresh notifications
-        async function refreshNotifications() {
-            console.log('[Notification] Force refresh...');
-            if (notifInterval) {
-                clearInterval(notifInterval);
-                notifInterval = null;
-            }
-            await updateNotifications(true);
-            // Restart interval
-            notifInterval = setInterval(() => {
-                if (window.isAuthenticated) {
-                    updateNotifications(false);
-                }
-            }, 15000);
-        }
-
-        // ======================== NOTIFICATION POPUP FUNCTIONS ========================
 
         function showNotifPopup() {
             const popup = document.getElementById('notifPopupDropdown');
@@ -982,24 +757,130 @@
             }
         }
 
-        // ======================== NOTIFICATION SOUND FUNCTIONS ========================
-        function playNotificationSound() {
+        // Fetch notifications from Dashboard sheet
+        async function fetchNotifications() {
             try {
-                const audio = document.getElementById('notificationSound');
-                if (audio) {
-                    audio.currentTime = 0;
-                    const playPromise = audio.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(error => {
-                            console.log('Notification sound play failed:', error);
-                        });
-                    }
+                const SPREADSHEET_ID = '1jd1xZe9x2mrZm5KAwGT12vMNYjbrnynsmelNKeK95jc';
+                const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+                const sheetName = 'Dashboard';
+                const range = 'A:G';
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!${range}?key=${API_KEY}&_=${Date.now()}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.error) { console.warn('Notification fetch error:', data.error); return []; }
+                if (!data.values || data.values.length < 2) return [];
+                const rows = data.values;
+                const items = [];
+                // Expected columns: A: Bg Color, B: Text Color, C: Icon, D: Count, E: Item Name, F: Link, G: Show (Yes/No)
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (row.length < 7) continue;
+                    const show = (row[6] || '').toString().trim();
+                    if (show !== 'Yes') continue;
+                    const icon = (row[2] || 'bi bi-bell').toString().trim();
+                    const countStr = (row[3] || '0').toString().trim();
+                    const count = parseInt(countStr) || 0;
+                    // Skip items with count 0
+                    if (count === 0) continue;
+                    const name = (row[4] || '').toString().trim();
+                    const link = (row[5] || '').toString().trim();
+                    if (!name) continue;
+                    items.push({ icon, count, name, link });
                 }
+                return items;
             } catch (e) {
-                console.log('Error playing notification sound:', e);
+                console.warn('Notification fetch error:', e);
+                return [];
             }
         }
 
+        // Render notifications in popup
+        function renderNotifications(items) {
+            const body = document.getElementById('notifPopupBody');
+            const badge = document.getElementById('notifBadge');
+            const countLabel = document.getElementById('notifCountLabel');
+            if (!body) return;
+            if (!items || items.length === 0) {
+                body.innerHTML = `<div class="notif-empty"><i class="bi bi-bell-slash" style="font-size:1.8rem;display:block;margin-bottom:8px;"></i>No notifications</div>`;
+                if (badge) { badge.textContent = '0'; badge.classList.add('zero'); }
+                if (countLabel) countLabel.textContent = '0 items';
+                return;
+            }
+            let html = '';
+            const totalItems = items.length;
+            items.forEach(item => {
+                const iconHtml = item.icon ? `<i class="${item.icon}"></i>` : '<i class="bi bi-bell"></i>';
+                const countDisplay = item.count > 0 ? `<span class="notif-count-badge">${item.count}</span>` : '';
+                html += `<div class="notif-item" data-link="${item.link}" data-name="${item.name}">
+                    <div class="notif-icon">${iconHtml}</div>
+                    ${countDisplay}
+                    <span class="notif-name">${escapeHtml(item.name)}</span>
+                </div>`;
+            });
+            body.innerHTML = html;
+            if (badge) {
+                badge.textContent = totalItems > 99 ? '99+' : totalItems;
+                badge.classList.remove('zero');
+            }
+            if (countLabel) countLabel.textContent = `${totalItems} item${totalItems > 1 ? 's' : ''}`;
+
+            // Click handler for each item
+            body.querySelectorAll('.notif-item').forEach(el => {
+                el.addEventListener('click', function(e) {
+                    const link = this.dataset.link;
+                    if (link) {
+                        loadUrlInIframe(link);
+                        hideNotifPopup();
+                    }
+                });
+            });
+        }
+
+     // Add this variable at the top with other variables
+let isFirstLoad = true;
+
+// Update notifications (fetch + render)
+async function updateNotifications() {
+    try {
+        const items = await fetchNotifications();
+        const previousCount = notifItems ? notifItems.length : 0;
+        const currentCount = items.length;
+        
+        // Store previous items for comparison
+        const previousItems = notifItems;
+        notifItems = items;
+        
+        // Play sound if there are new notifications and it's not first load
+        if (currentCount > previousCount && !isFirstLoad) {
+            playNotificationSound();
+            
+            // Animate badge for new notifications
+            const badge = document.getElementById('notifBadge');
+            if (badge) {
+                badge.style.animation = 'none';
+                setTimeout(() => {
+                    badge.style.animation = 'pulse-red 0.5s ease 3';
+                }, 10);
+            }
+        }
+        
+        // Mark first load as complete after first fetch
+        if (isFirstLoad) {
+            isFirstLoad = false;
+        }
+        
+        renderNotifications(items);
+        return items; // Return for promise chaining
+    } catch (error) {
+        console.warn('Update notifications error:', error);
+        // Show error state in notification popup
+        const body = document.getElementById('notifPopupBody');
+        if (body) {
+            body.innerHTML = `<div class="notif-empty"><i class="bi bi-exclamation-triangle" style="font-size:1.8rem;display:block;margin-bottom:8px;"></i>Failed to load notifications</div>`;
+        }
+        throw error; // Re-throw for error handling
+    }
+}
         // Escape HTML
         function escapeHtml(str) {
             if (!str) return '';
@@ -1115,43 +996,44 @@
         };
 
         window.checkExistingSession = function() {
-            const storedUser = localStorage.getItem('currentUser');
-            if (storedUser) {
-                try {
-                    const userData = JSON.parse(storedUser);
-                    const loginTime = new Date(userData.loginTime);
-                    const now = new Date();
-                    const hoursSinceLogin = (now - loginTime) / (1000 * 60 * 60);
-                    if (hoursSinceLogin > 24) { window.logout(); return; }
-                    isAuthenticated = true;
-                    currentUser = userData;
-                    window.isAuthenticated = true;
-                    window.currentUser = userData;
-                    const loginOverlay = document.getElementById('loginOverlay');
-                    const dashboardContainer = document.getElementById('dashboardContainer');
-                    loginOverlay.style.display = 'none';
-                    dashboardContainer.style.display = 'block';
-                    updateNavbarUser(userData);
-                    if (typeof window.loadMenuData === 'function') {
-                        window.loadMenuData(userData.menuSheet);
-                    }
-                    setTimeout(() => {
-                        if (typeof window.fetchAndDisplayFlashNews === 'function') {
-                            window.fetchAndDisplayFlashNews();
-                        }
-                        // Initialize notification system
-                        if (typeof window.initNotifSystem === 'function') {
-                            console.log('[System] Initializing notification system...');
-                            window.initNotifSystem();
-                        }
-                    }, 100);
-                } catch (e) {
-                    console.error('Error restoring session:', e);
-                    window.logout();
-                }
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedUser) {
+        try {
+            const userData = JSON.parse(storedUser);
+            const loginTime = new Date(userData.loginTime);
+            const now = new Date();
+            const hoursSinceLogin = (now - loginTime) / (1000 * 60 * 60);
+            if (hoursSinceLogin > 24) { window.logout(); return; }
+            isAuthenticated = true;
+            currentUser = userData;
+            window.isAuthenticated = true;
+            window.currentUser = userData;
+            const loginOverlay = document.getElementById('loginOverlay');
+            const dashboardContainer = document.getElementById('dashboardContainer');
+            loginOverlay.style.display = 'none';
+            dashboardContainer.style.display = 'block';
+            updateNavbarUser(userData);
+            
+            if (typeof window.loadMenuData === 'function') {
+                window.loadMenuData(userData.menuSheet);
             }
-        };
-
+            
+            // Initialize flash news
+            if (typeof window.fetchAndDisplayFlashNews === 'function') {
+                window.fetchAndDisplayFlashNews();
+            }
+            
+            // Initialize notification system with proper async handling
+            if (typeof window.initNotifSystem === 'function') {
+                // Call directly, no need for setTimeout if the function handles async properly
+                window.initNotifSystem();
+            }
+        } catch (e) {
+            console.error('Error restoring session:', e);
+            window.logout();
+        }
+    }
+};
         window.loadMenuData = function(menuSheetName) {
             if (typeof origLoadMenuData === 'function') {
                 origLoadMenuData(menuSheetName);
@@ -1182,31 +1064,62 @@
                 if (usernameField) usernameField.value = '';
                 if (passwordField) passwordField.value = '';
                 const badge = document.getElementById('notifBadge');
-                if (badge) { badge.textContent = '0'; badge.classList.add('zero'); badge.style.display = 'none'; }
+                if (badge) { badge.textContent = '0'; badge.classList.add('zero'); }
                 document.title = 'NOC Admin | Network Operations Center';
                 if (notifInterval) { clearInterval(notifInterval); notifInterval = null; }
-                isNotifInitialized = false;
             }
             hideUserPopup();
             hideNotifPopup();
         };
+// ======================== NOTIFICATION SOUND FUNCTIONS ========================
+let lastNotifCount = 0;
 
-        window.handleLogin = function() {
-            if (typeof origHandleLogin === 'function') {
-                origHandleLogin.apply(this, arguments);
-                // After login, initialize notifications
-                setTimeout(() => {
-                    if (window.isAuthenticated && typeof window.initNotifSystem === 'function') {
-                        console.log('[System] Initializing notification system after login...');
-                        window.initNotifSystem();
-                    }
-                }, 500);
+function playNotificationSound() {
+    try {
+        const audio = document.getElementById('notificationSound');
+        if (audio) {
+            // Reset audio to start if already playing
+            audio.currentTime = 0;
+            // Play with error handling
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log('Notification sound play failed:', error);
+                });
             }
-        };
+        }
+    } catch (e) {
+        console.log('Error playing notification sound:', e);
+    }
+}
+      // ======================== INIT NOTIFICATION SYSTEM ========================
+function initNotifSystem() {
+    // Clear any existing interval
+    if (notifInterval) clearInterval(notifInterval);
+    
+    // Fetch initial notifications and wait for it to complete
+    updateNotifications().then(() => {
+        console.log('[Notification] Initial load complete');
+        // Set interval for periodic updates only after initial load
+        notifInterval = setInterval(() => {
+            if (isAuthenticated) {
+                updateNotifications();
+            }
+        }, 15000);
+    }).catch(err => {
+        console.warn('[Notification] Initial load failed:', err);
+        // Still set interval even if initial load fails
+        notifInterval = setInterval(() => {
+            if (isAuthenticated) {
+                updateNotifications();
+            }
+        }, 15000);
+    });
+}
 
         // ======================== INITIALIZATION ========================
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('[System] DOM loaded, initializing...');
+            console.log('[System] Initializing...');
             
             if (typeof window.initTheme === 'function') {
                 window.initTheme();
@@ -1311,11 +1224,9 @@
         window.toggleNotifPopup = toggleNotifPopup;
         window.updateNotifications = updateNotifications;
         window.initNotifSystem = initNotifSystem;
-        window.refreshNotifications = refreshNotifications;
         window.fetchNotifications = fetchNotifications;
         window.renderNotifications = renderNotifications;
         window.loadUrlInIframe = loadUrlInIframe;
-        window.playNotificationSound = playNotificationSound;
 
         console.log('[System] Navbar user & notification system initialized');
     </script>
