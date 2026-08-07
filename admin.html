@@ -235,7 +235,8 @@
             background: var(--dropdown-hover);
         }
         body.dark-theme .user-popup-dropdown {
-            background: var(--bg-secondary);
+          /*  background: var(--bg-secondary);*/
+			  background: #1e293bc4;
             border-color: var(--border-color);
         }
         body.dark-theme .user-popup-header {
@@ -350,7 +351,8 @@
             position: absolute;
             top: calc(100% + 8px);
             right: 0;
-            background: var(--bg-secondary);
+            /*background: var(--bg-secondary);*/
+			background: #1e293b00;
             border: 1px solid var(--border-color);
             border-radius: 16px;
             box-shadow: 0 20px 60px var(--shadow-color);
@@ -364,6 +366,8 @@
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 9999;
             overflow: hidden;
+			backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
         }
         .notif-popup-dropdown.show {
             opacity: 1;
