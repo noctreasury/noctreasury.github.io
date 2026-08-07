@@ -644,7 +644,7 @@ body.dark-theme .link-item.active i {
 }
 
 .login-body .btn-primary {
-    background: linear-gradient(135deg, #184e81 0%, #0457a4 100%);
+    background: var(--primary);
     border: none;
     padding: 12px;
     font-size: 16px;
