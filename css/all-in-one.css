@@ -130,12 +130,17 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
    ============================================================ */
 .report-card,
 .card-db {
-    background: #fff;
-    border-radius: 20px;
-    box-shadow: 0 10px 25px -8px rgba(0,0,0,0.1);
-    border: 1px solid var(--border);
+    max-width: 100%;
+    width: 100%;
+    margin: 0 auto;
+    background: #fff3;
+	 background:linear-gradient(to bottom, #ffffff36 0%, rgba(255, 255, 255, 0.35) 50%, rgba(255, 255, 255, 0.08) 90%, #ffffff17 100%);
+    border-radius: 28px;
+    box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
     overflow: hidden;
 	padding:20px;
+	backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 .report-container,
@@ -1331,7 +1336,7 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
    STATS & SUMMARY
    ============================================================ */
 .summary-stats {
-    background: linear-gradient(135deg, #e8f0fe 0%, #dbeafe 100%);
+
     border-radius: 12px;
     padding: 12px 25px;
     margin: 12px 20px;
@@ -1399,7 +1404,7 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
 }
 
 .total-footer {
-    background: var(--light);
+   color:var(--primary);
     border-radius: 12px;
     padding: 10px 20px;
     margin: 12px 20px;
@@ -1414,7 +1419,7 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
 .total-label {
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--dark);
+    
     display: flex;
     align-items: center;
     gap: 8px;
