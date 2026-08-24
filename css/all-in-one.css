@@ -1190,7 +1190,7 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
    ============================================================ */
 .filter-section {
     padding: 15px 20px;
-    background: #fff;
+    color:var(--primary);
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
@@ -1921,7 +1921,7 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
    SELECT ALL ROW
    ============================================================ */
 .select-all-row {
-    background: #f8fafc;
+    
     padding: 12px 15px;
     border-radius: 12px;
     margin-bottom: 15px;
@@ -1930,7 +1930,7 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 15px;
-    border: 1px solid #e9ecef;
+    
 }
 
 .bulk-actions {
