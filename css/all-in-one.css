@@ -18,8 +18,9 @@
     --railtel-light: #f3e8ff;
     --vpn: #f59e0b;
     --vpn-light: #fef3c7;
-    --active-bg: #8abcff73 !important;
+    --active-bg: #8abcff47 !important;
 	--scrollbar-track: #e9ecef00;
+	
 }
 
 /* ============================================================
@@ -115,6 +116,7 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
     width: 100%;
     margin: 0 auto;
     background: #fff3;
+	 background:linear-gradient(to bottom, #ffffff36 0%, rgba(255, 255, 255, 0.35) 50%, rgba(255, 255, 255, 0.08) 90%, #ffffff17 100%);
     border-radius: 28px;
     box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
     overflow: hidden;
