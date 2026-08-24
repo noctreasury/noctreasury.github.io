@@ -1286,13 +1286,14 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
 }
 
 .filter-bar {
-    background: #ffffff;
+    background: #ffffff00;
     padding: 20px 25px;
     border-bottom: 1px solid #e2e8f0;
     display: flex;
     align-items: flex-end;
     gap: 20px;
     flex-wrap: wrap;
+	color: var(--primary);
 }
 
 .checkbox-group {
@@ -1552,7 +1553,8 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
 .section-title {
     font-size: 1.3rem;
     font-weight: 600;
-    color: var(--dark);
+   /* color: var(--dark);*/
+    color: var(--primary);
     margin: 0 0 20px;
     display: flex;
     align-items: center;
