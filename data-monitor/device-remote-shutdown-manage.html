@@ -143,6 +143,101 @@
             font-weight: 600;
             display: inline-block;
         }
+
+        /* Inactivity overlay styles */
+        .inactivity-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            backdrop-filter: blur(4px);
+        }
+        .inactivity-overlay.active {
+            display: flex;
+        }
+        .inactivity-modal {
+            background: white;
+            border-radius: 16px;
+            padding: 40px 50px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .inactivity-modal .icon {
+            font-size: 4rem;
+            color: #f59e0b;
+            margin-bottom: 15px;
+        }
+        .inactivity-modal h3 {
+            color: #1e293b;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        .inactivity-modal p {
+            color: #64748b;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .inactivity-modal .btn-resume {
+            background: #0b2b4a;
+            color: white;
+            border: none;
+            padding: 10px 35px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .inactivity-modal .btn-resume:hover {
+            background: #1a4a6a;
+            transform: translateY(-2px);
+        }
+        .inactivity-timer {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-top: 15px;
+        }
+        .inactivity-timer strong {
+            color: #475569;
+        }
+
+        /* Inactivity warning banner */
+        .inactivity-warning {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: #92400e;
+        }
+        .inactivity-warning.show {
+            display: flex;
+        }
+        .inactivity-warning .bi {
+            font-size: 1.2rem;
+        }
     </style>
 </head>
 <body>
@@ -153,6 +248,22 @@
 <!-- LOADING OVERLAY -->
 <div class="loading-overlay" id="loadingOverlay">
     <div class="custom-loader"></div>
+</div>
+
+<!-- INACTIVITY OVERLAY -->
+<div class="inactivity-overlay" id="inactivityOverlay">
+    <div class="inactivity-modal">
+        <div class="icon">⏰</div>
+        <h3>Auto-Check Stopped</h3>
+        <p>The auto-check has been automatically stopped due to <strong>30 minutes of inactivity</strong> on this page.</p>
+        <p style="font-size:0.9rem; color:#94a3b8;">This helps reduce unnecessary API requests when the page is not being actively used.</p>
+        <button class="btn-resume" id="resumeAutoCheckBtn">
+            <i class="bi bi-play-fill"></i> Resume Auto-Check
+        </button>
+        <div class="inactivity-timer">
+            Stopped at: <strong id="inactivityStopTime">--:--:--</strong>
+        </div>
+    </div>
 </div>
 
 <!-- Audio for notifications -->
@@ -218,6 +329,16 @@
                 </div>
             </div>
         </div>
+
+        <!-- Inactivity warning banner -->
+        <div class="inactivity-warning" id="inactivityWarning">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span id="inactivityWarningText">Auto-check will stop in <strong id="inactivityCountdown">30:00</strong> due to inactivity</span>
+            <button class="btn btn-sm btn-warning" id="resetInactivityBtn" style="margin-left:auto; padding:2px 12px; border-radius:15px;">
+                <i class="bi bi-arrow-clockwise"></i> Reset timer
+            </button>
+        </div>
+
         <div id="confirmStatusMsg" class="status-message"></div>
         <div id="confirmRecordsContainer">
             <div class="no-data-message">
@@ -346,6 +467,155 @@ const SHEET_NAME = "Data";
 const BACKUP_SHEET_NAME = "Backup";
 const ADMIN_SHEET_NAME = "Branch Admin Details";
 const API_KEY = "AIzaSyDc8tegwi2rgHyDFYm7uWBqVqQ7Fwb3uWM";
+
+// ============================================================
+//  INACTIVITY DETECTION
+// ============================================================
+
+const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+let inactivityTimer = null;
+let inactivityCountdownInterval = null;
+let inactivityWarningShown = false;
+let inactivityOverlayShown = false;
+let autoCheckStoppedByInactivity = false;
+let lastActivityTime = Date.now();
+let countdownSeconds = 1800; // 30 minutes in seconds
+
+// Reset inactivity timer on user activity
+function resetInactivityTimer() {
+    lastActivityTime = Date.now();
+    countdownSeconds = 1800;
+    inactivityWarningShown = false;
+    inactivityOverlayShown = false;
+    
+    // Hide warning if shown
+    $('#inactivityWarning').removeClass('show');
+    $('#inactivityOverlay').removeClass('active');
+    
+    // If auto-check was stopped by inactivity and we're on the confirm tab, restart it
+    if (autoCheckStoppedByInactivity && $('#confirmPane').hasClass('active-pane')) {
+        autoCheckStoppedByInactivity = false;
+        if (!isAutoCheckActive) {
+            startAutoCheck();
+            $('#inactivityWarning').removeClass('show');
+            $('#inactivityOverlay').removeClass('active');
+            $('#refreshStatusText').text('Auto-Check Active (Resumed)');
+            Swal.fire({
+                icon: 'info',
+                title: 'Auto-Check Resumed',
+                text: 'Auto-check has been resumed due to activity on the page.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+    }
+    
+    // Clear existing timers
+    clearTimeout(inactivityTimer);
+    clearInterval(inactivityCountdownInterval);
+    
+    // Start new inactivity timer
+    inactivityTimer = setTimeout(() => {
+        handleInactivity();
+    }, INACTIVITY_TIMEOUT_MS);
+    
+    // Start countdown for warning
+    inactivityCountdownInterval = setInterval(updateInactivityCountdown, 1000);
+}
+
+function updateInactivityCountdown() {
+    countdownSeconds--;
+    
+    if (countdownSeconds <= 0) {
+        clearInterval(inactivityCountdownInterval);
+        return;
+    }
+    
+    // Show warning when 5 minutes remaining
+    if (countdownSeconds <= 300 && !inactivityWarningShown && isAutoCheckActive) {
+        inactivityWarningShown = true;
+        $('#inactivityWarning').addClass('show');
+        $('#inactivityWarningText').html(`Auto-check will stop in <strong id="inactivityCountdown">${formatCountdown(countdownSeconds)}</strong> due to inactivity`);
+        $('#inactivityCountdown').text(formatCountdown(countdownSeconds));
+    }
+    
+    // Update countdown display
+    if (inactivityWarningShown) {
+        $('#inactivityCountdown').text(formatCountdown(countdownSeconds));
+    }
+}
+
+function formatCountdown(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function handleInactivity() {
+    // Only stop auto-check if it's active
+    if (!isAutoCheckActive) {
+        $('#inactivityWarning').removeClass('show');
+        return;
+    }
+    
+    // Stop the auto-check
+    stopAutoCheck();
+    autoCheckStoppedByInactivity = true;
+    
+    // Show the overlay
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString();
+    $('#inactivityStopTime').text(timeStr);
+    $('#inactivityOverlay').addClass('active');
+    $('#inactivityWarning').removeClass('show');
+    
+    // Update status text
+    $('#refreshStatusText').text('Stopped (Inactivity)');
+    
+    // Play a sound to notify
+    playNotificationSound();
+}
+
+// Resume auto-check from inactivity overlay
+$('#resumeAutoCheckBtn').on('click', function() {
+    $('#inactivityOverlay').removeClass('active');
+    autoCheckStoppedByInactivity = false;
+    resetInactivityTimer();
+    
+    if ($('#confirmPane').hasClass('active-pane')) {
+        startAutoCheck();
+        $('#refreshStatusText').text('Auto-Check Active');
+        Swal.fire({
+            icon: 'success',
+            title: 'Auto-Check Resumed',
+            text: 'Auto-check is now running again.',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    } else {
+        Swal.fire({
+            icon: 'info',
+            title: 'Switch to Confirmation Tab',
+            text: 'Please switch to the "Shutdown Confirmation" tab to resume auto-check.',
+            confirmButtonColor: '#0b2b4a'
+        });
+    }
+});
+
+// Reset inactivity timer on user interactions
+$(document).on('mousemove click keydown scroll touchstart', function() {
+    // Only track if auto-check is active
+    if (isAutoCheckActive || autoCheckStoppedByInactivity) {
+        resetInactivityTimer();
+    }
+});
+
+// Reset inactivity timer on specific button clicks
+$('#viewConfirmBtn, #viewPowerOnBtn, #viewPendingBranchesBtn, #confirmDate, #powerOnDate, #pendingBranchesDate').on('click focus change', function() {
+    if (isAutoCheckActive || autoCheckStoppedByInactivity) {
+        resetInactivityTimer();
+    }
+});
 
 // ============================================================
 //  NOTIFICATION SOUND
@@ -627,9 +897,19 @@ function switchTab(tab) {
         $('#tabConfirmBtn').addClass('active');
         $('#tabPowerOnBtn').removeClass('active');
         $('#tabPendingBranchesBtn').removeClass('active');
-        if (!isAutoCheckActive) {
+        
+        // If auto-check was stopped by inactivity, restart it
+        if (autoCheckStoppedByInactivity) {
+            autoCheckStoppedByInactivity = false;
+            startAutoCheck();
+            $('#inactivityOverlay').removeClass('active');
+            $('#inactivityWarning').removeClass('show');
+            $('#refreshStatusText').text('Auto-Check Active');
+        } else if (!isAutoCheckActive) {
             startAutoCheck();
         }
+        
+        resetInactivityTimer();
     } else if (tab === 'powerOn') {
         $('#powerOnPane').addClass('active-pane');
         $('#confirmPane').removeClass('active-pane');
@@ -643,6 +923,8 @@ function switchTab(tab) {
         if (!powerOnBadgeSet) {
             fetchInitialPowerOnCount();
         }
+        // Reset inactivity timer when switching to power on tab (still track activity)
+        resetInactivityTimer();
     } else if (tab === 'pendingBranches') {
         $('#pendingBranchesPane').addClass('active-pane');
         $('#confirmPane').removeClass('active-pane');
@@ -657,6 +939,8 @@ function switchTab(tab) {
         if (pendingBranchesCache.length === 0) {
             $('#viewPendingBranchesBtn').click();
         }
+        // Reset inactivity timer when switching to pending branches tab
+        resetInactivityTimer();
     }
 }
 
@@ -677,13 +961,17 @@ flatpickr("#confirmDate", {
             stopAutoCheck();
             startAutoCheck();
         }
+        resetInactivityTimer();
     }
 });
 
 flatpickr("#powerOnDate", {
     dateFormat: "d/m/Y",
     defaultDate: getPreviousDate(),
-    allowInput: true
+    allowInput: true,
+    onChange: function() {
+        resetInactivityTimer();
+    }
 });
 
 // Pending Branches Date Picker - ENABLED, BLANK by default
@@ -691,7 +979,10 @@ flatpickr("#pendingBranchesDate", {
     dateFormat: "d/m/Y",
     defaultDate: "", // BLANK by default
     allowInput: true,
-    placeholder: "DD/MM/YYYY"
+    placeholder: "DD/MM/YYYY",
+    onChange: function() {
+        resetInactivityTimer();
+    }
 });
 
 // ============================================================
@@ -718,10 +1009,16 @@ function startAutoCheck() {
     isAutoCheckActive = true;
     checkCount = 0;
     previousPendingCount = -1;
+    autoCheckStoppedByInactivity = false;
     
     $('#stopAutoRefreshBtn').show();
     $('#pulseIndicator').removeClass('inactive').addClass('pulse');
     $('#refreshStatusText').text('Auto-Check Active');
+    $('#inactivityOverlay').removeClass('active');
+    $('#inactivityWarning').removeClass('show');
+    
+    // Reset inactivity timer
+    resetInactivityTimer();
     
     performAutoCheck();
     autoCheckInterval = setInterval(performAutoCheck, 5000);
@@ -735,10 +1032,18 @@ function stopAutoCheck() {
     isAutoCheckActive = false;
     $('#stopAutoRefreshBtn').hide();
     $('#pulseIndicator').removeClass('pulse').addClass('inactive');
-    $('#refreshStatusText').text('Stopped');
+    if (!autoCheckStoppedByInactivity) {
+        $('#refreshStatusText').text('Stopped');
+    }
+    $('#inactivityWarning').removeClass('show');
+    clearTimeout(inactivityTimer);
+    clearInterval(inactivityCountdownInterval);
 }
 
 async function performAutoCheck() {
+    // Skip if auto-check is not active (prevents race conditions)
+    if (!isAutoCheckActive) return;
+    
     checkCount++;
     const date = $('#confirmDate').val();
     
@@ -976,7 +1281,7 @@ $('#viewConfirmBtn').on('click', async function() {
             $statusMsg.addClass('info').html(`<i class="bi bi-list"></i> Found ${records.length} pending request(s) for date: <strong>${date}</strong>.`).show();
         }
         
-        if (!isAutoCheckActive) {
+        if (!isAutoCheckActive && !autoCheckStoppedByInactivity) {
             startAutoCheck();
         }
         
@@ -2052,6 +2357,25 @@ $('#exportPendingBranchesCsvBtn').on('click', function() {
 });
 
 // ============================================================
+//  RESET INACTIVITY TIMER ON DEMAND
+// ============================================================
+
+$('#resetInactivityBtn').on('click', function() {
+    resetInactivityTimer();
+    $('#inactivityWarning').removeClass('show');
+    if (!isAutoCheckActive && $('#confirmPane').hasClass('active-pane')) {
+        startAutoCheck();
+    }
+    Swal.fire({
+        icon: 'success',
+        title: 'Timer Reset',
+        text: 'Inactivity timer has been reset to 30 minutes.',
+        timer: 1500,
+        showConfirmButton: false
+    });
+});
+
+// ============================================================
 //  INIT
 // ============================================================
 
@@ -2060,6 +2384,9 @@ $(document).ready(function() {
     
     // Set pending branches date to blank
     $('#pendingBranchesDate').val('');
+    
+    // Initialize inactivity timer
+    resetInactivityTimer();
     
     setTimeout(() => {
         $('#viewConfirmBtn').click();
