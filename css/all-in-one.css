@@ -4828,8 +4828,8 @@ body.dark-theme .user-popup-avatar-large {
 .no-data-message {
     text-align: center;
     padding: 50px;
-    color: #64748b;
-    background: #f8fafc;
+   /* color: #64748b;*/
+  /*  background: #f8fafc;*/
     border-radius: 12px;
     margin: 20px 0;
 }
