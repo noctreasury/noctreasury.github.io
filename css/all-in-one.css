@@ -114,7 +114,7 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
     max-width: 100%;
     width: 100%;
     margin: 0 auto;
-    background: #fff;
+    background: #fff3;
     border-radius: 28px;
     box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
     overflow: hidden;
@@ -933,7 +933,7 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
     font-weight: 600;
     background: transparent;
     border: none;
-    color: #475569;
+    color: #0081b4db;
     transition: 0.2s;
     border-bottom: 3px solid transparent;
     cursor: pointer;
@@ -1619,12 +1619,15 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
 
 .field-cell .form-label {
     font-weight: 600;
-    color: #0f172a;
+   /* color: #0f172a;*/
     font-size: 0.75rem;
     margin-bottom: 0;
     white-space: nowrap;
 }
-
+.text-muted {
+ 
+  color: rgb(105, 121, 136) !important;
+}
 .small-select-field {
     display: flex;
     align-items: center;
