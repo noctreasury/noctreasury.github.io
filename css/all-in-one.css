@@ -3237,7 +3237,7 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
 
 .timeline-content {
     flex: 1;
-    background: #f8fafc;
+    background: #f8fafc14;
     padding: 15px 20px;
     border-radius: 16px;
     position: relative;
@@ -3296,7 +3296,7 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
 }
 
 .timeline-wrapper {
-    background: #f8fafc;
+    
     border-radius: 24px;
     padding: 20px 20px 10px 20px;
 }
@@ -4724,7 +4724,7 @@ body.dark-theme .user-popup-avatar-large {
     gap: 12px;
     margin-bottom: 20px;
     padding: 15px 20px;
-    background: #f1f5f9;
+    background: #f1f5f921;
     border-radius: 20px;
 }
 
