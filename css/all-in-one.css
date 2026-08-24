@@ -118,7 +118,7 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
     background: #fff3;
 	 background:linear-gradient(to bottom, #ffffff36 0%, rgb(255 255 255 / 0%) 50%, rgb(255 255 255 / 0%) 90%, #ffffff17 100%);
     border-radius: 28px;
-    box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+    box-shadow: 0px 0px 35px -12px rgba(0, 0, 0, 0.1);
     overflow: hidden;
 	padding:20px;
 	backdrop-filter: blur(12px);
