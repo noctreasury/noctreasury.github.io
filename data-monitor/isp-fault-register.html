@@ -12,24 +12,63 @@
     <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
     <link rel="stylesheet" href="../css/flatpickr.min.css">
     <link rel="stylesheet" href="../css/sweetalert2.min.css">
-         <link rel="stylesheet" href="../css/all-in-one.css">
+    <link rel="stylesheet" href="../css/all-in-one.css">
+    <style>
+        /* minimal style for the dynamic status label */
+        .status-label-box {
+            background: #f0f5fa;
+            border-left: 4px solid #0f3b5f;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .status-label-box .status-text {
+            flex: 1;
+            color: #1e2f3d;
+            word-break: break-word;
+        }
+        .copy-status-btn {
+            background: #e2e9f0;
+            border: none;
+            border-radius: 30px;
+            padding: 4px 16px;
+            font-size: 0.85rem;
+            color: #0f3b5f;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        .copy-status-btn:hover {
+            background: #cbd8e5;
+        }
+        .app-card { padding-bottom: 1.5rem; }
+        .filter-bar { flex-wrap: wrap; }
+        .badge-pending { background: #f0b400; color: #222; }
+        .badge-down { background: #dc3545; color: white; }
+        .badge-up { background: #198754; color: white; }
+    </style>
 </head>
 <body>
 <div class="page-header">
-                <div class="page-header-left">
-                          <i class="bi bi-hdd-stack-fill"></i>
-                    <div>
-                        <h1>ISP Daily Fault Management</h1>
-                        <p>Railtel | BSNL VPNoFTTH | BSNL MPLS — Link Down Tracker</p>
-                    </div>
-                </div>
-            </div>
+    <div class="page-header-left">
+        <i class="bi bi-hdd-stack-fill"></i>
+        <div>
+            <h1>ISP Daily Fault Management</h1>
+            <p>Railtel | BSNL VPNoFTTH | BSNL MPLS — Link Down Tracker</p>
+        </div>
+    </div>
+</div>
 <div class="app-card">
-       <div class="tab-header">
+    <div class="tab-header">
         <button class="tab-btn active" id="tabAddBtn"><i class="bi bi-plus-circle"></i> Add Complaint</button>
         <button class="tab-btn" id="tabListBtn"><i class="bi bi-table"></i> Manage Records</button>
     </div>
-    
+
     <!-- Form Pane (Add only - no edit here, edit via modal) -->
     <div id="addPane" class="tab-pane active-pane">
         <h4 class="mb-3"><i class="bi bi-plus-circle"></i> Register New Fault</h4>
@@ -78,6 +117,13 @@
                     <label class="form-label required">Resolve Status</label>
                     <select id="resolveStatus" class="form-select" style="width:100%"></select>
                 </div>
+                <div class="col-12 mt-2">
+                    <!-- STATUS LABEL WITH COPY BUTTON -->
+                    <div class="status-label-box" id="statusLabelBox">
+                        <span class="status-text" id="statusDisplayText">Select options to generate status</span>
+                        <button type="button" class="copy-status-btn" id="copyStatusBtn"><i class="bi bi-clipboard"></i> Copy</button>
+                    </div>
+                </div>
                 <div class="col-12 mt-3">
                     <button type="submit" id="submitBtn" class="btn btn-primary-custom px-5"><i class="bi bi-save"></i> Add Record</button>
                     <button type="button" id="clearFormBtn" class="btn btn-outline-custom ms-2"><i class="bi bi-eraser"></i> Clear</button>
@@ -92,7 +138,7 @@
             <h5><i class="bi bi-hdd-stack"></i> ISP Faults</h5>
             <button id="refreshTableBtn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-repeat"></i> Refresh</button>
         </div>
-        
+
         <!-- Filter Bar with View Button -->
         <div class="filter-bar">
             <label><i class="bi bi-funnel-fill"></i> Filter by Resolve Status:</label>
@@ -103,7 +149,7 @@
             <span class="text-muted small ms-auto" id="filterRecordCount">Click "View" to load records</span>
             <button id="clearFilterBtn" class="btn btn-sm btn-outline-secondary" title="Clear Filter"><i class="bi bi-x-circle"></i> Clear</button>
         </div>
-        
+
         <div class="table-responsive" id="tableContainer">
             <table id="faultsTable" class="table table-striped table-hover" style="width:100%">
                 <thead>
@@ -200,17 +246,14 @@
     // =====================================================
     const SPREADSHEET_ID = "1T7GsX08h9B6tT7doDjfg4MgULk7JZaOa1YT7cF_otQI";
     const API_KEY = "AIzaSyDc8tegwi2rgHyDFYm7uWBqVqQ7Fwb3uWM";
-    
-    // IMPORTANT: Replace with your deployed Apps Script Web App URL
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzm3_Ft-hZdwZp69zf6nPJ4qOV_JFSZObwroXUEx6xZ2GnNGy9JrXIveqcEsDSvCE8P/exec";
-    
     const SHEET_FAULTS = "Details";
     const SHEET_TREASURIES = "Treasuries and  Code";
     const SHEET_CONNECTIONS = "Connections and source URL Deta";
     const SHEET_FOLLOWUP = "Followed up Details";
     const SHEET_LINKSTATUS = "Link Status";
     const SHEET_RESOLVE = "Resolve Status";
-    
+
     let dataTable = null;
     let faultRecords = [];
     let filteredRecords = [];
@@ -223,126 +266,18 @@
     let flatpickrInstance, editFlatpickr;
     let isTableLoaded = false;
     let isMetadataLoaded = false;
-    let currentFilterStatus = "Pending (Including Blank)";
-    
-    function showLoading(msg) { 
-        if($('#global-loading-overlay').length) return; 
-        $('body').append(`<div id="global-loading-overlay"><div style="background:white;padding:30px;border-radius:24px;text-align:center;"><i class="bi bi-arrow-repeat" style="font-size:48px;color:#0f3b5f;animation:spin 1s linear infinite;"></i><p>${msg}</p></div></div>`); 
+
+    // ---------- helper functions ----------
+    function showLoading(msg) {
+        if($('#global-loading-overlay').length) return;
+        $('body').append(`<div id="global-loading-overlay"><div style="background:white;padding:30px;border-radius:24px;text-align:center;"><i class="bi bi-arrow-repeat" style="font-size:48px;color:#0f3b5f;animation:spin 1s linear infinite;"></i><p>${msg}</p></div></div>`);
     }
     function hideLoading() { $('#global-loading-overlay').remove(); }
     function getTodayDMY() { let d = new Date(); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`; }
     function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
-    
-    // Check if resolve status is considered "Pending" (includes empty, null, or "Pending")
-    function isPendingStatus(status) {
-        if (!status || status.trim() === "") return true;
-        const lowerStatus = status.toString().toLowerCase().trim();
-        return lowerStatus === "pending";
-    }
-    
-    // Get the filter criteria for the query
-    function getFilterCriteria() {
-        const selectedFilter = $('#resolveStatusFilter').val();
-        if (selectedFilter === "ALL") {
-            return { type: "ALL", value: null };
-        } else if (selectedFilter === "Pending (Including Blank)") {
-            return { type: "PENDING", value: null };
-        } else {
-            return { type: "EXACT", value: selectedFilter };
-        }
-    }
-    
-    // Filter records based on selected resolve status (client-side fallback)
-    function filterRecordsByStatus(records, statusFilter) {
-        if (statusFilter === "ALL") {
-            return [...records];
-        } else if (statusFilter === "Pending (Including Blank)") {
-            return records.filter(record => isPendingStatus(record.resolveStatus));
-        } else {
-            return records.filter(record => record.resolveStatus === statusFilter);
-        }
-    }
-    
-    // Load fault records with server-side filtering
-    async function loadFilteredFaultRecords() {
-        const filter = getFilterCriteria();
-        showLoading("Loading records...");
-        
-        try {
-            // Construct URL with filter parameters
-            let url = `${APPS_SCRIPT_URL}?action=GET_FAULTS&sheetName=${SHEET_FAULTS}`;
-            
-            // Add filter parameters for server-side filtering
-            if (filter.type === "PENDING") {
-                url += `&filter=PENDING`;
-            } else if (filter.type === "EXACT") {
-                url += `&filter=EXACT&status=${encodeURIComponent(filter.value)}`;
-            }
-            // For ALL, no filter parameter needed
-            
-            const response = await fetch(url, {
-                method: "GET",
-                cache: "no-cache"
-            });
-            
-            const data = await response.json();
-            hideLoading();
-            
-            if (data && data.records) {
-                faultRecords = data.records;
-                filteredRecords = [...faultRecords];
-                return faultRecords;
-            } else {
-                // Fallback to client-side filtering if server-side filter fails
-                const rows = await fetchSheetDataDirect(SHEET_FAULTS, "A:I");
-                const records = parseFaultRecords(rows);
-                faultRecords = records;
-                filteredRecords = filterRecordsByStatus(records, $('#resolveStatusFilter').val());
-                return filteredRecords;
-            }
-        } catch (error) {
-            console.error("Error loading filtered records:", error);
-            // Fallback: load all records and filter client-side
-            const rows = await fetchSheetDataDirect(SHEET_FAULTS, "A:I");
-            const records = parseFaultRecords(rows);
-            faultRecords = records;
-            filteredRecords = filterRecordsByStatus(records, $('#resolveStatusFilter').val());
-            hideLoading();
-            return filteredRecords;
-        }
-    }
-    
-    // Parse fault records from sheet data
-    function parseFaultRecords(rows) {
-        if(!rows || rows.length < 2) return [];
-        const records = [];
-        for(let i = 1; i < rows.length; i++) {
-            const row = rows[i];
-            if(row.length > 0 && row[0] && row[0].toString().trim() !== "") {
-                records.push({
-                    rowIndex: i + 1,
-                    refNo: row[0] || "",
-                    treasuryName: row[1] || "",
-                    connection: row[2] || "",
-                    circuitId: row[3] || "",
-                    callDate: row[4] || "",
-                    lastFollowup: row[5] || "",
-                    remarks: row[6] || "",
-                    linkStatus: row[7] || "",
-                    resolveStatus: row[8] || ""
-                });
-            }
-        }
-        // Sort ascending by reference number
-        records.sort((a, b) => {
-            let numA = parseFloat(a.refNo) || 0;
-            let numB = parseFloat(b.refNo) || 0;
-            return numA - numB;
-        });
-        return records;
-    }
-    
-    // Google Sheets API direct read (fallback)
+    function isPendingStatus(status) { if (!status || status.trim() === "") return true; return status.toString().toLowerCase().trim() === "pending"; }
+
+    // ---------- metadata & sheet fetch ----------
     async function fetchSheetDataDirect(sheetName, range = "A:Z") {
         try {
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(sheetName)}!${range}?key=${API_KEY}`;
@@ -351,11 +286,9 @@
             return data.values || [];
         } catch(e) { console.error(`Error fetching ${sheetName}:`, e); return []; }
     }
-    
-    // Load metadata for dropdowns
+
     async function loadMetadata() {
         if (isMetadataLoaded) return;
-        
         showLoading("Loading form data...");
         let treasRows = await fetchSheetDataDirect(SHEET_TREASURIES, "A:B");
         treasuryOptions = [];
@@ -366,7 +299,6 @@
                 if(name && code) treasuryOptions.push({ id: code, text: name });
             }
         }
-        
         let connRows = await fetchSheetDataDirect(SHEET_CONNECTIONS, "A:E");
         connectionOptions = [];
         connectionMapping = {};
@@ -384,7 +316,6 @@
                 }
             }
         }
-        
         let followRows = await fetchSheetDataDirect(SHEET_FOLLOWUP, "A:A");
         followupOptions = [];
         if(followRows && followRows.length > 1) {
@@ -393,7 +324,6 @@
                 if(val) followupOptions.push(val);
             }
         }
-        
         let linkRows = await fetchSheetDataDirect(SHEET_LINKSTATUS, "A:A");
         linkStatusOptions = [];
         if(linkRows && linkRows.length > 1) {
@@ -402,7 +332,6 @@
                 if(val) linkStatusOptions.push(val);
             }
         }
-        
         let resolveRows = await fetchSheetDataDirect(SHEET_RESOLVE, "A:A");
         resolveStatusOptions = [];
         if(resolveRows && resolveRows.length > 1) {
@@ -411,17 +340,12 @@
                 if(val && val !== "Resolve Status") resolveStatusOptions.push(val);
             }
         }
-        
-        // Ensure "Pending" is in options if not present
-        if (!resolveStatusOptions.includes("Pending")) {
-            resolveStatusOptions.unshift("Pending");
-        }
-        
+        if (!resolveStatusOptions.includes("Pending")) resolveStatusOptions.unshift("Pending");
         isMetadataLoaded = true;
         hideLoading();
     }
-    
-    // Auto fetch Circuit ID
+
+    // ---------- auto fetch circuit ----------
     async function autoFetchCircuitId(connectionName, treasuryCode, treasuryName) {
         if(!connectionName || !treasuryCode) return "";
         const connInfo = connectionMapping[connectionName];
@@ -446,122 +370,107 @@
             return "";
         } catch(e) { return ""; }
     }
-    
-    // Destroy existing Select2 instances
+
+    // ---------- select2 helpers ----------
     function destroySelect2(selector) {
-        if ($(selector).hasClass('select2-hidden-accessible')) {
-            $(selector).select2('destroy');
-        }
+        if ($(selector).hasClass('select2-hidden-accessible')) $(selector).select2('destroy');
     }
-    
-    // Populate Select2 controls for Add Form
+
     function initAddFormSelect2() {
-        destroySelect2('#treasurySelect');
-        destroySelect2('#connectionSelect');
-        destroySelect2('#followupSelect');
-        destroySelect2('#linkStatus');
-        destroySelect2('#resolveStatus');
-        
+        destroySelect2('#treasurySelect'); destroySelect2('#connectionSelect');
+        destroySelect2('#followupSelect'); destroySelect2('#linkStatus'); destroySelect2('#resolveStatus');
         $('#treasurySelect').empty().append('<option></option>');
-        treasuryOptions.forEach(opt => { 
-            $('#treasurySelect').append(`<option value="${escapeHtml(opt.id)}">${escapeHtml(opt.text)}</option>`);
-        });
-        
+        treasuryOptions.forEach(opt => $('#treasurySelect').append(`<option value="${escapeHtml(opt.id)}">${escapeHtml(opt.text)}</option>`));
         $('#connectionSelect').empty().append('<option></option>');
-        connectionOptions.forEach(opt => { 
-            $('#connectionSelect').append(`<option value="${escapeHtml(opt.id)}">${escapeHtml(opt.text)}</option>`);
-        });
-        
+        connectionOptions.forEach(opt => $('#connectionSelect').append(`<option value="${escapeHtml(opt.id)}">${escapeHtml(opt.text)}</option>`));
         $('#followupSelect').empty().append('<option></option>');
-        followupOptions.forEach(opt => { 
-            $('#followupSelect').append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`);
-        });
-        
+        followupOptions.forEach(opt => $('#followupSelect').append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`));
         $('#linkStatus').empty().append('<option></option>');
-        linkStatusOptions.forEach(opt => { 
-            $('#linkStatus').append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`);
-        });
-        
+        linkStatusOptions.forEach(opt => $('#linkStatus').append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`));
         $('#resolveStatus').empty().append('<option></option>');
-        resolveStatusOptions.forEach(opt => { 
-            $('#resolveStatus').append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`);
-        });
-        
+        resolveStatusOptions.forEach(opt => $('#resolveStatus').append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`));
         $('#treasurySelect').select2({ theme: "bootstrap-5", placeholder: "Select Treasury", allowClear: true, width: '100%' });
         $('#connectionSelect').select2({ theme: "bootstrap-5", placeholder: "Select Connection (ISP)", allowClear: true, width: '100%' });
         $('#followupSelect').select2({ theme: "bootstrap-5", placeholder: "Select action type", allowClear: true, width: '100%' });
         $('#linkStatus').select2({ theme: "bootstrap-5", placeholder: "Select status", width: '100%' });
         $('#resolveStatus').select2({ theme: "bootstrap-5", placeholder: "Select status", width: '100%' });
-        
         $('#linkStatus').val("Link Down").trigger('change');
         $('#resolveStatus').val("Pending").trigger('change');
     }
-    
-    // Populate Select2 controls for Edit Modal
+
     function initEditModalSelect2() {
-        destroySelect2('#editTreasurySelect');
-        destroySelect2('#editConnectionSelect');
-        destroySelect2('#editFollowupSelect');
-        destroySelect2('#editLinkStatus');
-        destroySelect2('#editResolveStatus');
-        
+        destroySelect2('#editTreasurySelect'); destroySelect2('#editConnectionSelect');
+        destroySelect2('#editFollowupSelect'); destroySelect2('#editLinkStatus'); destroySelect2('#editResolveStatus');
         $('#editTreasurySelect').empty().append('<option></option>');
-        treasuryOptions.forEach(opt => { 
-            $('#editTreasurySelect').append(`<option value="${escapeHtml(opt.id)}">${escapeHtml(opt.text)}</option>`);
-        });
-        
+        treasuryOptions.forEach(opt => $('#editTreasurySelect').append(`<option value="${escapeHtml(opt.id)}">${escapeHtml(opt.text)}</option>`));
         $('#editConnectionSelect').empty().append('<option></option>');
-        connectionOptions.forEach(opt => { 
-            $('#editConnectionSelect').append(`<option value="${escapeHtml(opt.id)}">${escapeHtml(opt.text)}</option>`);
-        });
-        
+        connectionOptions.forEach(opt => $('#editConnectionSelect').append(`<option value="${escapeHtml(opt.id)}">${escapeHtml(opt.text)}</option>`));
         $('#editFollowupSelect').empty().append('<option></option>');
-        followupOptions.forEach(opt => { 
-            $('#editFollowupSelect').append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`);
-        });
-        
+        followupOptions.forEach(opt => $('#editFollowupSelect').append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`));
         $('#editLinkStatus').empty().append('<option></option>');
-        linkStatusOptions.forEach(opt => { 
-            $('#editLinkStatus').append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`);
-        });
-        
+        linkStatusOptions.forEach(opt => $('#editLinkStatus').append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`));
         $('#editResolveStatus').empty().append('<option></option>');
-        resolveStatusOptions.forEach(opt => { 
-            $('#editResolveStatus').append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`);
-        });
-        
+        resolveStatusOptions.forEach(opt => $('#editResolveStatus').append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`));
         $('#editTreasurySelect').select2({ theme: "bootstrap-5", placeholder: "Select Treasury", allowClear: true, dropdownParent: $('#editModal'), width: '100%' });
         $('#editConnectionSelect').select2({ theme: "bootstrap-5", placeholder: "Select Connection", allowClear: true, dropdownParent: $('#editModal'), width: '100%' });
         $('#editFollowupSelect').select2({ theme: "bootstrap-5", placeholder: "Select action", allowClear: true, dropdownParent: $('#editModal'), width: '100%' });
         $('#editLinkStatus').select2({ theme: "bootstrap-5", placeholder: "Select status", dropdownParent: $('#editModal'), width: '100%' });
         $('#editResolveStatus').select2({ theme: "bootstrap-5", placeholder: "Select status", dropdownParent: $('#editModal'), width: '100%' });
-        
         $('#editLinkStatus').val("Link Down").trigger('change');
         $('#editResolveStatus').val("Pending").trigger('change');
     }
-    
-    // NO-CORS write operations
+
+    // ---------- dynamic status label update ----------
+    function updateStatusLabel() {
+        const conn = $('#connectionSelect').val() || '';
+        const linkStat = $('#linkStatus').val() || '';
+        const treasury = $('#treasurySelect option:selected').text() || '';
+        const circuit = $('#circuitId').val() || '';
+        const callDate = $('#callDate').val() || '';
+        const followSel = $('#followupSelect').val() || '';
+        const followText = $('#followupText').val() || '';
+        const followCombined = followSel + (followText ? '  ' + followText : '');
+        let parts = [];
+        if (conn) parts.push(conn);
+        if (linkStat) parts.push(linkStat);
+        if (treasury) parts.push('at ' + treasury);
+        if (circuit) parts.push('(with Circuit/Tele: ' + circuit + ' )');
+        if (callDate) parts.push('dated ' + callDate);
+        if (followCombined) parts.push('. ' + followCombined);
+        let display = parts.length ? parts.join(' ') : 'Select options to generate status';
+        $('#statusDisplayText').text(display);
+    }
+
+    // ---------- copy status text ----------
+    $('#copyStatusBtn').on('click', function() {
+        const text = $('#statusDisplayText').text();
+        if (text && text !== 'Select options to generate status') {
+            navigator.clipboard.writeText(text).then(() => {
+                Swal.fire({ icon: 'success', title: 'Copied!', text: 'Status copied to clipboard', timer: 1200, showConfirmButton: false });
+            }).catch(() => {
+                // fallback
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                ta.remove();
+                Swal.fire({ icon: 'success', title: 'Copied!', timer: 1200, showConfirmButton: false });
+            });
+        } else {
+            Swal.fire({ icon: 'info', title: 'Nothing to copy', text: 'Please select options first.' });
+        }
+    });
+
+    // ---------- form submit & reset ----------
     async function saveRecordNoCors(recordData, isUpdate = false, rowId = null) {
         const action = isUpdate ? "UPDATE_FAULT" : "ADD_FAULT";
         const payload = { action, sheetName: SHEET_FAULTS, data: recordData, rowId: rowId };
         showLoading(isUpdate ? "Updating..." : "Adding record...");
-        
         try {
-            await fetch(APPS_SCRIPT_URL, { 
-                method: "POST", 
-                mode: "no-cors",
-                cache: "no-cache",
-                headers: { "Content-Type": "application/json" }, 
-                body: JSON.stringify(payload) 
-            });
+            await fetch(APPS_SCRIPT_URL, { method: "POST", mode: "no-cors", cache: "no-cache", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
             hideLoading();
-            Swal.fire({
-                icon: "success",
-                title: isUpdate ? "Updated!" : "Added!",
-                text: "Record saved successfully. Refresh the list to see changes.",
-                timer: 2000,
-                showConfirmButton: false
-            });
+            Swal.fire({ icon: "success", title: isUpdate ? "Updated!" : "Added!", text: "Record saved successfully. Refresh the list to see changes.", timer: 2000, showConfirmButton: false });
             return true;
         } catch(err) {
             hideLoading();
@@ -570,11 +479,10 @@
             return false;
         }
     }
-    
+
     async function deleteRecordNoCors(rowId, refNo) {
         const confirm = await Swal.fire({ title: `Delete ${refNo}?`, text: "This action cannot be undone", icon: "warning", showCancelButton: true, confirmButtonColor: "#dc2626", confirmButtonText: "Yes, delete" });
         if(!confirm.isConfirmed) return false;
-        
         const payload = { action: "DELETE_FAULT", sheetName: SHEET_FAULTS, rowId: rowId };
         showLoading("Deleting...");
         try {
@@ -588,8 +496,7 @@
             return false;
         }
     }
-    
-    // Add form submit
+
     $('#faultForm').on('submit', async function(e) {
         e.preventDefault();
         const treasuryCode = $('#treasurySelect').val();
@@ -599,13 +506,11 @@
         if(!connection) { Swal.fire("Required", "Select Connection", "warning"); return; }
         const callDate = $('#callDate').val();
         if(!callDate) { Swal.fire("Required", "Call Registered Date", "warning"); return; }
-        
         let followupCombined = "";
         const followBase = $('#followupSelect').val();
         const followExtra = $('#followupText').val().trim();
         if(followBase) followupCombined = followBase + (followExtra ? " " + followExtra : "");
         else if(followExtra) followupCombined = followExtra;
-        
         const record = {
             treasuryName: treasuryName,
             connection: connection,
@@ -616,200 +521,10 @@
             linkStatus: $('#linkStatus').val(),
             resolveStatus: $('#resolveStatus').val()
         };
-        
         const success = await saveRecordNoCors(record, false, null);
-        if(success) {
-            resetForm();
-            // Reload records if table is already loaded
-            if (isTableLoaded) {
-                await loadFilteredFaultRecords();
-                updateTableWithFilter();
-            }
-        }
+        if(success) { resetForm(); if (isTableLoaded) { await loadFilteredFaultRecords(); updateTableWithFilter(); } }
     });
-    
-    // Edit modal - open with record data
-    async function openEditModal(record) {
-        initEditModalSelect2();
-        
-        $('#editRowId').val(record.rowIndex);
-        const treasuryItem = treasuryOptions.find(t => t.text === record.treasuryName);
-        if(treasuryItem) $('#editTreasurySelect').val(treasuryItem.id).trigger('change');
-        else $('#editTreasurySelect').val(null).trigger('change');
-        
-        $('#editConnectionSelect').val(record.connection).trigger('change');
-        $('#editCircuitId').val(record.circuitId);
-        $('#editCallDate').val(record.callDate);
-        if(editFlatpickr) editFlatpickr.setDate(record.callDate, false);
-        
-        let matchedBase = followupOptions.find(f => record.lastFollowup && record.lastFollowup.startsWith(f));
-        if(matchedBase) {
-            $('#editFollowupSelect').val(matchedBase).trigger('change');
-            let rest = record.lastFollowup.substring(matchedBase.length).trim();
-            $('#editFollowupText').val(rest);
-        } else {
-            $('#editFollowupSelect').val(null).trigger('change');
-            $('#editFollowupText').val(record.lastFollowup || '');
-        }
-        $('#editRemarks').val(record.remarks);
-        $('#editLinkStatus').val(record.linkStatus || 'Link Down').trigger('change');
-        $('#editResolveStatus').val(record.resolveStatus || 'Pending').trigger('change');
-        
-        $('#editModal').modal('show');
-    }
-    
-    // Update via modal
-    $('#confirmUpdateBtn').on('click', async function() {
-        const rowId = $('#editRowId').val();
-        const treasuryName = $('#editTreasurySelect option:selected').text();
-        if(!$('#editTreasurySelect').val()) { Swal.fire("Required", "Select Treasury", "warning"); return; }
-        const connection = $('#editConnectionSelect').val();
-        if(!connection) { Swal.fire("Required", "Select Connection", "warning"); return; }
-        const callDate = $('#editCallDate').val();
-        if(!callDate) { Swal.fire("Required", "Call Registered Date", "warning"); return; }
-        
-        let followupCombined = "";
-        const followBase = $('#editFollowupSelect').val();
-        const followExtra = $('#editFollowupText').val().trim();
-        if(followBase) followupCombined = followBase + (followExtra ? " " + followExtra : "");
-        else if(followExtra) followupCombined = followExtra;
-        
-        const record = {
-            treasuryName: treasuryName,
-            connection: connection,
-            circuitId: $('#editCircuitId').val() || "",
-            callDate: callDate,
-            lastFollowup: followupCombined,
-            remarks: $('#editRemarks').val() || "",
-            linkStatus: $('#editLinkStatus').val(),
-            resolveStatus: $('#editResolveStatus').val()
-        };
-        
-        const success = await saveRecordNoCors(record, true, parseInt(rowId));
-        if(success) {
-            $('#editModal').modal('hide');
-            if (isTableLoaded) {
-                await loadFilteredFaultRecords();
-                updateTableWithFilter();
-            }
-        }
-    });
-    
-    // Auto-fetch circuit on connection change
-    $('#connectionSelect').on('change', async function() {
-        const conn = $(this).val();
-        const treasuryCode = $('#treasurySelect').val();
-        const treasuryName = $('#treasurySelect option:selected').text();
-        if(conn && treasuryCode) {
-            const circuit = await autoFetchCircuitId(conn, treasuryCode, treasuryName);
-            $('#circuitId').val(circuit);
-        }
-    });
-    
-    $(document).on('change', '#editConnectionSelect', async function() {
-        const conn = $(this).val();
-        const treasuryCode = $('#editTreasurySelect').val();
-        const treasuryName = $('#editTreasurySelect option:selected').text();
-        if(conn && treasuryCode) {
-            const circuit = await autoFetchCircuitId(conn, treasuryCode, treasuryName);
-            $('#editCircuitId').val(circuit);
-        }
-    });
-    
-    // Update the DataTable with filtered records
-    function updateTableWithFilter() {
-        if (dataTable) {
-            dataTable.clear();
-            dataTable.rows.add(filteredRecords);
-            dataTable.draw();
-        }
-        
-        // Update record count display
-        const selectedFilter = $('#resolveStatusFilter').val();
-        const countText = filteredRecords.length === 1 ? "1 record" : `${filteredRecords.length} records`;
-        const filterText = selectedFilter === "ALL" ? "Showing all" : `Showing ${countText} with status: ${selectedFilter}`;
-        $('#filterRecordCount').text(filterText);
-    }
-    
-    // Populate filter dropdown with resolve status options
-    function populateFilterDropdown() {
-        const filterSelect = $('#resolveStatusFilter');
-        filterSelect.empty();
-        
-        // Add ALL option
-        filterSelect.append('<option value="ALL">-- All Records --</option>');
-        
-        // Add special "Pending (Including Blank)" option first (default)
-        filterSelect.append('<option value="Pending (Including Blank)" selected>⏳ Pending </option>');
-        
-        // Add all resolve status options from sheet
-        resolveStatusOptions.forEach(opt => {
-            if (opt !== "Pending") {
-                filterSelect.append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`);
-            }
-        });
-        
-        // Initialize Select2 for filter dropdown
-        if ($('#resolveStatusFilter').hasClass('select2-hidden-accessible')) {
-            $('#resolveStatusFilter').select2('destroy');
-        }
-        $('#resolveStatusFilter').select2({
-            theme: "bootstrap-5",
-            placeholder: "Filter by status",
-            width: '250px'
-        });
-        
-        // Set default value to "Pending (Including Blank)"
-        $('#resolveStatusFilter').val("Pending (Including Blank)").trigger('change');
-    }
-    
-    // Filter change handler
-    $('#resolveStatusFilter').on('change', function() {
-        // Update count display to show what would be loaded
-        if (faultRecords.length > 0 && isTableLoaded) {
-            const filtered = filterRecordsByStatus(faultRecords, $(this).val());
-            const countText = filtered.length === 1 ? "1 record" : `${filtered.length} records`;
-            $('#filterRecordCount').text(`Showing ${countText} with status: ${$(this).val()}`);
-        } else {
-            // Just show count of what would be loaded
-            const selectedFilter = $(this).val();
-            $('#filterRecordCount').text(`Click "View" to load records with status: ${selectedFilter}`);
-        }
-    });
-    
-    // View button - load records based on selected filter
-    $('#viewFilterBtn').on('click', async function() {
-        const btn = $(this);
-        btn.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Loading...');
-        
-        try {
-            await loadFilteredFaultRecords();
-            
-            if (!isTableLoaded) {
-                // First time loading - initialize DataTable
-                initDataTable();
-                isTableLoaded = true;
-            }
-            
-            updateTableWithFilter();
-        } catch (error) {
-            console.error("Error loading records:", error);
-            Swal.fire("Error", "Failed to load records. Please try again.", "error");
-        } finally {
-            btn.prop('disabled', false).html('<i class="bi bi-eye"></i> View');
-        }
-    });
-    
-    $('#clearFilterBtn').on('click', function() {
-        $('#resolveStatusFilter').val("Pending (Including Blank)").trigger('change');
-        if (isTableLoaded) {
-            // Reload with pending filter
-            loadFilteredFaultRecords().then(() => {
-                updateTableWithFilter();
-            });
-        }
-    });
-    
+
     function resetForm() {
         $('#faultForm')[0].reset();
         $('#circuitId').val('');
@@ -821,21 +536,97 @@
         $('#linkStatus').val('Link Down').trigger('change');
         $('#resolveStatus').val('Pending').trigger('change');
         if(flatpickrInstance) flatpickrInstance.setDate(new Date(), true);
+        updateStatusLabel();
     }
-    
-    async function refreshTableAndRecords() {
-        if (isTableLoaded) {
-            await loadFilteredFaultRecords();
-            updateTableWithFilter();
+    $('#clearFormBtn').on('click', resetForm);
+
+    // ---------- data table & filter ----------
+    function parseFaultRecords(rows) {
+        if(!rows || rows.length < 2) return [];
+        const records = [];
+        for(let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if(row.length > 0 && row[0] && row[0].toString().trim() !== "") {
+                records.push({
+                    rowIndex: i + 1,
+                    refNo: row[0] || "",
+                    treasuryName: row[1] || "",
+                    connection: row[2] || "",
+                    circuitId: row[3] || "",
+                    callDate: row[4] || "",
+                    lastFollowup: row[5] || "",
+                    remarks: row[6] || "",
+                    linkStatus: row[7] || "",
+                    resolveStatus: row[8] || ""
+                });
+            }
+        }
+        records.sort((a,b) => (parseFloat(a.refNo)||0) - (parseFloat(b.refNo)||0));
+        return records;
+    }
+
+    function filterRecordsByStatus(records, statusFilter) {
+        if (statusFilter === "ALL") return [...records];
+        if (statusFilter === "Pending (Including Blank)") return records.filter(r => isPendingStatus(r.resolveStatus));
+        return records.filter(r => r.resolveStatus === statusFilter);
+    }
+
+    async function loadFilteredFaultRecords() {
+        const filter = { type: $('#resolveStatusFilter').val() === "ALL" ? "ALL" : $('#resolveStatusFilter').val() === "Pending (Including Blank)" ? "PENDING" : "EXACT", value: $('#resolveStatusFilter').val() };
+        showLoading("Loading records...");
+        try {
+            let url = `${APPS_SCRIPT_URL}?action=GET_FAULTS&sheetName=${SHEET_FAULTS}`;
+            if (filter.type === "PENDING") url += `&filter=PENDING`;
+            else if (filter.type === "EXACT") url += `&filter=EXACT&status=${encodeURIComponent(filter.value)}`;
+            const response = await fetch(url, { method: "GET", cache: "no-cache" });
+            const data = await response.json();
+            hideLoading();
+            if (data && data.records) {
+                faultRecords = data.records;
+                filteredRecords = [...faultRecords];
+                return faultRecords;
+            } else {
+                const rows = await fetchSheetDataDirect(SHEET_FAULTS, "A:I");
+                const records = parseFaultRecords(rows);
+                faultRecords = records;
+                filteredRecords = filterRecordsByStatus(records, $('#resolveStatusFilter').val());
+                return filteredRecords;
+            }
+        } catch (error) {
+            console.error("Error loading filtered records:", error);
+            const rows = await fetchSheetDataDirect(SHEET_FAULTS, "A:I");
+            const records = parseFaultRecords(rows);
+            faultRecords = records;
+            filteredRecords = filterRecordsByStatus(records, $('#resolveStatusFilter').val());
+            hideLoading();
+            return filteredRecords;
         }
     }
-    
+
+    function updateTableWithFilter() {
+        if (dataTable) {
+            dataTable.clear();
+            dataTable.rows.add(filteredRecords);
+            dataTable.draw();
+        }
+        const selectedFilter = $('#resolveStatusFilter').val();
+        const countText = filteredRecords.length === 1 ? "1 record" : `${filteredRecords.length} records`;
+        $('#filterRecordCount').text(selectedFilter === "ALL" ? "Showing all" : `Showing ${countText} with status: ${selectedFilter}`);
+    }
+
+    function populateFilterDropdown() {
+        const filterSelect = $('#resolveStatusFilter');
+        filterSelect.empty();
+        filterSelect.append('<option value="ALL">-- All Records --</option>');
+        filterSelect.append('<option value="Pending (Including Blank)" selected>⏳ Pending </option>');
+        resolveStatusOptions.forEach(opt => { if (opt !== "Pending") filterSelect.append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`); });
+        if ($('#resolveStatusFilter').hasClass('select2-hidden-accessible')) $('#resolveStatusFilter').select2('destroy');
+        $('#resolveStatusFilter').select2({ theme: "bootstrap-5", placeholder: "Filter by status", width: '250px' });
+        $('#resolveStatusFilter').val("Pending (Including Blank)").trigger('change');
+    }
+
     function initDataTable() {
-        if(dataTable) {
-            dataTable.destroy();
-            dataTable = null;
-        }
-        
+        if(dataTable) { dataTable.destroy(); dataTable = null; }
         dataTable = $('#faultsTable').DataTable({
             data: [],
             columns: [
@@ -852,7 +643,7 @@
             ],
             order: [[0, 'asc']],
             pageLength: 25,
-            drawCallback: function() { 
+            drawCallback: function() {
                 $('.edit-record-btn').off('click').on('click', function() {
                     const rowIdx = $(this).data('rowidx');
                     const record = filteredRecords.find(r => r.rowIndex === rowIdx);
@@ -862,74 +653,143 @@
                     const rowIdx = $(this).data('rowidx');
                     const ref = $(this).data('ref');
                     const success = await deleteRecordNoCors(rowIdx, ref);
-                    if(success) {
-                        if (isTableLoaded) {
-                            await loadFilteredFaultRecords();
-                            updateTableWithFilter();
-                        }
-                    }
+                    if(success) { if (isTableLoaded) { await loadFilteredFaultRecords(); updateTableWithFilter(); } }
                 });
             }
         });
     }
-    
-    function initFlatpickr() {
-        flatpickrInstance = flatpickr("#callDate", { dateFormat: "d/m/Y", defaultDate: new Date() });
-        editFlatpickr = flatpickr("#editCallDate", { dateFormat: "d/m/Y", defaultDate: new Date() });
+
+    // ---------- edit modal ----------
+    async function openEditModal(record) {
+        initEditModalSelect2();
+        $('#editRowId').val(record.rowIndex);
+        const treasuryItem = treasuryOptions.find(t => t.text === record.treasuryName);
+        if(treasuryItem) $('#editTreasurySelect').val(treasuryItem.id).trigger('change');
+        else $('#editTreasurySelect').val(null).trigger('change');
+        $('#editConnectionSelect').val(record.connection).trigger('change');
+        $('#editCircuitId').val(record.circuitId);
+        $('#editCallDate').val(record.callDate);
+        if(editFlatpickr) editFlatpickr.setDate(record.callDate, false);
+        let matchedBase = followupOptions.find(f => record.lastFollowup && record.lastFollowup.startsWith(f));
+        if(matchedBase) {
+            $('#editFollowupSelect').val(matchedBase).trigger('change');
+            let rest = record.lastFollowup.substring(matchedBase.length).trim();
+            $('#editFollowupText').val(rest);
+        } else {
+            $('#editFollowupSelect').val(null).trigger('change');
+            $('#editFollowupText').val(record.lastFollowup || '');
+        }
+        $('#editRemarks').val(record.remarks);
+        $('#editLinkStatus').val(record.linkStatus || 'Link Down').trigger('change');
+        $('#editResolveStatus').val(record.resolveStatus || 'Pending').trigger('change');
+        $('#editModal').modal('show');
     }
-    
+
+    $('#confirmUpdateBtn').on('click', async function() {
+        const rowId = $('#editRowId').val();
+        const treasuryName = $('#editTreasurySelect option:selected').text();
+        if(!$('#editTreasurySelect').val()) { Swal.fire("Required", "Select Treasury", "warning"); return; }
+        const connection = $('#editConnectionSelect').val();
+        if(!connection) { Swal.fire("Required", "Select Connection", "warning"); return; }
+        const callDate = $('#editCallDate').val();
+        if(!callDate) { Swal.fire("Required", "Call Registered Date", "warning"); return; }
+        let followupCombined = "";
+        const followBase = $('#editFollowupSelect').val();
+        const followExtra = $('#editFollowupText').val().trim();
+        if(followBase) followupCombined = followBase + (followExtra ? " " + followExtra : "");
+        else if(followExtra) followupCombined = followExtra;
+        const record = {
+            treasuryName: treasuryName,
+            connection: connection,
+            circuitId: $('#editCircuitId').val() || "",
+            callDate: callDate,
+            lastFollowup: followupCombined,
+            remarks: $('#editRemarks').val() || "",
+            linkStatus: $('#editLinkStatus').val(),
+            resolveStatus: $('#editResolveStatus').val()
+        };
+        const success = await saveRecordNoCors(record, true, parseInt(rowId));
+        if(success) {
+            $('#editModal').modal('hide');
+            if (isTableLoaded) { await loadFilteredFaultRecords(); updateTableWithFilter(); }
+        }
+    });
+
+    // ---------- auto fetch circuit on change ----------
+    $('#connectionSelect').on('change', async function() {
+        const conn = $(this).val();
+        const treasuryCode = $('#treasurySelect').val();
+        const treasuryName = $('#treasurySelect option:selected').text();
+        if(conn && treasuryCode) {
+            const circuit = await autoFetchCircuitId(conn, treasuryCode, treasuryName);
+            $('#circuitId').val(circuit);
+        }
+        updateStatusLabel();
+    });
+    $(document).on('change', '#editConnectionSelect', async function() {
+        const conn = $(this).val();
+        const treasuryCode = $('#editTreasurySelect').val();
+        const treasuryName = $('#editTreasurySelect option:selected').text();
+        if(conn && treasuryCode) {
+            const circuit = await autoFetchCircuitId(conn, treasuryCode, treasuryName);
+            $('#editCircuitId').val(circuit);
+        }
+    });
+    // update label on any change
+    $('#treasurySelect, #connectionSelect, #circuitId, #callDate, #followupSelect, #followupText, #linkStatus, #resolveStatus').on('change input', function() {
+        updateStatusLabel();
+    });
+
+    // ---------- view / refresh / filter ----------
+    $('#viewFilterBtn').on('click', async function() {
+        const btn = $(this);
+        btn.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Loading...');
+        try {
+            await loadFilteredFaultRecords();
+            if (!isTableLoaded) { initDataTable(); isTableLoaded = true; }
+            updateTableWithFilter();
+        } catch (error) { console.error("Error loading records:", error); Swal.fire("Error", "Failed to load records.", "error"); }
+        finally { btn.prop('disabled', false).html('<i class="bi bi-eye"></i> View'); }
+    });
+    $('#clearFilterBtn').on('click', function() {
+        $('#resolveStatusFilter').val("Pending (Including Blank)").trigger('change');
+        if (isTableLoaded) { loadFilteredFaultRecords().then(() => { updateTableWithFilter(); }); }
+    });
+    $('#refreshTableBtn').on('click', async () => { if (isTableLoaded) { await refreshTableAndRecords(); } });
+    async function refreshTableAndRecords() { if (isTableLoaded) { await loadFilteredFaultRecords(); updateTableWithFilter(); } }
+
+    // ---------- tab switch ----------
     function switchTab(tabId) {
         if(tabId === 'add') {
             $("#addPane").addClass("active-pane");
             $("#listPane").removeClass("active-pane");
             $("#tabAddBtn").addClass("active");
             $("#tabListBtn").removeClass("active");
-            if (isMetadataLoaded) {
-                setTimeout(function() { initAddFormSelect2(); }, 100);
-            }
+            if (isMetadataLoaded) setTimeout(() => { initAddFormSelect2(); }, 100);
         } else {
             $("#listPane").addClass("active-pane");
             $("#addPane").removeClass("active-pane");
             $("#tabListBtn").addClass("active");
             $("#tabAddBtn").removeClass("active");
-            // Update filter count display
-            if (isTableLoaded) {
-                updateTableWithFilter();
-            } else {
-                const selectedFilter = $('#resolveStatusFilter').val();
-                $('#filterRecordCount').text(`Click "View" to load records with status: ${selectedFilter}`);
-            }
+            if (isTableLoaded) updateTableWithFilter();
+            else $('#filterRecordCount').text(`Click "View" to load records with status: ${$('#resolveStatusFilter').val()}`);
         }
     }
-    
-    $('#clearFormBtn').on('click', resetForm);
-    $('#refreshTableBtn').on('click', async () => { 
-        if (isTableLoaded) {
-            await refreshTableAndRecords();
-        }
-    });
     $('#tabAddBtn').on('click', () => { switchTab('add'); resetForm(); });
     $('#tabListBtn').on('click', () => { switchTab('list'); });
-    
+
+    // ---------- init ----------
     $(async function() {
-        // Only load metadata (dropdown options) initially
         showLoading("Loading form data...");
         await loadMetadata();
         hideLoading();
-        
-        // Initialize only Add form related components
         initAddFormSelect2();
-        initFlatpickr();
+        flatpickrInstance = flatpickr("#callDate", { dateFormat: "d/m/Y", defaultDate: new Date() });
+        editFlatpickr = flatpickr("#editCallDate", { dateFormat: "d/m/Y", defaultDate: new Date() });
         resetForm();
-        
-        // Populate filter dropdown with available status options
         populateFilterDropdown();
-        
-        // Set initial filter count message
         $('#filterRecordCount').text('Click "View" to load records');
-        
-        // DO NOT load fault records or initialize DataTable on page load
-        // This will happen only when user clicks "View" button
+        updateStatusLabel();
     });
 </script>
 </body>
