@@ -1452,15 +1452,16 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
 }
 
 .stat-card {
-    background: #fff;
+    background: #ffffff42;
     border-radius: 20px;
     padding: 20px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-    border: 1px solid var(--border);
+   
     display: flex;
     align-items: center;
     gap: 15px;
     transition: transform 0.2s;
+	color: var(--primary);
 }
 
 .stat-card:hover {
@@ -1553,7 +1554,7 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
 
 .stat-info p {
     margin: 5px 0 0;
-    color: #64748b;
+  
     font-size: 0.9rem;
 }
 
@@ -1589,11 +1590,11 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
    TABLE CARDS
    ============================================================ */
 .table-card {
-    background: #fff;
+   
     border-radius: 24px;
     padding: 20px;
     box-shadow: 0 8px 25px rgba(0,0,0,0.05);
-    border: 1px solid var(--border);
+  
     overflow-x: auto;
 }
 
