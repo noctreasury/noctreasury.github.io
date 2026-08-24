@@ -119,6 +119,8 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
     box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
     overflow: hidden;
 	padding:20px;
+	backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 /* ============================================================
@@ -3510,11 +3512,15 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
 }
 
 .report-title-section {
-    background: #fff;
+  /*  background: #fff;*/
     padding: 15px 25px;
     border-bottom: 1px solid #e2e8f0;
+	color:var(--primary);
 }
-
+div.dataTables_wrapper div.dataTables_length label {
+  
+    color: var(--primary) !important;
+}
 .empty-cell {
     color: #94a3b8;
     font-style: italic;
