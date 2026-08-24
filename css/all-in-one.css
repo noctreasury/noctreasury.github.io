@@ -166,7 +166,7 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
 
 .form-label {
     font-weight: 600;
-    color: var(--dark);
+    color: var(--primary);
     margin-bottom: 8px;
     display: block;
 }
