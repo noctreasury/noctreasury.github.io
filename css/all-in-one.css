@@ -3621,7 +3621,8 @@ div.dataTables_wrapper div.dataTables_length label {
     border-radius: 12px !important;
     border: 1px solid #cbd5e1 !important;
     min-height: 42px;
-    background: #fff !important;
+    background: #fff0 !important;
+    color:var(--primary)!important;
 }
 
 .select2-container--bootstrap-5 .select2-selection:hover {
