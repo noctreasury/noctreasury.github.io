@@ -4578,9 +4578,9 @@ pre {
     display: block;
 }
 .status-message.info {
-    background: #07408833;
-    color: #1e40af;
-    border: 1px solid #bfdbfe;
+   background-color: #86868612;
+    border-color: #bae6fd2b;
+    color: #0369a1;
     display: block;
 }
 .status-message.waiting {
