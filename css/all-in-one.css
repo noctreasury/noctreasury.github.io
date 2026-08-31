@@ -199,8 +199,8 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
 .form-control:focus,
 .form-select:focus {
     outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(15, 91, 156, 0.1);
+   border-color: #86b7fe !important;
+  box-shadow: 0 0 0 0.25rem rgba(13
 }
 
 .form-control[readonly] {
