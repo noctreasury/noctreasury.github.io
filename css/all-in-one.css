@@ -1035,8 +1035,10 @@ body {
 }
 
 .nav-tabs {
-    border-bottom: 2px solid var(--border);
+   border-bottom: 1px solid #76b1ff42;
     margin-bottom: 25px;
+    padding: 0 24px;
+    display: flex;
 }
 
 .nav-tabs .nav-link {
@@ -1243,7 +1245,6 @@ body {
 .filter-section {
     padding: 15px 20px;
     color: var(--primary);
-    border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
     gap: 20px;
