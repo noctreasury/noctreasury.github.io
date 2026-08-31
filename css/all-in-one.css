@@ -3655,7 +3655,7 @@ div.dataTables_wrapper div.dataTables_length label {
 
 .select2-container--bootstrap-5 .select2-results__option--selected {
     background-color: #e8f0fe;
-    color: #0f5b9c;
+    color: #fff;
 }
 
 .select2-container--bootstrap-5 .select2-results__option--highlighted {
