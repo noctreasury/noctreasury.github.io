@@ -113,27 +113,58 @@ body {
     max-width: 100%;
     width: 100%;
     margin: 0 auto;
-    background: #fff3;
-    background: linear-gradient(to bottom, #ffffff36 0%, rgb(255 255 255 / 0%) 50%, rgb(255 255 255 / 0%) 90%, #ffffff17 100%);
+    /* Enhanced glass background with better light/dark compatibility */
+    background: rgba(255, 255, 255, 0.08);
+    background: linear-gradient(
+        165deg, 
+        rgba(255, 255, 255, 0.15) 0%, 
+        rgba(255, 255, 255, 0.05) 30%,
+        rgba(255, 255, 255, 0.02) 60%,
+        rgba(255, 255, 255, 0.08) 100%
+    );
     border-radius: 28px;
-    box-shadow: 0px 0px 35px -12px rgba(0, 0, 0, 0.1);
+    /* Multi-layered shadow for depth */
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.08),
+        0 2px 8px rgba(0, 0, 0, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
     overflow: hidden;
     padding: 20px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    /* Enhanced blur with subtle border */
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
 }
 .card-body {
-    max-width: 100%;
+   max-width: 100%;
     width: 100%;
     margin: 0 auto;
-    background: #fff3;
-    background: linear-gradient(to bottom, #ffffff36 0%, rgb(255 255 255 / 0%) 50%, rgb(255 255 255 / 0%) 90%, #ffffff17 100%);
+    /* Enhanced glass background with better light/dark compatibility */
+    background: rgba(255, 255, 255, 0.08);
+    background: linear-gradient(
+        165deg, 
+        rgba(255, 255, 255, 0.15) 0%, 
+        rgba(255, 255, 255, 0.05) 30%,
+        rgba(255, 255, 255, 0.02) 60%,
+        rgba(255, 255, 255, 0.08) 100%
+    );
     border-radius: 28px;
-    box-shadow: 0px 0px 35px -12px rgba(0, 0, 0, 0.1);
+    /* Multi-layered shadow for depth */
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.08),
+        0 2px 8px rgba(0, 0, 0, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
     overflow: hidden;
     padding: 20px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    /* Enhanced blur with subtle border */
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+
 }
 /* ============================================================
    REPORT CARDS
@@ -143,14 +174,30 @@ body {
     max-width: 100%;
     width: 100%;
     margin: 0 auto;
-    background: #fff3;
-    background: linear-gradient(to bottom, #ffffff36 0%, rgb(255 255 255 / 0%) 50%, rgb(255 255 255 / 0%) 90%, #ffffff17 100%);
+    /* Enhanced glass background with better light/dark compatibility */
+    background: rgba(255, 255, 255, 0.08);
+    background: linear-gradient(
+        165deg, 
+        rgba(255, 255, 255, 0.15) 0%, 
+        rgba(255, 255, 255, 0.05) 30%,
+        rgba(255, 255, 255, 0.02) 60%,
+        rgba(255, 255, 255, 0.08) 100%
+    );
     border-radius: 28px;
-    box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+    /* Multi-layered shadow for depth */
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.08),
+        0 2px 8px rgba(0, 0, 0, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
     overflow: hidden;
     padding: 20px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    /* Enhanced blur with subtle border */
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+
 }
 
 .report-container,
