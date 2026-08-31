@@ -470,7 +470,7 @@
         try {
             await fetch(APPS_SCRIPT_URL, { method: "POST", mode: "no-cors", cache: "no-cache", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
             hideLoading();
-            Swal.fire({ icon: "success", title: isUpdate ? "Updated!" : "Added!", text: "Record saved successfully. Refresh the list to see changes.", timer: 2000, showConfirmButton: false });
+            Swal.fire({ icon: "success", title: isUpdate ? "Updated!" : "Added!", text: "Record saved successfully. Refresh the list to see changes.", timer: 2000, showConfirmButton: true });
             return true;
         } catch(err) {
             hideLoading();
