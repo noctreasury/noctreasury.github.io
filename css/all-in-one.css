@@ -133,8 +133,8 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
     max-width: 100%;
     width: 100%;
     margin: 0 auto;
-    background: #fff3;
-	 background:linear-gradient(to bottom, #ffffff36 0%, rgba(255, 255, 255, 0.35) 50%, rgba(255, 255, 255, 0.08) 90%, #ffffff17 100%);
+      background: #fff3;
+	 background:linear-gradient(to bottom, #ffffff36 0%, rgb(255 255 255 / 0%) 50%, rgb(255 255 255 / 0%) 90%, #ffffff17 100%);
     border-radius: 28px;
     box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
     overflow: hidden;
@@ -3544,8 +3544,7 @@ div.dataTables_wrapper div.dataTables_length label {
 
 .package-name {
     font-weight: 600;
-    color: var(--dark);
-}
+    }
 
 .lan-pool-badge {
     background-color: #e6f0fa;
