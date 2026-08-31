@@ -3618,7 +3618,7 @@ div.dataTables_wrapper div.dataTables_length label {
    ============================================================ */
 .select2-container--bootstrap-5 .select2-selection {
     border-radius: 12px !important;
-    border: 1px solid #cbd5e1 !important;
+    border: 1px solid #22b6ff6b !important;
     min-height: 42px;
     background: #fff0 !important;
     color:var(--primary)!important;
