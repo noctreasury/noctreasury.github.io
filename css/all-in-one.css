@@ -3681,7 +3681,9 @@ div.dataTables_wrapper div.dataTables_length label {
 .select2-container--bootstrap-5 .select2-dropdown {
     z-index: 1060 !important;
 }
-
+.list-group-item {
+  color: var(--primary)!important;
+}
 /* ============================================================
    FLATPICKR
    ============================================================ */
