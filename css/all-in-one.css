@@ -1809,7 +1809,7 @@ body {
 .branch-selector-container label {
     font-weight: 600;
     margin-bottom: 0;
-    color: #0f172a;
+    color: var(--primary);
 }
 
 .branch-selector-container select {
