@@ -2047,7 +2047,7 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
     align-items: center;
     justify-content: center;
     z-index: 10000;
-    backdrop-filter: none !important;
+    backdrop-filter: blur(22px) !important;
 }
 
 .loading-content {
