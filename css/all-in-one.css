@@ -3627,6 +3627,7 @@ div.dataTables_wrapper div.dataTables_length label {
 
 .select2-container--bootstrap-5 .select2-selection:hover {
     border-color: #86b7fe !important;
+    color:var(--primary)!important;
 }
 
 .select2-container--bootstrap-5.select2-container--focus .select2-selection {
@@ -3653,17 +3654,17 @@ div.dataTables_wrapper div.dataTables_length label {
         color: var(--primary)!important;
 }
 .select2-container--bootstrap-5 .select2-results__option[aria-selected=true] {
-    color: #fff!important;
+    color: #fff !important;
 
 }
 .select2-container--bootstrap-5 .select2-results__option--selected {
     background-color: #e8f0fe;
-    color: #fff;
+    color: #fff !important;
 }
 
 .select2-container--bootstrap-5 .select2-results__option--highlighted {
     background-color: var(--primary)!important;
-    color: #fff;
+    color: #fff !important;
 }
 
 .select2-container--bootstrap-5 .select2-selection__choice {
