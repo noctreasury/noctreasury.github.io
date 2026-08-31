@@ -3784,7 +3784,7 @@ div.dataTables_wrapper div.dataTables_length label {
 }
 
 .waiting-modal .modal-footer {
-    border-top: none;
+    border-top: solid 1px  #88888838 !important;
     padding-top: 0;
 }
 
