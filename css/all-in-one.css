@@ -3650,7 +3650,7 @@ div.dataTables_wrapper div.dataTables_length label {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 .select2-container--bootstrap-5 .select2-results__option {
-        color: var(--primary)!important;
+        color: #000!important;
 }
 
 .select2-container--bootstrap-5 .select2-results__option--selected {
