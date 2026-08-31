@@ -1919,8 +1919,7 @@ body {
 }
 
 .bulk-actions {
-    background: #f8fafc;
-    padding: 12px 15px;
+       padding: 12px 15px;
     border-radius: 12px;
     margin: 10px 0;
     display: flex;
