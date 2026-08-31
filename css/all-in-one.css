@@ -192,7 +192,8 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
     padding: 10px 15px;
     width: 100%;
     transition: all 0.2s;
-    background: #fff;
+    background: #fff0;
+    color: var(--primary)!important;
 }
 
 .form-control:focus,
