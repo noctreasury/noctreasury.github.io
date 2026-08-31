@@ -1186,6 +1186,56 @@ body {
     font-size: 0.9rem;
     padding-top: 15px;
 }
+/* ============================================================
+   PAGINATION PAGE-LINK BUTTONS
+   ============================================================ */
+.page-link {
+    background: linear-gradient(to bottom, #ffffff36 0%, rgb(167 167 167 / 23%) 50%, rgb(68 67 67 / 22%) 90%, #ffffff17 100%) !important;
+    border: solid 1px #ffffff2b !important;
+    color: var(--primary) !important;
+    transition: all 0.3s ease !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+/* Hover effect */
+.page-link:hover {
+    background:  linear-gradient(to bottom, #ffffff36 0%, rgb(167 167 167 / 23%) 50%, rgb(68 67 67 / 22%) 90%, #ffffff17 100%) !important;
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.2) !important;
+}
+
+/* Active page */
+.page-item.active .page-link {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%) !important;
+    border-color: var(--primary) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3) !important;
+}
+
+/* Active page hover */
+.page-item.active .page-link:hover {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4) !important;
+}
+
+/* Disabled state */
+.page-item.disabled .page-link {
+    background: linear-gradient(to bottom, #ffffff15 0%, rgba(255, 255, 255, 0.02) 50%, rgba(255, 255, 255, 0) 90%, #ffffff08 100%) !important;
+    border-color: #ffffff15 !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
+}
+
+/* Hover for disabled - no transform */
+.page-item.disabled .page-link:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
 
 /* ============================================================
    FILTERS
