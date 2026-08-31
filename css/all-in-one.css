@@ -204,8 +204,7 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
 }
 
 .form-control[readonly] {
-    background-color: #f1f5f9;
-    cursor: not-allowed;
+       cursor: not-allowed;
 }
 
 .required::after {
@@ -3635,7 +3634,7 @@ div.dataTables_wrapper div.dataTables_length label {
 }
 
 .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
-    color: #1e293b;
+    color: var(--primary)!important;
     line-height: 28px;
 }
 
