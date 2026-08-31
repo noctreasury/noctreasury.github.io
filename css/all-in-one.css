@@ -4596,7 +4596,12 @@ pre {
     border-color: #bae6fd2b;
     color: #0369a1;
 }
+.alert-secondary{
+ background-color: #86868612;
+    border-color: #bae6fd2b;
+    color: #0369a1;
 
+}
 /* Chart */
 .chart-container {
     background: #ffffff;
