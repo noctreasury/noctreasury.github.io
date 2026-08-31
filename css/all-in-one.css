@@ -3521,7 +3521,7 @@ box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.1);
 .report-title-section {
   /*  background: #fff;*/
     padding: 15px 25px;
-    border-bottom: 1px solid #e2e8f0;
+  /*  border-bottom: 1px solid #e2e8f0;*/
 	color:var(--primary);
 }
 div.dataTables_wrapper div.dataTables_length label {
