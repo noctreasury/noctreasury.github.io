@@ -2554,7 +2554,6 @@ border: 1px solid #e9ecef38;
    TREASURY / BRANCH DISPLAY
    ============================================================ */
 .treasury-badge {
-    background: var(--primary-light);
     color: var(--primary);
     padding: 4px 12px;
     border-radius: 20px;
@@ -2858,17 +2857,7 @@ border: 1px solid #e9ecef38;
 /* ============================================================
    CIRCUIT / VPN IDs
    ============================================================ */
-.circuit-id-code {
-    font-family: monospace;
-    font-weight: 600;
-    background: #f0fdf4;
-    color: #0b5e42;
-    padding: 3px 8px;
-    border-radius: 20px;
-    display: inline-block;
-    font-size: 0.85rem;
-    border: 1px solid #d1fae5;
-}
+
 
 .circuit-id-empty {
     color: #94a3b8;
@@ -4870,7 +4859,7 @@ body.dark-theme .user-popup-avatar-large {
 }
 
 .treasury-badge {
-    background: var(--primary-light);
+    
     color: var(--primary);
     padding: 4px 12px;
     border-radius: 20px;
