@@ -178,6 +178,10 @@ body {
 /* ============================================================
    REPORT CARDS
    ============================================================ */
+.team-card{
+background: #ffffff1c!important;
+border: 1px solid #e9ecef29;
+}
 .report-card,
 .card-db {
     max-width: 100%;
