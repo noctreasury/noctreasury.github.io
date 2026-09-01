@@ -123,7 +123,7 @@
     
     function showLoading(msg) { 
         if($('#global-loading-overlay').length) return; 
-        $('body').append(`<div id="global-loading-overlay"><div style="background:white;padding:30px;border-radius:24px;text-align:center;"><i class="bi bi-arrow-repeat" style="font-size:48px;color:#0f3b5f;animation:spin 1s linear infinite;"></i><p>${msg}</p></div></div>`); 
+        $('body').append(`<div id="global-loading-overlay"><div class="loading-overlay"><i class="bi bi-arrow-repeat" style="font-size:48px;color:#0f3b5f;animation:spin 1s linear infinite;"></i><p>${msg}</p></div></div>`); 
     }
     function hideLoading() { $('#global-loading-overlay').remove(); }
     function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
