@@ -249,7 +249,7 @@ body {
     width: 100%;
     transition: all 0.2s;
     background: #fff0;
-    color: var(--primary) !important;
+    color: #64748b !important;
 }
 
 .form-control:focus,
