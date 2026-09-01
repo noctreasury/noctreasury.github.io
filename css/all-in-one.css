@@ -21,7 +21,14 @@
     --active-bg: #8abcff26;
     --scrollbar-track: #e9ecef00;
     --text-default: #64748b;
+ 
 }
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-default: #ffffff;
+  }
+}
+
 
 /* ============================================================
    RESET & BASE
