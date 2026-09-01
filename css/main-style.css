@@ -42,7 +42,7 @@ body.dark-theme {
     --navbar-start: rgb(32,33,36);
     --navbar-end: rgb(32,33,36);
     --text-primary: #f1f5f9;
-    --text-secondary: #e2e8f0;
+    --text-secondary: #94a3b8;
     --text-muted: #94a3b8;
     --border-color: #334155;
     --dropdown-bg: #1e293b;
@@ -55,7 +55,7 @@ body.dark-theme {
     --scrollbar-thumb: #475569;
     --scrollbar-thumb-hover: #0b5ed7;
     --logo-color: #8b5cf6;
-    --sidebar-bg: rgb(32,33,36);
+    --sidebar-bg: #0a0c10;
     --sidebar-border: #334155;
     --card-bg: #1e293b;
 }
@@ -348,7 +348,8 @@ input:checked + .slider .bi-moon {
 
 /* Menu Cards */
 .menu-card {
-    background: var(--card-bg);
+    /*background: var(--card-bg);*/
+	background: linear-gradient(165deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 30%, rgba(255, 255, 255, 0.02) 60%, rgba(255, 255, 255, 0.08) 100%);
     border: 1px solid var(--border-color);
     border-radius: 1rem;
     margin-bottom: 1rem;
