@@ -4417,7 +4417,7 @@ pre {
     padding: 3px 10px;
     font-size: 0.75rem;
     font-weight: 500;
-    color: #1e293b;
+    color: var(--text-default)!important;
     white-space: nowrap;
     display: inline-block;
 }
