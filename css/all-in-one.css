@@ -1208,7 +1208,7 @@ border: 1px solid #e9ecef38;
 .dataTables_wrapper .dataTables_length select {
     border-radius: 20px;
     padding: 6px 12px;
-    border: 1px solid #cbd5e1;
+    
     font-size: 0.8rem;
     height: 38px;
 }
