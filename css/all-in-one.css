@@ -20,6 +20,7 @@
     --vpn-light: #fef3c7;
     --active-bg: #8abcff26;
     --scrollbar-track: #e9ecef00;
+    --text-default: #64748b;
 }
 
 /* ============================================================
@@ -249,7 +250,7 @@ body {
     width: 100%;
     transition: all 0.2s;
     background: #fff0;
-    color: #64748b !important;
+    color: var(--text-default) !important;
 }
 
 .form-control:focus,
@@ -405,7 +406,7 @@ body {
 }
 
 .btn-secondary-custom {
-    background: #64748b;
+    background: var(--text-default);
     border: none;
     padding: 10px 24px;
     font-weight: 600;
@@ -707,7 +708,7 @@ body {
 }
 
 .btn-reset {
-    background: #64748b;
+    background: var(--text-default);
     border: none;
     padding: 12px 24px;
     font-weight: 700;
@@ -926,7 +927,7 @@ body {
     font-size: 0.7rem;
 }
 .badge-secondary {
-    background-color: #64748b;
+    background-color: var(--text-default);
     color: #fff;
     padding: 4px 10px;
     border-radius: 30px;
@@ -1056,7 +1057,7 @@ body {
 .nav-tabs-custom .nav-link {
     border: none;
     font-weight: 600;
-    color: #64748b;
+    color: var(--text-default);
     padding: 12px 28px;
     border-radius: 10px 10px 0 0;
     background: transparent;
@@ -1092,7 +1093,7 @@ body {
     border: none;
     font-weight: 600;
     padding: 12px 28px;
-    color: #64748b;
+    color: var(--text-default);
     transition: all 0.2s;
     border-radius: 12px 12px 0 0;
 }
@@ -1158,7 +1159,7 @@ body {
     padding: 10px 8px;
     vertical-align: middle;
     font-size: 0.85rem;
-    color: #64748b;
+    color: var(--text-default);
     border-bottom: 1px solid var(--border);
     border: 1px solid #73737352;
 }
@@ -1231,7 +1232,7 @@ body {
 }
 
 .dataTables_info {
-    color: #64748b;
+    color: var(--text-default);
     font-size: 0.9rem;
     padding-top: 15px;
 }
@@ -1464,7 +1465,7 @@ body {
 
 .stat-label {
     font-size: 0.7rem;
-    color: #64748b;
+    color: var(--text-default);
 }
 
 .stats-badge {
@@ -1827,7 +1828,7 @@ body {
 
 .ip-dot {
     font-weight: bold;
-    color: #64748b;
+    color: var(--text-default);
 }
 
 .ip-last-field {
@@ -2091,7 +2092,7 @@ body {
 
 .last-updated {
     font-size: 0.85rem;
-    color: #64748b;
+    color: var(--text-default);
 }
 
 .refresh-controls {
@@ -2581,7 +2582,7 @@ body {
 
 .branch-details p {
     margin: 5px 0 0;
-    color: #64748b;
+    color: var(--text-default);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -3329,7 +3330,7 @@ body {
 
 .timeline-date {
     font-size: 0.7rem;
-    color: #64748b;
+    color: var(--text-default);
     margin-bottom: 5px;
     display: flex;
     align-items: center;
@@ -3528,7 +3529,7 @@ body {
     font-size: 0.8rem;
 }
 .serial-cell {
-    color: #64748b;
+    color: var(--text-default);
     font-weight: 500;
     text-align: center;
 }
@@ -3681,7 +3682,7 @@ div.dataTables_wrapper div.dataTables_length label {
 
 .resend-timer {
     font-size: 0.8rem;
-    color: #64748b;
+    color: var(--text-default);
     text-align: center;
     margin-top: 10px;
 }
@@ -3708,7 +3709,7 @@ div.dataTables_wrapper div.dataTables_length label {
 }
 
 .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
-    color: var(--primary) !important;
+    color: var(--text-default) !important;
     line-height: 28px;
 }
 
@@ -4319,7 +4320,7 @@ code {
 }
 .html-hint {
     font-size: 0.75rem;
-    color: #64748b;
+    color: var(--text-default);
     margin-top: 5px;
 }
 pre {
@@ -4339,7 +4340,7 @@ pre {
 .about-section p {
     margin: 0;
     font-size: 0.85rem;
-    color: #64748b;
+    color: var(--text-default);
     line-height: 1.5;
 }
 
