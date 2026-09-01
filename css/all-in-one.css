@@ -996,7 +996,7 @@ body {
     font-weight: 600;
     background: transparent;
     border: none;
-    color: #0081b4db;
+    color: var(--text-default);
     transition: 0.2s;
     border-bottom: 3px solid transparent;
     cursor: pointer;
