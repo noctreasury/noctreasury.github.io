@@ -261,7 +261,7 @@ border: 1px solid #e9ecef38;
     padding: 10px 15px;
     width: 100%;
     transition: all 0.2s;
-    background: #fff0;
+    background: #fff0 !important;
     color: var(--text-default) !important;
 }
 
