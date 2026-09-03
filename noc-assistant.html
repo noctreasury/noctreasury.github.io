@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1939,4 +1940,1947 @@ function escapeHtml(
 </script>
 
 </body>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
+<title>Treasury NOC Assistant</title>
+
+<style>
+
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+
+  --bg: #f4f7fb;
+  --card: rgba(255,255,255,.78);
+
+  --text: #172033;
+  --muted: #6b7280;
+
+  --border: rgba(100,116,139,.20);
+
+  --user-bg: #2563eb;
+  --bot-bg: rgba(255,255,255,.92);
+
+  --danger: #dc2626;
+
+  --shadow:
+    0 20px 50px rgba(15,23,42,.12);
+}
+
+
+* {
+  box-sizing: border-box;
+}
+
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+
+  width: 100%;
+  height: 100%;
+
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  color: var(--text);
+
+  background:
+    radial-gradient(
+      circle at top,
+      rgba(37,99,235,.10),
+      transparent 40%
+    ),
+    var(--bg);
+}
+
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+
+/* =====================================================
+   APPLICATION
+   ===================================================== */
+
+.app {
+  width: min(100%, 1000px);
+  height: min(94vh, 850px);
+
+  display: flex;
+  flex-direction: column;
+
+  background: var(--card);
+
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+
+  border: 1px solid var(--border);
+
+  border-radius: 28px;
+
+  box-shadow: var(--shadow);
+
+  overflow: hidden;
+}
+
+
+/* =====================================================
+   HEADER
+   ===================================================== */
+
+.header {
+  min-height: 72px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 14px 20px;
+
+  border-bottom:
+    1px solid var(--border);
+}
+
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+
+.bot-icon {
+  width: 44px;
+  height: 44px;
+
+  border-radius: 14px;
+
+  display: grid;
+  place-items: center;
+
+  color: white;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--primary),
+      var(--primary-dark)
+    );
+
+  font-size: 21px;
+}
+
+
+.bot-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+
+.user-info {
+  margin-top: 2px;
+
+  color: var(--muted);
+
+  font-size: 12px;
+}
+
+
+.header-actions {
+  display: flex;
+  gap: 7px;
+}
+
+
+.header-btn {
+  border: 1px solid var(--border);
+
+  background: rgba(255,255,255,.45);
+
+  color: var(--text);
+
+  padding: 8px 11px;
+
+  border-radius: 10px;
+
+  cursor: pointer;
+
+  font-size: 12px;
+}
+
+
+.header-btn:hover {
+  background: rgba(255,255,255,.75);
+}
+
+
+/* =====================================================
+   CHAT
+   ===================================================== */
+
+.chat {
+  flex: 1;
+
+  overflow-y: auto;
+
+  padding: 22px;
+
+  scroll-behavior: smooth;
+}
+
+
+.message {
+  display: flex;
+
+  margin-bottom: 15px;
+}
+
+
+.message.user {
+  justify-content: flex-end;
+}
+
+
+.bubble {
+  max-width: min(78%, 700px);
+
+  padding: 12px 15px;
+
+  border-radius: 18px;
+
+  line-height: 1.5;
+
+  font-size: 14px;
+
+  word-break: break-word;
+}
+
+
+.message.bot .bubble {
+  background: var(--bot-bg);
+
+  border:
+    1px solid var(--border);
+
+  border-top-left-radius: 6px;
+}
+
+
+.message.user .bubble {
+  background: var(--user-bg);
+
+  color: white;
+
+  border-top-right-radius: 6px;
+}
+
+
+.message-time {
+  margin-top: 4px;
+
+  color: var(--muted);
+
+  font-size: 10px;
+}
+
+
+.typing {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 4px;
+}
+
+
+.typing span {
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background: var(--muted);
+
+  animation: typing 1.2s infinite;
+}
+
+
+.typing span:nth-child(2) {
+  animation-delay: .15s;
+}
+
+
+.typing span:nth-child(3) {
+  animation-delay: .30s;
+}
+
+
+@keyframes typing {
+
+  0%, 60%, 100% {
+    opacity: .3;
+    transform: translateY(0);
+  }
+
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+
+/* =====================================================
+   INPUT
+   ===================================================== */
+
+.composer {
+  padding: 13px 16px;
+
+  border-top:
+    1px solid var(--border);
+
+  background:
+    rgba(255,255,255,.35);
+}
+
+
+.input-row {
+  display: flex;
+
+  align-items: flex-end;
+
+  gap: 9px;
+}
+
+
+#questionInput {
+
+  flex: 1;
+
+  min-height: 46px;
+  max-height: 140px;
+
+  resize: none;
+
+  border:
+    1px solid var(--border);
+
+  border-radius: 15px;
+
+  outline: none;
+
+  padding: 12px 14px;
+
+  font: inherit;
+
+  color: var(--text);
+
+  background:
+    rgba(255,255,255,.72);
+}
+
+
+#questionInput:focus {
+
+  border-color:
+    rgba(37,99,235,.55);
+
+  box-shadow:
+    0 0 0 3px rgba(37,99,235,.10);
+}
+
+
+.send-btn {
+
+  width: 46px;
+  height: 46px;
+
+  border: 0;
+
+  border-radius: 14px;
+
+  color: white;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--primary),
+      var(--primary-dark)
+    );
+
+  cursor: pointer;
+
+  font-size: 18px;
+}
+
+
+.send-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+
+.composer-note {
+
+  margin-top: 7px;
+
+  color: var(--muted);
+
+  font-size: 10px;
+
+  text-align: center;
+}
+
+
+/* =====================================================
+   MODAL
+   ===================================================== */
+
+.modal-backdrop {
+
+  position: fixed;
+
+  inset: 0;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 20px;
+
+  background:
+    rgba(15,23,42,.45);
+
+  backdrop-filter: blur(8px);
+
+  z-index: 1000;
+}
+
+
+.modal {
+
+  width: min(100%, 430px);
+
+  padding: 25px;
+
+  border-radius: 24px;
+
+  background:
+    rgba(255,255,255,.96);
+
+  box-shadow:
+    0 30px 80px rgba(15,23,42,.25);
+}
+
+
+.modal h2 {
+
+  margin: 0 0 7px;
+
+  font-size: 21px;
+}
+
+
+.modal p {
+
+  margin: 0 0 20px;
+
+  color: var(--muted);
+
+  font-size: 13px;
+
+  line-height: 1.5;
+}
+
+
+.field {
+  margin-bottom: 14px;
+}
+
+
+.field label {
+
+  display: block;
+
+  margin-bottom: 6px;
+
+  font-size: 12px;
+
+  font-weight: 600;
+}
+
+
+.field input {
+
+  width: 100%;
+
+  height: 45px;
+
+  padding: 0 13px;
+
+  border:
+    1px solid var(--border);
+
+  border-radius: 12px;
+
+  outline: none;
+
+  font: inherit;
+}
+
+
+.field input:focus {
+
+  border-color:
+    rgba(37,99,235,.55);
+
+  box-shadow:
+    0 0 0 3px rgba(37,99,235,.10);
+}
+
+
+.branch-preview {
+
+  margin-top: 5px;
+
+  color: var(--primary);
+
+  font-size: 11px;
+}
+
+
+.modal-error {
+
+  display: none;
+
+  margin-bottom: 12px;
+
+  padding: 9px 11px;
+
+  border-radius: 10px;
+
+  color: var(--danger);
+
+  background: rgba(220,38,38,.08);
+
+  font-size: 12px;
+}
+
+
+.modal-actions {
+
+  display: flex;
+
+  gap: 9px;
+
+  margin-top: 20px;
+}
+
+
+.primary-btn,
+.secondary-btn {
+
+  flex: 1;
+
+  height: 44px;
+
+  border-radius: 12px;
+
+  cursor: pointer;
+
+  font-weight: 600;
+}
+
+
+.primary-btn {
+
+  border: 0;
+
+  color: white;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--primary),
+      var(--primary-dark)
+    );
+}
+
+
+.secondary-btn {
+
+  border:
+    1px solid var(--border);
+
+  background:
+    rgba(255,255,255,.7);
+
+  color: var(--text);
+}
+
+
+/* =====================================================
+   EXTERNAL DATA
+   ===================================================== */
+
+.external-field {
+  margin: 4px 0;
+}
+
+
+/* =====================================================
+   MOBILE
+   ===================================================== */
+
+@media (max-width: 650px) {
+
+  body {
+    align-items: stretch;
+  }
+
+
+  .app {
+
+    width: 100%;
+    height: 100vh;
+
+    border-radius: 0;
+
+    border: 0;
+  }
+
+
+  .header {
+    padding: 12px 14px;
+  }
+
+
+  .chat {
+    padding: 15px;
+  }
+
+
+  .bubble {
+    max-width: 88%;
+  }
+
+
+  .header-btn {
+    padding: 7px 8px;
+
+    font-size: 11px;
+  }
+
+}
+
+</style>
+</head>
+
+
+<body>
+
+
+<div class="app">
+
+  <!-- HEADER -->
+
+  <header class="header">
+
+    <div class="brand">
+
+      <div class="bot-icon">
+        🤖
+      </div>
+
+      <div>
+
+        <div
+          class="bot-title"
+          id="botTitle"
+        >
+          Treasury NOC Assistant
+        </div>
+
+        <div
+          class="user-info"
+          id="userInfo"
+        >
+          Not configured
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="header-actions">
+
+      <button
+        class="header-btn"
+        id="changeUserBtn"
+        type="button"
+      >
+        Change
+      </button>
+
+      <button
+        class="header-btn"
+        id="clearChatBtn"
+        type="button"
+      >
+        Clear
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <!-- CHAT -->
+
+  <main
+    class="chat"
+    id="chat"
+  ></main>
+
+
+  <!-- COMPOSER -->
+
+  <footer class="composer">
+
+    <div class="input-row">
+
+      <textarea
+        id="questionInput"
+        rows="1"
+        placeholder="Type your question..."
+        autocomplete="off"
+      ></textarea>
+
+      <button
+        class="send-btn"
+        id="sendBtn"
+        type="button"
+        title="Send"
+      >
+        ➤
+      </button>
+
+    </div>
+
+    <div class="composer-note">
+      Press Enter to send • Shift + Enter for a new line
+    </div>
+
+  </footer>
+
+</div>
+
+
+<!-- USER / BRANCH MODAL -->
+
+<div
+  class="modal-backdrop"
+  id="userModal"
+  style="display:none;"
+>
+
+  <div class="modal">
+
+    <h2>
+      Welcome
+    </h2>
+
+    <p>
+      Before starting the chat, please provide your
+      name and Treasury BR Code.
+    </p>
+
+
+    <div
+      class="modal-error"
+      id="modalError"
+    ></div>
+
+
+    <div class="field">
+
+      <label for="nameInput">
+        Name
+      </label>
+
+      <input
+        id="nameInput"
+        type="text"
+        maxlength="100"
+        autocomplete="name"
+        placeholder="Enter your name"
+      >
+
+    </div>
+
+
+    <div class="field">
+
+      <label for="branchInput">
+        BR Code
+      </label>
+
+      <input
+        id="branchInput"
+        type="text"
+        maxlength="20"
+        autocomplete="off"
+        placeholder="Example: BR0101 or 101"
+      >
+
+      <div
+        class="branch-preview"
+        id="branchPreview"
+      ></div>
+
+    </div>
+
+
+    <div class="modal-actions">
+
+      <button
+        class="secondary-btn"
+        id="cancelUserBtn"
+        type="button"
+      >
+        Cancel
+      </button>
+
+      <button
+        class="primary-btn"
+        id="saveUserBtn"
+        type="button"
+      >
+        Continue
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script>
+
+/* =====================================================
+   CONFIGURATION
+   ===================================================== */
+
+const API_URL =
+  'https://script.google.com/macros/s/AKfycbxon3bCL1Jqb7shyZYe51XzacN70H_nP7jeJNXAR0danCS3q8jNzo6EchBtZfNp9KlxiQ/exec';
+
+
+const STORAGE_KEYS = {
+
+  NAME:
+    'treasury_chatbot_user_name',
+
+  BR_CODE:
+    'treasury_chatbot_br_code'
+};
+
+
+/* =====================================================
+   STATE
+   ===================================================== */
+
+let appConfig = {
+
+  botName:
+    'Treasury NOC Assistant',
+
+  welcomeMessage:
+    'Hello! How can I help you?'
+};
+
+
+let isWaiting = false;
+
+
+/* =====================================================
+   DOM
+   ===================================================== */
+
+const chat =
+  document.getElementById('chat');
+
+const questionInput =
+  document.getElementById('questionInput');
+
+const sendBtn =
+  document.getElementById('sendBtn');
+
+const userInfo =
+  document.getElementById('userInfo');
+
+const botTitle =
+  document.getElementById('botTitle');
+
+const userModal =
+  document.getElementById('userModal');
+
+const nameInput =
+  document.getElementById('nameInput');
+
+const branchInput =
+  document.getElementById('branchInput');
+
+const branchPreview =
+  document.getElementById('branchPreview');
+
+const modalError =
+  document.getElementById('modalError');
+
+const saveUserBtn =
+  document.getElementById('saveUserBtn');
+
+const cancelUserBtn =
+  document.getElementById('cancelUserBtn');
+
+const changeUserBtn =
+  document.getElementById('changeUserBtn');
+
+const clearChatBtn =
+  document.getElementById('clearChatBtn');
+
+
+/* =====================================================
+   INITIALIZATION
+   ===================================================== */
+
+document.addEventListener(
+  'DOMContentLoaded',
+  initialize
+);
+
+
+async function initialize() {
+
+  if (
+    !API_URL ||
+    API_URL.includes(
+      'PASTE_YOUR_APPS_SCRIPT'
+    )
+  ) {
+
+    showSetupMessage();
+
+    return;
+  }
+
+
+  try {
+
+    const config =
+      await apiRequest(
+        'config'
+      );
+
+
+    if (
+      config &&
+      config.success
+    ) {
+
+      appConfig =
+        Object.assign(
+          appConfig,
+          config
+        );
+    }
+
+
+  } catch (error) {
+
+    console.error(
+      'Configuration error:',
+      error
+    );
+  }
+
+
+  botTitle.textContent =
+    appConfig.botName;
+
+
+  const savedName =
+    localStorage.getItem(
+      STORAGE_KEYS.NAME
+    );
+
+
+  const savedBR =
+    localStorage.getItem(
+      STORAGE_KEYS.BR_CODE
+    );
+
+
+  if (
+    savedName &&
+    savedBR
+  ) {
+
+    const normalized =
+      normalizeBRCode(
+        savedBR
+      );
+
+
+    if (normalized) {
+
+      updateUserInfo(
+        savedName,
+        normalized
+      );
+
+      addBotMessage(
+        appConfig.welcomeMessage
+      );
+
+      return;
+    }
+  }
+
+
+  showUserModal();
+}
+
+
+/* =====================================================
+   BR CODE
+   ===================================================== */
+
+function normalizeBRCode(value) {
+
+  if (
+    value === null ||
+    value === undefined
+  ) {
+    return '';
+  }
+
+
+  const digits =
+    String(value)
+      .replace(/\D/g, '');
+
+
+  if (
+    !digits ||
+    digits.length > 4
+  ) {
+    return '';
+  }
+
+
+  return (
+    'BR' +
+    digits.padStart(4, '0')
+  );
+}
+
+
+branchInput.addEventListener(
+  'input',
+  function() {
+
+    const normalized =
+      normalizeBRCode(
+        branchInput.value
+      );
+
+
+    if (normalized) {
+
+      branchPreview.textContent =
+        'Recognized as: ' +
+        normalized;
+
+    } else {
+
+      branchPreview.textContent =
+        '';
+    }
+  }
+);
+
+
+/* =====================================================
+   USER MODAL
+   ===================================================== */
+
+function showUserModal() {
+
+  modalError.style.display =
+    'none';
+
+  modalError.textContent =
+    '';
+
+  nameInput.value =
+    localStorage.getItem(
+      STORAGE_KEYS.NAME
+    ) || '';
+
+  branchInput.value =
+    localStorage.getItem(
+      STORAGE_KEYS.BR_CODE
+    ) || '';
+
+  updateBranchPreview();
+
+  userModal.style.display =
+    'flex';
+
+  setTimeout(
+    function() {
+
+      if (!nameInput.value) {
+        nameInput.focus();
+      } else {
+        branchInput.focus();
+      }
+
+    },
+    100
+  );
+}
+
+
+function hideUserModal() {
+
+  userModal.style.display =
+    'none';
+}
+
+
+function updateBranchPreview() {
+
+  const normalized =
+    normalizeBRCode(
+      branchInput.value
+    );
+
+
+  branchPreview.textContent =
+    normalized
+      ? 'Recognized as: ' + normalized
+      : '';
+}
+
+
+async function saveUserDetails() {
+
+  const name =
+    nameInput.value.trim();
+
+
+  const brCode =
+    normalizeBRCode(
+      branchInput.value
+    );
+
+
+  if (!name) {
+
+    showModalError(
+      'Please enter your name.'
+    );
+
+    nameInput.focus();
+
+    return;
+  }
+
+
+  if (!brCode) {
+
+    showModalError(
+      'Please enter a valid BR Code such as BR0101 or 101.'
+    );
+
+    branchInput.focus();
+
+    return;
+  }
+
+
+  saveUserBtn.disabled =
+    true;
+
+  saveUserBtn.textContent =
+    'Checking...';
+
+
+  try {
+
+    const result =
+      await apiRequest(
+        'validatebranch',
+        {
+          brCode: brCode
+        }
+      );
+
+
+    if (
+      !result ||
+      !result.success
+    ) {
+
+      throw new Error(
+        result &&
+        result.message
+          ? result.message
+          : 'Unable to validate BR Code.'
+      );
+    }
+
+
+    if (!result.valid) {
+
+      throw new Error(
+        result.message ||
+        'Invalid BR Code.'
+      );
+    }
+
+
+    // Permanent browser storage.
+    localStorage.setItem(
+      STORAGE_KEYS.NAME,
+      name
+    );
+
+    localStorage.setItem(
+      STORAGE_KEYS.BR_CODE,
+      result.brCode
+    );
+
+
+    updateUserInfo(
+      name,
+      result.brCode
+    );
+
+
+    hideUserModal();
+
+
+    chat.innerHTML = '';
+
+
+    addBotMessage(
+      appConfig.welcomeMessage
+    );
+
+
+    if (
+      result.branch &&
+      result.branch.branchName
+    ) {
+
+      addBotMessage(
+        'You are connected to <strong>' +
+        escapeHtml(
+          result.branch.branchName
+        ) +
+        '</strong> (' +
+        escapeHtml(
+          result.brCode
+        ) +
+        ').'
+      );
+    }
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    showModalError(
+      error.message ||
+      'Unable to validate the BR Code.'
+    );
+
+  } finally {
+
+    saveUserBtn.disabled =
+      false;
+
+    saveUserBtn.textContent =
+      'Continue';
+  }
+}
+
+
+function showModalError(message) {
+
+  modalError.textContent =
+    message;
+
+  modalError.style.display =
+    'block';
+}
+
+
+saveUserBtn.addEventListener(
+  'click',
+  saveUserDetails
+);
+
+
+cancelUserBtn.addEventListener(
+  'click',
+  function() {
+
+    const hasUser =
+      localStorage.getItem(
+        STORAGE_KEYS.NAME
+      ) &&
+      localStorage.getItem(
+        STORAGE_KEYS.BR_CODE
+      );
+
+
+    if (hasUser) {
+
+      hideUserModal();
+
+    } else {
+
+      // Do not allow closing the
+      // initial registration modal.
+      showModalError(
+        'Please enter your Name and BR Code to continue.'
+      );
+    }
+  }
+);
+
+
+/* =====================================================
+   USER INFO
+   ===================================================== */
+
+function updateUserInfo(
+  name,
+  brCode
+) {
+
+  userInfo.textContent =
+    name +
+    ' • ' +
+    brCode;
+}
+
+
+/* =====================================================
+   CHANGE USER / BRANCH
+   ===================================================== */
+
+changeUserBtn.addEventListener(
+  'click',
+  function() {
+
+    showUserModal();
+  }
+);
+
+
+/* =====================================================
+   CHAT
+   ===================================================== */
+
+function addUserMessage(
+  text
+) {
+
+  addMessage(
+    'user',
+    escapeHtml(text)
+  );
+}
+
+
+function addBotMessage(
+  html
+) {
+
+  addMessage(
+    'bot',
+    html
+  );
+}
+
+
+function addMessage(
+  type,
+  content
+) {
+
+  const wrapper =
+    document.createElement('div');
+
+  wrapper.className =
+    'message ' + type;
+
+
+  const bubble =
+    document.createElement('div');
+
+  bubble.className =
+    'bubble';
+
+
+  bubble.innerHTML =
+    content;
+
+
+  wrapper.appendChild(
+    bubble
+  );
+
+
+  chat.appendChild(
+    wrapper
+  );
+
+
+  chat.scrollTop =
+    chat.scrollHeight;
+}
+
+
+function addTyping() {
+
+  const wrapper =
+    document.createElement('div');
+
+  wrapper.className =
+    'message bot';
+
+  wrapper.id =
+    'typingMessage';
+
+
+  const bubble =
+    document.createElement('div');
+
+  bubble.className =
+    'bubble';
+
+
+  bubble.innerHTML =
+    `
+      <div class="typing">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    `;
+
+
+  wrapper.appendChild(
+    bubble
+  );
+
+
+  chat.appendChild(
+    wrapper
+  );
+
+
+  chat.scrollTop =
+    chat.scrollHeight;
+}
+
+
+function removeTyping() {
+
+  const element =
+    document.getElementById(
+      'typingMessage'
+    );
+
+
+  if (element) {
+    element.remove();
+  }
+}
+
+
+/* =====================================================
+   ASK QUESTION
+   ===================================================== */
+
+async function askQuestion() {
+
+  if (isWaiting) {
+    return;
+  }
+
+
+  const question =
+    questionInput.value.trim();
+
+
+  if (!question) {
+    return;
+  }
+
+
+  const name =
+    localStorage.getItem(
+      STORAGE_KEYS.NAME
+    );
+
+
+  const brCode =
+    localStorage.getItem(
+      STORAGE_KEYS.BR_CODE
+    );
+
+
+  if (
+    !name ||
+    !brCode
+  ) {
+
+    showUserModal();
+
+    return;
+  }
+
+
+  questionInput.value =
+    '';
+
+  resizeTextarea();
+
+
+  addUserMessage(
+    question
+  );
+
+
+  addTyping();
+
+
+  isWaiting =
+    true;
+
+  sendBtn.disabled =
+    true;
+
+
+  try {
+
+    const result =
+      await apiRequest(
+        'ask',
+        {
+          brCode:
+            brCode,
+
+          question:
+            question
+        }
+      );
+
+
+    removeTyping();
+
+
+    if (
+      !result ||
+      !result.success
+    ) {
+
+      addBotMessage(
+        escapeHtml(
+          result &&
+          result.error
+            ? result.error
+            : 'Unable to process your request.'
+        )
+      );
+
+      return;
+    }
+
+
+    let answer =
+      result.answer ||
+      appConfig.welcomeMessage;
+
+
+    if (
+      result.answerType ===
+      'HTML'
+    ) {
+
+      // HTML answers are trusted
+      // because they originate from
+      // your controlled Google Sheet.
+      addBotMessage(
+        answer
+      );
+
+    } else {
+
+      addBotMessage(
+        escapeHtml(answer)
+          .replace(
+            /\n/g,
+            '<br>'
+          )
+      );
+    }
+
+
+  } catch (error) {
+
+    removeTyping();
+
+
+    console.error(error);
+
+
+    addBotMessage(
+      'Unable to connect to the chatbot server. ' +
+      'Please try again.'
+    );
+
+  } finally {
+
+    isWaiting =
+      false;
+
+    sendBtn.disabled =
+      false;
+
+    questionInput.focus();
+  }
+}
+
+
+/* =====================================================
+   API REQUEST - JSONP
+   ===================================================== */
+
+function apiRequest(
+  action,
+  params = {}
+) {
+
+  return new Promise(
+    function(resolve, reject) {
+
+      const callbackName =
+        'chatbotCallback_' +
+        Date.now() +
+        '_' +
+        Math.floor(
+          Math.random() * 100000
+        );
+
+
+      const script =
+        document.createElement(
+          'script'
+        );
+
+
+      let completed =
+        false;
+
+
+      const timeout =
+        setTimeout(
+          function() {
+
+            if (completed) {
+              return;
+            }
+
+
+            completed = true;
+
+            cleanup();
+
+
+            reject(
+              new Error(
+                'Request timed out.'
+              )
+            );
+
+          },
+          30000
+        );
+
+
+      window[callbackName] =
+        function(data) {
+
+          if (completed) {
+            return;
+          }
+
+
+          completed = true;
+
+
+          clearTimeout(
+            timeout
+          );
+
+
+          cleanup();
+
+
+          resolve(data);
+        };
+
+
+      function cleanup() {
+
+        try {
+          script.remove();
+        } catch (e) {}
+
+
+        try {
+          delete window[
+            callbackName
+          ];
+        } catch (e) {
+
+          window[
+            callbackName
+          ] = undefined;
+        }
+      }
+
+
+      const query =
+        new URLSearchParams();
+
+
+      query.set(
+        'action',
+        action
+      );
+
+
+      query.set(
+        'callback',
+        callbackName
+      );
+
+
+      Object.keys(params)
+        .forEach(
+          function(key) {
+
+            if (
+              params[key] !==
+              undefined &&
+              params[key] !== null
+            ) {
+
+              query.set(
+                key,
+                String(
+                  params[key]
+                )
+              );
+            }
+          }
+        );
+
+
+      script.src =
+        API_URL +
+        '?' +
+        query.toString();
+
+
+      script.onerror =
+        function() {
+
+          if (completed) {
+            return;
+          }
+
+
+          completed = true;
+
+
+          clearTimeout(
+            timeout
+          );
+
+
+          cleanup();
+
+
+          reject(
+            new Error(
+              'Unable to connect to API.'
+            )
+          );
+        };
+
+
+      document.head.appendChild(
+        script
+      );
+
+    }
+  );
+}
+
+
+/* =====================================================
+   UI EVENTS
+   ===================================================== */
+
+sendBtn.addEventListener(
+  'click',
+  askQuestion
+);
+
+
+questionInput.addEventListener(
+  'keydown',
+  function(event) {
+
+    if (
+      event.key === 'Enter' &&
+      !event.shiftKey
+    ) {
+
+      event.preventDefault();
+
+      askQuestion();
+    }
+  }
+);
+
+
+questionInput.addEventListener(
+  'input',
+  resizeTextarea
+);
+
+
+function resizeTextarea() {
+
+  questionInput.style.height =
+    'auto';
+
+
+  questionInput.style.height =
+    Math.min(
+      questionInput.scrollHeight,
+      140
+    ) +
+    'px';
+}
+
+
+clearChatBtn.addEventListener(
+  'click',
+  function() {
+
+    chat.innerHTML = '';
+
+    addBotMessage(
+      appConfig.welcomeMessage
+    );
+  }
+);
+
+
+/* =====================================================
+   SETUP MESSAGE
+   ===================================================== */
+
+function showSetupMessage() {
+
+  chat.innerHTML = '';
+
+  addBotMessage(
+    '<strong>Chatbot configuration required.</strong><br><br>' +
+    'Please set the Google Apps Script Web App URL ' +
+    'in the <code>API_URL</code> variable in index.html.'
+  );
+}
+
+
+/* =====================================================
+   SECURITY / HTML HELPERS
+   ===================================================== */
+
+function escapeHtml(
+  value
+) {
+
+  return String(value || '')
+    .replace(
+      /&/g,
+      '&amp;'
+    )
+    .replace(
+      /</g,
+      '&lt;'
+    )
+    .replace(
+      />/g,
+      '&gt;'
+    )
+    .replace(
+      /"/g,
+      '&quot;'
+    )
+    .replace(
+      /'/g,
+      '&#039;'
+    );
+}
+
+</script>
+
+</body>
+>>>>>>> 69e067d2ffa43b5930ad0cb385cf356efdb86b07
 </html>
