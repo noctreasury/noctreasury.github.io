@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <meta charset="UTF-8">
 
 <meta
@@ -12,40 +13,40 @@
 
 <style>
 
-:root {
-  --primary: #2563eb;
-  --primary-dark: #1d4ed8;
-
-  --bg: #f4f7fb;
-  --card: rgba(255,255,255,.78);
-
-  --text: #172033;
-  --muted: #6b7280;
-
-  --border: rgba(100,116,139,.20);
-
-  --user-bg: #2563eb;
-  --bot-bg: rgba(255,255,255,.92);
-
-  --danger: #dc2626;
-
-  --shadow:
-    0 20px 50px rgba(15,23,42,.12);
-}
-
-
 * {
   box-sizing: border-box;
 }
 
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --text: #172033;
+  --muted: #667085;
+  --border: rgba(100,116,139,.22);
+  --card: rgba(255,255,255,.72);
+  --input: rgba(255,255,255,.78);
+  --shadow: 0 20px 50px rgba(15,23,42,.12);
+}
 
-html,
+@media (prefers-color-scheme: dark) {
+
+  :root {
+    --primary: #60a5fa;
+    --primary-dark: #3b82f6;
+    --text: #f1f5f9;
+    --muted: #a8b3c5;
+    --border: rgba(255,255,255,.12);
+    --card: rgba(15,23,42,.70);
+    --input: rgba(15,23,42,.72);
+    --shadow: 0 20px 50px rgba(0,0,0,.35);
+  }
+}
+
 body {
-  margin: 0;
-  padding: 0;
 
-  width: 100%;
-  height: 100%;
+  margin: 0;
+
+  min-height: 100vh;
 
   font-family:
     Inter,
@@ -58,36 +59,53 @@ body {
   color: var(--text);
 
   background:
-    radial-gradient(
-      circle at top,
-      rgba(37,99,235,.10),
-      transparent 40%
-    ),
-    var(--bg);
-}
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,.92) 0%,
+      rgba(255,255,255,.65) 35%,
+      rgba(255,255,255,.12) 100%
+    );
 
-
-body {
   display: flex;
+
   justify-content: center;
+
   align-items: center;
+
+  padding: 16px;
 }
 
+@media (prefers-color-scheme: dark) {
 
-/* =====================================================
-   APPLICATION
-   ===================================================== */
+  body {
+
+    background:
+      linear-gradient(
+        180deg,
+        rgba(15,23,42,.95) 0%,
+        rgba(15,23,42,.70) 45%,
+        rgba(15,23,42,.18) 100%
+      );
+  }
+}
+
 
 .app {
-  width: min(100%, 1000px);
-  height: min(94vh, 850px);
+
+  width: 100%;
+
+  max-width: 720px;
+
+  height: min(850px, 94vh);
 
   display: flex;
+
   flex-direction: column;
 
   background: var(--card);
 
   backdrop-filter: blur(18px);
+
   -webkit-backdrop-filter: blur(18px);
 
   border: 1px solid var(--border);
@@ -102,315 +120,310 @@ body {
 
 /* =====================================================
    HEADER
-   ===================================================== */
+===================================================== */
 
 .header {
-  min-height: 72px;
+
+  padding: 18px 20px;
 
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
 
-  padding: 14px 20px;
-
-  border-bottom:
-    1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
-
 .brand {
+
   display: flex;
+
   align-items: center;
+
   gap: 12px;
 }
 
-
 .bot-icon {
+
   width: 44px;
+
   height: 44px;
 
   border-radius: 14px;
 
   display: grid;
+
   place-items: center;
+
+  background: var(--primary);
 
   color: white;
 
-  background:
-    linear-gradient(
-      135deg,
-      var(--primary),
-      var(--primary-dark)
-    );
-
   font-size: 21px;
-}
 
-
-.bot-title {
-  font-size: 16px;
   font-weight: 700;
 }
 
+.bot-title {
 
-.user-info {
+  font-size: 17px;
+
+  font-weight: 700;
+}
+
+.bot-status {
+
   margin-top: 2px;
 
-  color: var(--muted);
-
   font-size: 12px;
+
+  color: var(--muted);
 }
 
+.header-actions button {
 
-.header-actions {
-  display: flex;
-  gap: 7px;
-}
+  border: 0;
 
+  background: transparent;
 
-.header-btn {
-  border: 1px solid var(--border);
-
-  background: rgba(255,255,255,.45);
-
-  color: var(--text);
-
-  padding: 8px 11px;
-
-  border-radius: 10px;
+  color: var(--primary);
 
   cursor: pointer;
 
-  font-size: 12px;
-}
+  font-size: 13px;
 
+  font-weight: 600;
 
-.header-btn:hover {
-  background: rgba(255,255,255,.75);
+  padding: 8px;
 }
 
 
 /* =====================================================
    CHAT
-   ===================================================== */
+===================================================== */
 
 .chat {
+
   flex: 1;
 
   overflow-y: auto;
 
-  padding: 22px;
+  padding: 20px;
 
   scroll-behavior: smooth;
 }
 
-
 .message {
+
   display: flex;
 
-  margin-bottom: 15px;
+  margin-bottom: 14px;
 }
 
-
 .message.user {
+
   justify-content: flex-end;
 }
 
+.message.bot {
+
+  justify-content: flex-start;
+}
 
 .bubble {
-  max-width: min(78%, 700px);
+
+  max-width: 84%;
 
   padding: 12px 15px;
 
   border-radius: 18px;
 
-  line-height: 1.5;
+  line-height: 1.55;
 
   font-size: 14px;
 
-  word-break: break-word;
+  word-wrap: break-word;
+
+  overflow-wrap: anywhere;
 }
 
-
 .message.bot .bubble {
-  background: var(--bot-bg);
+
+  background:
+    rgba(148,163,184,.13);
 
   border:
     1px solid var(--border);
 
-  border-top-left-radius: 6px;
+  border-bottom-left-radius: 5px;
 }
 
-
 .message.user .bubble {
-  background: var(--user-bg);
+
+  background: var(--primary);
 
   color: white;
 
-  border-top-right-radius: 6px;
+  border-bottom-right-radius: 5px;
+}
+
+.bubble strong {
+
+  font-weight: 700;
+}
+
+.bubble a {
+
+  color: var(--primary);
+
+  text-decoration: underline;
+}
+
+.message.user .bubble a {
+
+  color: white;
 }
 
 
-.message-time {
-  margin-top: 4px;
-
-  color: var(--muted);
-
-  font-size: 10px;
-}
-
+/* =====================================================
+   TYPING
+===================================================== */
 
 .typing {
+
   display: inline-flex;
 
-  align-items: center;
-
   gap: 4px;
+
+  align-items: center;
 }
 
-
 .typing span {
+
   width: 6px;
+
   height: 6px;
 
   border-radius: 50%;
 
-  background: var(--muted);
+  background: currentColor;
 
-  animation: typing 1.2s infinite;
+  animation:
+    typing 1.2s infinite ease-in-out;
 }
 
-
 .typing span:nth-child(2) {
+
   animation-delay: .15s;
 }
 
-
 .typing span:nth-child(3) {
+
   animation-delay: .30s;
 }
-
 
 @keyframes typing {
 
   0%, 60%, 100% {
-    opacity: .3;
     transform: translateY(0);
+    opacity: .45;
   }
 
   30% {
+    transform: translateY(-4px);
     opacity: 1;
-    transform: translateY(-3px);
   }
 }
 
 
 /* =====================================================
    INPUT
-   ===================================================== */
+===================================================== */
 
 .composer {
-  padding: 13px 16px;
 
-  border-top:
-    1px solid var(--border);
+  padding: 12px;
 
-  background:
-    rgba(255,255,255,.35);
-}
+  border-top: 1px solid var(--border);
 
-
-.input-row {
   display: flex;
 
-  align-items: flex-end;
-
-  gap: 9px;
+  gap: 8px;
 }
 
-
-#questionInput {
+.question-input {
 
   flex: 1;
 
-  min-height: 46px;
-  max-height: 140px;
-
-  resize: none;
+  min-width: 0;
 
   border:
     1px solid var(--border);
 
-  border-radius: 15px;
-
-  outline: none;
-
-  padding: 12px 14px;
-
-  font: inherit;
+  background: var(--input);
 
   color: var(--text);
 
-  background:
-    rgba(255,255,255,.72);
+  border-radius: 16px;
+
+  padding: 12px 14px;
+
+  outline: none;
+
+  resize: none;
+
+  font-family: inherit;
+
+  font-size: 14px;
+
+  min-height: 44px;
+
+  max-height: 120px;
 }
 
+.question-input:focus {
 
-#questionInput:focus {
-
-  border-color:
-    rgba(37,99,235,.55);
-
-  box-shadow:
-    0 0 0 3px rgba(37,99,235,.10);
+  border-color: var(--primary);
 }
-
 
 .send-btn {
 
   width: 46px;
+
   height: 46px;
 
   border: 0;
 
-  border-radius: 14px;
+  border-radius: 15px;
+
+  background: var(--primary);
 
   color: white;
-
-  background:
-    linear-gradient(
-      135deg,
-      var(--primary),
-      var(--primary-dark)
-    );
 
   cursor: pointer;
 
   font-size: 18px;
+
+  flex-shrink: 0;
 }
 
+.send-btn:hover {
+
+  background: var(--primary-dark);
+}
 
 .send-btn:disabled {
-  opacity: .55;
+
+  opacity: .5;
+
   cursor: not-allowed;
-}
-
-
-.composer-note {
-
-  margin-top: 7px;
-
-  color: var(--muted);
-
-  font-size: 10px;
-
-  text-align: center;
 }
 
 
 /* =====================================================
    MODAL
-   ===================================================== */
+===================================================== */
 
 .modal-backdrop {
 
@@ -418,50 +431,59 @@ body {
 
   inset: 0;
 
-  display: flex;
+  background:
+    rgba(15,23,42,.48);
+
+  backdrop-filter: blur(7px);
+
+  display: none;
 
   align-items: center;
 
   justify-content: center;
 
-  padding: 20px;
-
-  background:
-    rgba(15,23,42,.45);
-
-  backdrop-filter: blur(8px);
+  padding: 18px;
 
   z-index: 1000;
 }
 
+.modal-backdrop.show {
+
+  display: flex;
+}
 
 .modal {
 
-  width: min(100%, 430px);
+  width: 100%;
 
-  padding: 25px;
+  max-width: 430px;
+
+  background: var(--card);
+
+  border:
+    1px solid var(--border);
 
   border-radius: 24px;
 
-  background:
-    rgba(255,255,255,.96);
+  padding: 24px;
 
-  box-shadow:
-    0 30px 80px rgba(15,23,42,.25);
+  box-shadow: var(--shadow);
+
+  backdrop-filter: blur(20px);
 }
-
 
 .modal h2 {
 
-  margin: 0 0 7px;
+  margin:
+    0 0 7px;
 
   font-size: 21px;
 }
 
-
 .modal p {
 
-  margin: 0 0 20px;
+  margin:
+    0 0 20px;
 
   color: var(--muted);
 
@@ -470,11 +492,10 @@ body {
   line-height: 1.5;
 }
 
-
 .field {
+
   margin-bottom: 14px;
 }
-
 
 .field label {
 
@@ -482,50 +503,46 @@ body {
 
   margin-bottom: 6px;
 
-  font-size: 12px;
+  font-size: 13px;
 
   font-weight: 600;
 }
-
 
 .field input {
 
   width: 100%;
 
-  height: 45px;
-
-  padding: 0 13px;
-
   border:
     1px solid var(--border);
 
-  border-radius: 12px;
+  background: var(--input);
+
+  color: var(--text);
+
+  padding: 12px 13px;
+
+  border-radius: 13px;
 
   outline: none;
 
-  font: inherit;
-}
+  font-family: inherit;
 
+  font-size: 14px;
+}
 
 .field input:focus {
 
-  border-color:
-    rgba(37,99,235,.55);
-
-  box-shadow:
-    0 0 0 3px rgba(37,99,235,.10);
+  border-color: var(--primary);
 }
 
-
-.branch-preview {
+.br-help {
 
   margin-top: 5px;
 
-  color: var(--primary);
+  color: var(--muted);
 
   font-size: 11px;
 }
-
 
 .modal-error {
 
@@ -533,141 +550,163 @@ body {
 
   margin-bottom: 12px;
 
-  padding: 9px 11px;
+  padding: 10px 12px;
 
   border-radius: 10px;
 
-  color: var(--danger);
+  background:
+    rgba(239,68,68,.10);
 
-  background: rgba(220,38,38,.08);
+  color: #dc2626;
 
   font-size: 12px;
 }
 
+.modal-error.show {
 
-.modal-actions {
-
-  display: flex;
-
-  gap: 9px;
-
-  margin-top: 20px;
+  display: block;
 }
-
-
-.primary-btn,
-.secondary-btn {
-
-  flex: 1;
-
-  height: 44px;
-
-  border-radius: 12px;
-
-  cursor: pointer;
-
-  font-weight: 600;
-}
-
 
 .primary-btn {
 
+  width: 100%;
+
   border: 0;
+
+  background: var(--primary);
 
   color: white;
 
-  background:
-    linear-gradient(
-      135deg,
-      var(--primary),
-      var(--primary-dark)
-    );
+  border-radius: 13px;
+
+  padding: 13px;
+
+  font-family: inherit;
+
+  font-size: 14px;
+
+  font-weight: 700;
+
+  cursor: pointer;
 }
 
-
 .secondary-btn {
+
+  width: 100%;
+
+  margin-top: 8px;
 
   border:
     1px solid var(--border);
 
-  background:
-    rgba(255,255,255,.7);
+  background: transparent;
 
   color: var(--text);
+
+  border-radius: 13px;
+
+  padding: 11px;
+
+  font-family: inherit;
+
+  font-size: 13px;
+
+  cursor: pointer;
 }
 
 
 /* =====================================================
-   EXTERNAL DATA
-   ===================================================== */
+   BRANCH INFO
+===================================================== */
 
-.external-field {
-  margin: 4px 0;
+.branch-info {
+
+  margin-top: 8px;
+
+  padding: 9px 12px;
+
+  border-radius: 12px;
+
+  background:
+    rgba(37,99,235,.08);
+
+  font-size: 11px;
+
+  color: var(--muted);
+
+  display: none;
+}
+
+.branch-info.show {
+
+  display: block;
+}
+
+
+/* =====================================================
+   EMPTY / NO ANSWER
+===================================================== */
+
+.query-id {
+
+  margin-top: 8px;
+
+  font-size: 11px;
+
+  opacity: .75;
+}
+
+.query-id strong {
+
+  font-weight: 700;
 }
 
 
 /* =====================================================
    MOBILE
-   ===================================================== */
+===================================================== */
 
-@media (max-width: 650px) {
+@media (max-width: 600px) {
 
   body {
-    align-items: stretch;
+    padding: 0;
   }
-
 
   .app {
 
-    width: 100%;
     height: 100vh;
 
+    max-height: none;
+
     border-radius: 0;
-
-    border: 0;
   }
-
-
-  .header {
-    padding: 12px 14px;
-  }
-
 
   .chat {
+
     padding: 15px;
   }
 
-
   .bubble {
-    max-width: 88%;
+
+    max-width: 90%;
   }
-
-
-  .header-btn {
-    padding: 7px 8px;
-
-    font-size: 11px;
-  }
-
 }
 
 </style>
-</head>
 
+</head>
 
 <body>
 
 
 <div class="app">
 
-  <!-- HEADER -->
-
   <header class="header">
 
     <div class="brand">
 
       <div class="bot-icon">
-        🤖
+        T
       </div>
 
       <div>
@@ -680,10 +719,10 @@ body {
         </div>
 
         <div
-          class="user-info"
-          id="userInfo"
+          class="bot-status"
+          id="botStatus"
         >
-          Not configured
+          Online
         </div>
 
       </div>
@@ -694,19 +733,10 @@ body {
     <div class="header-actions">
 
       <button
-        class="header-btn"
-        id="changeUserBtn"
         type="button"
+        id="changeUserBtn"
       >
         Change
-      </button>
-
-      <button
-        class="header-btn"
-        id="clearChatBtn"
-        type="button"
-      >
-        Clear
       </button>
 
     </div>
@@ -714,53 +744,46 @@ body {
   </header>
 
 
-  <!-- CHAT -->
-
   <main
     class="chat"
     id="chat"
   ></main>
 
 
-  <!-- COMPOSER -->
+  <form
+    class="composer"
+    id="chatForm"
+  >
 
-  <footer class="composer">
+    <textarea
+      id="questionInput"
+      class="question-input"
+      placeholder="Type your question..."
+      rows="1"
+      autocomplete="off"
+    ></textarea>
 
-    <div class="input-row">
+    <button
+      class="send-btn"
+      id="sendBtn"
+      type="submit"
+      title="Send"
+    >
+      ➤
+    </button>
 
-      <textarea
-        id="questionInput"
-        rows="1"
-        placeholder="Type your question..."
-        autocomplete="off"
-      ></textarea>
-
-      <button
-        class="send-btn"
-        id="sendBtn"
-        type="button"
-        title="Send"
-      >
-        ➤
-      </button>
-
-    </div>
-
-    <div class="composer-note">
-      Press Enter to send • Shift + Enter for a new line
-    </div>
-
-  </footer>
+  </form>
 
 </div>
 
 
-<!-- USER / BRANCH MODAL -->
+<!-- ===================================================
+     USER SETUP MODAL
+=================================================== -->
 
 <div
   class="modal-backdrop"
   id="userModal"
-  style="display:none;"
 >
 
   <div class="modal">
@@ -770,18 +793,14 @@ body {
     </h2>
 
     <p>
-      Before starting the chat, please provide your
-      name and Treasury BR Code.
+      Please enter your name and BR Code to start
+      using the Treasury NOC Assistant.
     </p>
 
 
     <div
-      class="modal-error"
-      id="modalError"
-    ></div>
-
-
-    <div class="field">
+      class="field"
+    >
 
       <label for="nameInput">
         Name
@@ -790,55 +809,54 @@ body {
       <input
         id="nameInput"
         type="text"
-        maxlength="100"
-        autocomplete="name"
         placeholder="Enter your name"
+        autocomplete="name"
       >
 
     </div>
 
 
-    <div class="field">
+    <div
+      class="field"
+    >
 
-      <label for="branchInput">
+      <label for="brInput">
         BR Code
       </label>
 
       <input
-        id="branchInput"
+        id="brInput"
         type="text"
-        maxlength="20"
-        autocomplete="off"
         placeholder="Example: BR0101 or 101"
+        autocomplete="off"
       >
 
+      <div class="br-help">
+        BR0101, BR101, br101, BR 101, b r 101
+        and 101 are accepted.
+      </div>
+
       <div
-        class="branch-preview"
-        id="branchPreview"
+        class="branch-info"
+        id="branchInfo"
       ></div>
 
     </div>
 
 
-    <div class="modal-actions">
+    <div
+      class="modal-error"
+      id="modalError"
+    ></div>
 
-      <button
-        class="secondary-btn"
-        id="cancelUserBtn"
-        type="button"
-      >
-        Cancel
-      </button>
 
-      <button
-        class="primary-btn"
-        id="saveUserBtn"
-        type="button"
-      >
-        Continue
-      </button>
-
-    </div>
+    <button
+      class="primary-btn"
+      id="saveUserBtn"
+      type="button"
+    >
+      Continue
+    </button>
 
   </div>
 
@@ -849,281 +867,282 @@ body {
 
 /* =====================================================
    CONFIGURATION
-   ===================================================== */
+===================================================== */
+
+/*
+ * IMPORTANT:
+ *
+ * Replace this URL with your deployed Apps Script
+ * Web App URL.
+ *
+ * Example:
+ *
+ * https://script.google.com/macros/s/XXXXXXXX/exec
+ */
 
 const API_URL =
-  'https://script.google.com/macros/s/AKfycbxon3bCL1Jqb7shyZYe51XzacN70H_nP7jeJNXAR0danCS3q8jNzo6EchBtZfNp9KlxiQ/exec';
+  'https://script.google.com/macros/s/AKfycbzd_nk0EZxD7HKsCg4zUVeMkKUL2TA1KuAviKie-SQz4hlhAjPNW4V2UgIHnVI2DmvJ2g/exec';
 
+
+/*
+ * Browser storage keys.
+ */
 
 const STORAGE_KEYS = {
 
   NAME:
-    'treasury_chatbot_user_name',
+    'treasury_chat_user_name',
 
   BR_CODE:
-    'treasury_chatbot_br_code'
+    'treasury_chat_br_code',
+
+  BRANCH:
+    'treasury_chat_branch'
 };
-
-
-/* =====================================================
-   STATE
-   ===================================================== */
-
-let appConfig = {
-
-  botName:
-    'Treasury NOC Assistant',
-
-  welcomeMessage:
-    'Hello! How can I help you?'
-};
-
-
-let isWaiting = false;
 
 
 /* =====================================================
    DOM
-   ===================================================== */
+===================================================== */
 
 const chat =
-  document.getElementById('chat');
+  document.getElementById(
+    'chat'
+  );
 
 const questionInput =
-  document.getElementById('questionInput');
+  document.getElementById(
+    'questionInput'
+  );
+
+const chatForm =
+  document.getElementById(
+    'chatForm'
+  );
 
 const sendBtn =
-  document.getElementById('sendBtn');
-
-const userInfo =
-  document.getElementById('userInfo');
-
-const botTitle =
-  document.getElementById('botTitle');
+  document.getElementById(
+    'sendBtn'
+  );
 
 const userModal =
-  document.getElementById('userModal');
+  document.getElementById(
+    'userModal'
+  );
 
 const nameInput =
-  document.getElementById('nameInput');
+  document.getElementById(
+    'nameInput'
+  );
 
-const branchInput =
-  document.getElementById('branchInput');
-
-const branchPreview =
-  document.getElementById('branchPreview');
-
-const modalError =
-  document.getElementById('modalError');
+const brInput =
+  document.getElementById(
+    'brInput'
+  );
 
 const saveUserBtn =
-  document.getElementById('saveUserBtn');
+  document.getElementById(
+    'saveUserBtn'
+  );
 
-const cancelUserBtn =
-  document.getElementById('cancelUserBtn');
+const modalError =
+  document.getElementById(
+    'modalError'
+  );
+
+const branchInfo =
+  document.getElementById(
+    'branchInfo'
+  );
 
 const changeUserBtn =
-  document.getElementById('changeUserBtn');
+  document.getElementById(
+    'changeUserBtn'
+  );
 
-const clearChatBtn =
-  document.getElementById('clearChatBtn');
+const botTitle =
+  document.getElementById(
+    'botTitle'
+  );
 
 
 /* =====================================================
-   INITIALIZATION
-   ===================================================== */
+   STATE
+===================================================== */
+
+let userName =
+  localStorage.getItem(
+    STORAGE_KEYS.NAME
+  ) || '';
+
+let brCode =
+  localStorage.getItem(
+    STORAGE_KEYS.BR_CODE
+  ) || '';
+
+let branch =
+  null;
+
+let waiting =
+  false;
+
+
+/* =====================================================
+   START
+===================================================== */
 
 document.addEventListener(
   'DOMContentLoaded',
-  initialize
+  function () {
+
+    loadConfig();
+
+    if (
+      userName &&
+      brCode
+    ) {
+
+      loadStoredBranch();
+
+    } else {
+
+      showUserModal();
+    }
+
+    questionInput.focus();
+  }
 );
 
 
-async function initialize() {
-
-  if (
-    !API_URL ||
-    API_URL.includes(
-      'PASTE_YOUR_APPS_SCRIPT'
-    )
-  ) {
-
-    showSetupMessage();
-
-    return;
-  }
-
-
-  try {
-
-    const config =
-      await apiRequest(
-        'config'
-      );
-
-
-    if (
-      config &&
-      config.success
-    ) {
-
-      appConfig =
-        Object.assign(
-          appConfig,
-          config
-        );
-    }
-
-
-  } catch (error) {
-
-    console.error(
-      'Configuration error:',
-      error
-    );
-  }
-
-
-  botTitle.textContent =
-    appConfig.botName;
-
-
-  const savedName =
-    localStorage.getItem(
-      STORAGE_KEYS.NAME
-    );
-
-
-  const savedBR =
-    localStorage.getItem(
-      STORAGE_KEYS.BR_CODE
-    );
-
-
-  if (
-    savedName &&
-    savedBR
-  ) {
-
-    const normalized =
-      normalizeBRCode(
-        savedBR
-      );
-
-
-    if (normalized) {
-
-      updateUserInfo(
-        savedName,
-        normalized
-      );
-
-      addBotMessage(
-        appConfig.welcomeMessage
-      );
-
-      return;
-    }
-  }
-
-
-  showUserModal();
-}
-
-
 /* =====================================================
-   BR CODE
-   ===================================================== */
+   LOAD CONFIG
+===================================================== */
 
-function normalizeBRCode(value) {
+function loadConfig() {
 
-  if (
-    value === null ||
-    value === undefined
-  ) {
-    return '';
-  }
+  jsonp(
+    'config',
+    {},
+    function (response) {
 
+      if (
+        response &&
+        response.success
+      ) {
 
-  const digits =
-    String(value)
-      .replace(/\D/g, '');
+        if (
+          response.botName
+        ) {
 
-
-  if (
-    !digits ||
-    digits.length > 4
-  ) {
-    return '';
-  }
-
-
-  return (
-    'BR' +
-    digits.padStart(4, '0')
+          botTitle.textContent =
+            response.botName;
+        }
+      }
+    }
   );
 }
 
 
-branchInput.addEventListener(
-  'input',
-  function() {
+/* =====================================================
+   LOAD STORED BRANCH
+===================================================== */
 
-    const normalized =
-      normalizeBRCode(
-        branchInput.value
-      );
+function loadStoredBranch() {
 
+  const storedBranch =
+    localStorage.getItem(
+      STORAGE_KEYS.BRANCH
+    );
 
-    if (normalized) {
+  if (storedBranch) {
 
-      branchPreview.textContent =
-        'Recognized as: ' +
-        normalized;
+    try {
 
-    } else {
+      branch =
+        JSON.parse(
+          storedBranch
+        );
 
-      branchPreview.textContent =
-        '';
+    } catch (error) {
+
+      branch =
+        null;
     }
   }
-);
+
+
+  /*
+   * Validate again with server.
+   */
+
+  validateBranch(
+    brCode,
+    function (response) {
+
+      if (
+        response &&
+        response.success &&
+        response.valid
+      ) {
+
+        branch =
+          response.branch;
+
+        localStorage.setItem(
+          STORAGE_KEYS.BRANCH,
+          JSON.stringify(
+            branch
+          )
+        );
+
+        showWelcome();
+
+      } else {
+
+        localStorage.removeItem(
+          STORAGE_KEYS.BRANCH
+        );
+
+        showUserModal();
+      }
+    }
+  );
+}
 
 
 /* =====================================================
    USER MODAL
-   ===================================================== */
+===================================================== */
 
 function showUserModal() {
 
-  modalError.style.display =
-    'none';
+  modalError.classList.remove(
+    'show'
+  );
 
   modalError.textContent =
     '';
 
   nameInput.value =
-    localStorage.getItem(
-      STORAGE_KEYS.NAME
-    ) || '';
+    userName || '';
 
-  branchInput.value =
-    localStorage.getItem(
-      STORAGE_KEYS.BR_CODE
-    ) || '';
+  brInput.value =
+    brCode || '';
 
-  updateBranchPreview();
-
-  userModal.style.display =
-    'flex';
+  userModal.classList.add(
+    'show'
+  );
 
   setTimeout(
-    function() {
+    function () {
 
       if (!nameInput.value) {
+
         nameInput.focus();
+
       } else {
-        branchInput.focus();
+
+        brInput.focus();
       }
 
     },
@@ -1132,38 +1151,35 @@ function showUserModal() {
 }
 
 
+/* =====================================================
+   HIDE MODAL
+===================================================== */
+
 function hideUserModal() {
 
-  userModal.style.display =
-    'none';
+  userModal.classList.remove(
+    'show'
+  );
 }
 
 
-function updateBranchPreview() {
+/* =====================================================
+   SAVE USER
+===================================================== */
 
-  const normalized =
-    normalizeBRCode(
-      branchInput.value
-    );
-
-
-  branchPreview.textContent =
-    normalized
-      ? 'Recognized as: ' + normalized
-      : '';
-}
+saveUserBtn.addEventListener(
+  'click',
+  saveUserDetails
+);
 
 
-async function saveUserDetails() {
+function saveUserDetails() {
 
   const name =
     nameInput.value.trim();
 
-
-  const brCode =
-    normalizeBRCode(
-      branchInput.value
-    );
+  const enteredBR =
+    brInput.value.trim();
 
 
   if (!name) {
@@ -1178,330 +1194,291 @@ async function saveUserDetails() {
   }
 
 
-  if (!brCode) {
+  if (!enteredBR) {
 
     showModalError(
-      'Please enter a valid BR Code such as BR0101 or 101.'
+      'Please enter your BR Code.'
     );
 
-    branchInput.focus();
+    brInput.focus();
 
     return;
   }
 
 
-  saveUserBtn.disabled =
-    true;
-
-  saveUserBtn.textContent =
-    'Checking...';
+  setModalLoading(
+    true
+  );
 
 
-  try {
+  validateBranch(
+    enteredBR,
+    function (response) {
 
-    const result =
-      await apiRequest(
-        'validatebranch',
-        {
-          brCode: brCode
-        }
+      setModalLoading(
+        false
       );
 
 
-    if (
-      !result ||
-      !result.success
-    ) {
+      if (
+        !response ||
+        !response.success
+      ) {
 
-      throw new Error(
-        result &&
-        result.message
-          ? result.message
-          : 'Unable to validate BR Code.'
-      );
-    }
+        showModalError(
+          'Unable to validate BR Code. Please try again.'
+        );
 
-
-    if (!result.valid) {
-
-      throw new Error(
-        result.message ||
-        'Invalid BR Code.'
-      );
-    }
+        return;
+      }
 
 
-    // Permanent browser storage.
-    localStorage.setItem(
-      STORAGE_KEYS.NAME,
-      name
-    );
+      if (
+        !response.valid
+      ) {
 
-    localStorage.setItem(
-      STORAGE_KEYS.BR_CODE,
-      result.brCode
-    );
+        showModalError(
+          response.message ||
+          'Invalid or inactive BR Code.'
+        );
 
-
-    updateUserInfo(
-      name,
-      result.brCode
-    );
+        return;
+      }
 
 
-    hideUserModal();
+      /*
+       * Server returned normalized BR Code.
+       */
+
+      userName =
+        name;
+
+      brCode =
+        response.branch.brCode;
+
+      branch =
+        response.branch;
 
 
-    chat.innerHTML = '';
+      /*
+       * Permanently store in browser.
+       *
+       * localStorage remains until the user
+       * clears browser storage or changes details.
+       */
 
-
-    addBotMessage(
-      appConfig.welcomeMessage
-    );
-
-
-    if (
-      result.branch &&
-      result.branch.branchName
-    ) {
-
-      addBotMessage(
-        'You are connected to <strong>' +
-        escapeHtml(
-          result.branch.branchName
-        ) +
-        '</strong> (' +
-        escapeHtml(
-          result.brCode
-        ) +
-        ').'
-      );
-    }
-
-
-  } catch (error) {
-
-    console.error(error);
-
-    showModalError(
-      error.message ||
-      'Unable to validate the BR Code.'
-    );
-
-  } finally {
-
-    saveUserBtn.disabled =
-      false;
-
-    saveUserBtn.textContent =
-      'Continue';
-  }
-}
-
-
-function showModalError(message) {
-
-  modalError.textContent =
-    message;
-
-  modalError.style.display =
-    'block';
-}
-
-
-saveUserBtn.addEventListener(
-  'click',
-  saveUserDetails
-);
-
-
-cancelUserBtn.addEventListener(
-  'click',
-  function() {
-
-    const hasUser =
-      localStorage.getItem(
-        STORAGE_KEYS.NAME
-      ) &&
-      localStorage.getItem(
-        STORAGE_KEYS.BR_CODE
+      localStorage.setItem(
+        STORAGE_KEYS.NAME,
+        userName
       );
 
+      localStorage.setItem(
+        STORAGE_KEYS.BR_CODE,
+        brCode
+      );
 
-    if (hasUser) {
+      localStorage.setItem(
+        STORAGE_KEYS.BRANCH,
+        JSON.stringify(
+          branch
+        )
+      );
+
 
       hideUserModal();
 
-    } else {
+      clearChat();
 
-      // Do not allow closing the
-      // initial registration modal.
-      showModalError(
-        'Please enter your Name and BR Code to continue.'
-      );
+      showWelcome();
     }
-  }
-);
-
-
-/* =====================================================
-   USER INFO
-   ===================================================== */
-
-function updateUserInfo(
-  name,
-  brCode
-) {
-
-  userInfo.textContent =
-    name +
-    ' • ' +
-    brCode;
+  );
 }
 
 
 /* =====================================================
    CHANGE USER / BRANCH
-   ===================================================== */
+===================================================== */
 
 changeUserBtn.addEventListener(
   'click',
-  function() {
+  function () {
 
-    showUserModal();
+    nameInput.value =
+      userName;
+
+    brInput.value =
+      brCode;
+
+    modalError.classList.remove(
+      'show'
+    );
+
+    branchInfo.classList.remove(
+      'show'
+    );
+
+    userModal.classList.add(
+      'show'
+    );
+
+    nameInput.focus();
   }
 );
 
 
 /* =====================================================
-   CHAT
-   ===================================================== */
+   BR CODE INPUT
+===================================================== */
 
-function addUserMessage(
-  text
-) {
+brInput.addEventListener(
+  'blur',
+  function () {
 
-  addMessage(
-    'user',
-    escapeHtml(text)
-  );
-}
+    const value =
+      brInput.value.trim();
 
+    if (!value) {
+      return;
+    }
 
-function addBotMessage(
-  html
-) {
+    validateBranch(
+      value,
+      function (response) {
 
-  addMessage(
-    'bot',
-    html
-  );
-}
+        if (
+          response &&
+          response.success &&
+          response.valid
+        ) {
 
+          branchInfo.textContent =
+            response.branch.branchName +
+            (
+              response.branch.district
+                ? ' — ' +
+                  response.branch.district
+                : ''
+            );
 
-function addMessage(
-  type,
-  content
-) {
+          branchInfo.classList.add(
+            'show'
+          );
 
-  const wrapper =
-    document.createElement('div');
+        } else {
 
-  wrapper.className =
-    'message ' + type;
-
-
-  const bubble =
-    document.createElement('div');
-
-  bubble.className =
-    'bubble';
-
-
-  bubble.innerHTML =
-    content;
-
-
-  wrapper.appendChild(
-    bubble
-  );
-
-
-  chat.appendChild(
-    wrapper
-  );
-
-
-  chat.scrollTop =
-    chat.scrollHeight;
-}
-
-
-function addTyping() {
-
-  const wrapper =
-    document.createElement('div');
-
-  wrapper.className =
-    'message bot';
-
-  wrapper.id =
-    'typingMessage';
-
-
-  const bubble =
-    document.createElement('div');
-
-  bubble.className =
-    'bubble';
-
-
-  bubble.innerHTML =
-    `
-      <div class="typing">
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
-    `;
-
-
-  wrapper.appendChild(
-    bubble
-  );
-
-
-  chat.appendChild(
-    wrapper
-  );
-
-
-  chat.scrollTop =
-    chat.scrollHeight;
-}
-
-
-function removeTyping() {
-
-  const element =
-    document.getElementById(
-      'typingMessage'
+          branchInfo.classList.remove(
+            'show'
+          );
+        }
+      }
     );
-
-
-  if (element) {
-    element.remove();
   }
+);
+
+
+/* =====================================================
+   VALIDATE BRANCH
+===================================================== */
+
+function validateBranch(
+  value,
+  callback
+) {
+
+  jsonp(
+    'validatebranch',
+    {
+      brCode:
+        value
+    },
+    callback
+  );
 }
 
 
 /* =====================================================
-   ASK QUESTION
-   ===================================================== */
+   WELCOME
+===================================================== */
 
-async function askQuestion() {
+function showWelcome() {
 
-  if (isWaiting) {
+  const branchName =
+    branch &&
+    branch.branchName
+      ? branch.branchName
+      : 'your branch';
+
+
+  addBotMessage(
+
+    'Hello <strong>' +
+    escapeHtml(
+      userName
+    ) +
+    '</strong>!<br><br>' +
+
+    'You are connected to ' +
+
+    '<strong>' +
+    escapeHtml(
+      branchName
+    ) +
+    '</strong> ' +
+
+    '(' +
+    escapeHtml(
+      brCode
+    ) +
+    ').<br><br>' +
+
+    'How can I help you?'
+  );
+}
+
+
+/* =====================================================
+   CHAT SUBMIT
+===================================================== */
+
+chatForm.addEventListener(
+  'submit',
+  function (event) {
+
+    event.preventDefault();
+
+    sendQuestion();
+  }
+);
+
+
+/* =====================================================
+   ENTER KEY
+===================================================== */
+
+questionInput.addEventListener(
+  'keydown',
+  function (event) {
+
+    if (
+      event.key === 'Enter' &&
+      !event.shiftKey
+    ) {
+
+      event.preventDefault();
+
+      sendQuestion();
+    }
+  }
+);
+
+
+/* =====================================================
+   SEND QUESTION
+===================================================== */
+
+function sendQuestion() {
+
+  if (waiting) {
     return;
   }
 
@@ -1515,20 +1492,8 @@ async function askQuestion() {
   }
 
 
-  const name =
-    localStorage.getItem(
-      STORAGE_KEYS.NAME
-    );
-
-
-  const brCode =
-    localStorage.getItem(
-      STORAGE_KEYS.BR_CODE
-    );
-
-
   if (
-    !name ||
+    !userName ||
     !brCode
   ) {
 
@@ -1538,402 +1503,636 @@ async function askQuestion() {
   }
 
 
-  questionInput.value =
-    '';
-
-  resizeTextarea();
-
+  /*
+   * Display user's question.
+   */
 
   addUserMessage(
-    question
+    escapeHtml(
+      question
+    )
   );
 
 
-  addTyping();
+  questionInput.value =
+    '';
+
+  autoResize();
 
 
-  isWaiting =
+  /*
+   * Typing indicator.
+   */
+
+  const typingId =
+    showTyping();
+
+
+  waiting =
     true;
 
   sendBtn.disabled =
     true;
 
 
-  try {
+  jsonp(
+    'ask',
+    {
 
-    const result =
-      await apiRequest(
-        'ask',
-        {
-          brCode:
-            brCode,
+      name:
+        userName,
 
-          question:
-            question
-        }
+      brCode:
+        brCode,
+
+      question:
+        question
+
+    },
+
+    function (response) {
+
+      removeTyping(
+        typingId
       );
 
 
-    removeTyping();
+      waiting =
+        false;
 
-
-    if (
-      !result ||
-      !result.success
-    ) {
-
-      addBotMessage(
-        escapeHtml(
-          result &&
-          result.error
-            ? result.error
-            : 'Unable to process your request.'
-        )
-      );
-
-      return;
-    }
-
-
-    let answer =
-      result.answer ||
-      appConfig.welcomeMessage;
-
-
-    if (
-      result.answerType ===
-      'HTML'
-    ) {
-
-      // HTML answers are trusted
-      // because they originate from
-      // your controlled Google Sheet.
-      addBotMessage(
-        answer
-      );
-
-    } else {
-
-      addBotMessage(
-        escapeHtml(answer)
-          .replace(
-            /\n/g,
-            '<br>'
-          )
-      );
-    }
-
-
-  } catch (error) {
-
-    removeTyping();
-
-
-    console.error(error);
-
-
-    addBotMessage(
-      'Unable to connect to the chatbot server. ' +
-      'Please try again.'
-    );
-
-  } finally {
-
-    isWaiting =
-      false;
-
-    sendBtn.disabled =
-      false;
-
-    questionInput.focus();
-  }
-}
-
-
-/* =====================================================
-   API REQUEST - JSONP
-   ===================================================== */
-
-function apiRequest(
-  action,
-  params = {}
-) {
-
-  return new Promise(
-    function(resolve, reject) {
-
-      const callbackName =
-        'chatbotCallback_' +
-        Date.now() +
-        '_' +
-        Math.floor(
-          Math.random() * 100000
-        );
-
-
-      const script =
-        document.createElement(
-          'script'
-        );
-
-
-      let completed =
+      sendBtn.disabled =
         false;
 
 
-      const timeout =
-        setTimeout(
-          function() {
+      if (
+        !response
+      ) {
 
-            if (completed) {
-              return;
-            }
-
-
-            completed = true;
-
-            cleanup();
-
-
-            reject(
-              new Error(
-                'Request timed out.'
-              )
-            );
-
-          },
-          30000
+        addBotMessage(
+          'Unable to contact the chatbot server.'
         );
 
-
-      window[callbackName] =
-        function(data) {
-
-          if (completed) {
-            return;
-          }
-
-
-          completed = true;
-
-
-          clearTimeout(
-            timeout
-          );
-
-
-          cleanup();
-
-
-          resolve(data);
-        };
-
-
-      function cleanup() {
-
-        try {
-          script.remove();
-        } catch (e) {}
-
-
-        try {
-          delete window[
-            callbackName
-          ];
-        } catch (e) {
-
-          window[
-            callbackName
-          ] = undefined;
-        }
+        return;
       }
 
 
-      const query =
-        new URLSearchParams();
+      if (
+        !response.success
+      ) {
+
+        addBotMessage(
+          escapeHtml(
+            response.error ||
+            'Unable to process your question.'
+          )
+        );
+
+        return;
+      }
 
 
-      query.set(
-        'action',
-        action
-      );
+      /*
+       * ------------------------------------------------
+       * ANSWER FOUND
+       * ------------------------------------------------
+       */
+
+      if (
+        response.answered === true
+      ) {
+
+        renderAnswer(
+          response
+        );
+
+        return;
+      }
 
 
-      query.set(
-        'callback',
-        callbackName
-      );
+      /*
+       * ------------------------------------------------
+       * NO ANSWER
+       * ------------------------------------------------
+       *
+       * The backend has already written the question
+       * to Unanswered_Queries.
+       * ------------------------------------------------
+       */
 
-
-      Object.keys(params)
-        .forEach(
-          function(key) {
-
-            if (
-              params[key] !==
-              undefined &&
-              params[key] !== null
-            ) {
-
-              query.set(
-                key,
-                String(
-                  params[key]
-                )
-              );
-            }
-          }
+      let html =
+        escapeHtml(
+          response.answer ||
+          'Sorry, I could not find a suitable answer.'
         );
 
 
-      script.src =
-        API_URL +
-        '?' +
-        query.toString();
+      if (
+        response.queryId
+      ) {
+
+        html +=
+
+          '<div class="query-id">' +
+
+          'Query ID: <strong>' +
+
+          escapeHtml(
+            response.queryId
+          ) +
+
+          '</strong>' +
+
+          '</div>';
+      }
 
 
-      script.onerror =
-        function() {
-
-          if (completed) {
-            return;
-          }
-
-
-          completed = true;
-
-
-          clearTimeout(
-            timeout
-          );
-
-
-          cleanup();
-
-
-          reject(
-            new Error(
-              'Unable to connect to API.'
-            )
-          );
-        };
-
-
-      document.head.appendChild(
-        script
+      addBotMessage(
+        html
       );
-
     }
   );
 }
 
 
 /* =====================================================
-   UI EVENTS
-   ===================================================== */
+   RENDER ANSWER
+===================================================== */
 
-sendBtn.addEventListener(
-  'click',
-  askQuestion
-);
+function renderAnswer(
+  response
+) {
+
+  let answer =
+    response.answer || '';
 
 
-questionInput.addEventListener(
-  'keydown',
-  function(event) {
+  /*
+   * If answer type is HTML,
+   * render HTML.
+   *
+   * If TEXT, escape it and convert line breaks.
+   */
 
-    if (
-      event.key === 'Enter' &&
-      !event.shiftKey
-    ) {
+  if (
+    String(
+      response.answerType || ''
+    ).toUpperCase() ===
+    'HTML'
+  ) {
 
-      event.preventDefault();
+    addBotMessage(
+      answer
+    );
 
-      askQuestion();
-    }
+  } else {
+
+    addBotMessage(
+      escapeHtml(
+        answer
+      )
+      .replace(
+        /\n/g,
+        '<br>'
+      )
+    );
   }
-);
+}
 
+
+/* =====================================================
+   ADD USER MESSAGE
+===================================================== */
+
+function addUserMessage(
+  html
+) {
+
+  const wrapper =
+    document.createElement(
+      'div'
+    );
+
+  wrapper.className =
+    'message user';
+
+
+  const bubble =
+    document.createElement(
+      'div'
+    );
+
+  bubble.className =
+    'bubble';
+
+
+  bubble.innerHTML =
+    html;
+
+
+  wrapper.appendChild(
+    bubble
+  );
+
+  chat.appendChild(
+    wrapper
+  );
+
+  scrollChat();
+}
+
+
+/* =====================================================
+   ADD BOT MESSAGE
+===================================================== */
+
+function addBotMessage(
+  html
+) {
+
+  const wrapper =
+    document.createElement(
+      'div'
+    );
+
+  wrapper.className =
+    'message bot';
+
+
+  const bubble =
+    document.createElement(
+      'div'
+    );
+
+  bubble.className =
+    'bubble';
+
+
+  bubble.innerHTML =
+    html;
+
+
+  wrapper.appendChild(
+    bubble
+  );
+
+  chat.appendChild(
+    wrapper
+  );
+
+  scrollChat();
+}
+
+
+/* =====================================================
+   TYPING
+===================================================== */
+
+function showTyping() {
+
+  const id =
+    'typing-' +
+    Date.now();
+
+
+  const wrapper =
+    document.createElement(
+      'div'
+    );
+
+  wrapper.className =
+    'message bot';
+
+  wrapper.id =
+    id;
+
+
+  wrapper.innerHTML =
+
+    '<div class="bubble">' +
+
+      '<div class="typing">' +
+
+        '<span></span>' +
+        '<span></span>' +
+        '<span></span>' +
+
+      '</div>' +
+
+    '</div>';
+
+
+  chat.appendChild(
+    wrapper
+  );
+
+  scrollChat();
+
+
+  return id;
+}
+
+
+function removeTyping(
+  id
+) {
+
+  const element =
+    document.getElementById(
+      id
+    );
+
+  if (element) {
+
+    element.remove();
+  }
+}
+
+
+/* =====================================================
+   CLEAR CHAT
+===================================================== */
+
+function clearChat() {
+
+  chat.innerHTML =
+    '';
+}
+
+
+/* =====================================================
+   SCROLL
+===================================================== */
+
+function scrollChat() {
+
+  setTimeout(
+    function () {
+
+      chat.scrollTop =
+        chat.scrollHeight;
+
+    },
+    20
+  );
+}
+
+
+/* =====================================================
+   TEXTAREA AUTO RESIZE
+===================================================== */
 
 questionInput.addEventListener(
   'input',
-  resizeTextarea
+  autoResize
 );
 
 
-function resizeTextarea() {
+function autoResize() {
 
   questionInput.style.height =
     'auto';
 
-
   questionInput.style.height =
     Math.min(
       questionInput.scrollHeight,
-      140
-    ) +
-    'px';
+      120
+    ) + 'px';
 }
 
 
-clearChatBtn.addEventListener(
-  'click',
-  function() {
-
-    chat.innerHTML = '';
-
-    addBotMessage(
-      appConfig.welcomeMessage
-    );
-  }
-);
-
-
 /* =====================================================
-   SETUP MESSAGE
-   ===================================================== */
+   MODAL ERROR
+===================================================== */
 
-function showSetupMessage() {
+function showModalError(
+  message
+) {
 
-  chat.innerHTML = '';
+  modalError.textContent =
+    message;
 
-  addBotMessage(
-    '<strong>Chatbot configuration required.</strong><br><br>' +
-    'Please set the Google Apps Script Web App URL ' +
-    'in the <code>API_URL</code> variable in index.html.'
+  modalError.classList.add(
+    'show'
   );
 }
 
 
 /* =====================================================
-   SECURITY / HTML HELPERS
-   ===================================================== */
+   MODAL LOADING
+===================================================== */
+
+function setModalLoading(
+  loading
+) {
+
+  saveUserBtn.disabled =
+    loading;
+
+  saveUserBtn.textContent =
+    loading
+      ? 'Validating...'
+      : 'Continue';
+}
+
+
+/* =====================================================
+   JSONP CLIENT
+===================================================== */
+
+function jsonp(
+  action,
+  params,
+  callback
+) {
+
+  if (
+    !API_URL ||
+    API_URL ===
+      'YOUR_APPS_SCRIPT_WEB_APP_URL'
+  ) {
+
+    callback({
+
+      success: false,
+
+      error:
+        'Apps Script API URL has not been configured.'
+    });
+
+    return;
+  }
+
+
+  const callbackName =
+    'treasuryCallback_' +
+    Date.now() +
+    '_' +
+    Math.floor(
+      Math.random() * 100000
+    );
+
+
+  const script =
+    document.createElement(
+      'script'
+    );
+
+
+  const query =
+    new URLSearchParams();
+
+
+  query.set(
+    'action',
+    action
+  );
+
+
+  query.set(
+    'callback',
+    callbackName
+  );
+
+
+  Object.keys(
+    params || {}
+  ).forEach(
+    function (key) {
+
+      query.set(
+        key,
+        params[key]
+      );
+    }
+  );
+
+
+  const timeout =
+    setTimeout(
+      function () {
+
+        cleanup();
+
+        callback({
+
+          success: false,
+
+          error:
+            'The server did not respond in time.'
+        });
+
+      },
+      30000
+    );
+
+
+  window[callbackName] =
+    function (data) {
+
+      clearTimeout(
+        timeout
+      );
+
+      cleanup();
+
+      callback(
+        data
+      );
+    };
+
+
+  script.onerror =
+    function () {
+
+      clearTimeout(
+        timeout
+      );
+
+      cleanup();
+
+      callback({
+
+        success: false,
+
+        error:
+          'Unable to connect to the chatbot API.'
+      });
+    };
+
+
+  script.src =
+    API_URL +
+    (
+      API_URL.indexOf('?') >= 0
+        ? '&'
+        : '?'
+    ) +
+    query.toString();
+
+
+  document
+    .head
+    .appendChild(
+      script
+    );
+
+
+  function cleanup() {
+
+    try {
+      delete window[
+        callbackName
+      ];
+    } catch (error) {
+      window[
+        callbackName
+      ] = undefined;
+    }
+
+
+    if (
+      script.parentNode
+    ) {
+
+      script.parentNode.removeChild(
+        script
+      );
+    }
+  }
+}
+
+
+/* =====================================================
+   HTML ESCAPE
+===================================================== */
 
 function escapeHtml(
   value
 ) {
 
-  return String(value || '')
-    .replace(
-      /&/g,
-      '&amp;'
-    )
-    .replace(
-      /</g,
-      '&lt;'
-    )
-    .replace(
-      />/g,
-      '&gt;'
-    )
-    .replace(
-      /"/g,
-      '&quot;'
-    )
-    .replace(
-      /'/g,
-      '&#039;'
-    );
+  return String(
+    value || ''
+  )
+  .replace(
+    /&/g,
+    '&amp;'
+  )
+  .replace(
+    /</g,
+    '&lt;'
+  )
+  .replace(
+    />/g,
+    '&gt;'
+  )
+  .replace(
+    /"/g,
+    '&quot;'
+  )
+  .replace(
+    /'/g,
+    '&#039;'
+  );
 }
 
 </script>
