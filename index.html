@@ -783,6 +783,207 @@
                 font-size: 0.65rem;
             }
         }
+
+        /* =====================================================
+           NOC AI ASSISTANT - FLOATING WIDGET
+           ===================================================== */
+        .noc-ai-widget {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            z-index: 9999;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .noc-ai-launcher {
+            position: relative;
+            width: 62px;
+            height: 62px;
+            border: 0;
+            border-radius: 50%;
+            padding: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            background: linear-gradient(135deg, #0a4b7a, #1a7ab5);
+            box-shadow: 0 10px 28px rgba(10,75,122,.35), 0 4px 12px rgba(0,0,0,.12);
+            transition: transform .25s ease, box-shadow .25s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .noc-ai-launcher:hover {
+            transform: translateY(-3px) scale(1.04);
+            box-shadow: 0 14px 34px rgba(10,75,122,.42), 0 6px 16px rgba(0,0,0,.14);
+        }
+
+        .noc-ai-launcher:focus-visible {
+            outline: 3px solid rgba(26,122,181,.35);
+            outline-offset: 4px;
+        }
+
+        .noc-ai-launcher-icon {
+            position: relative;
+            z-index: 2;
+            width: 34px;
+            height: 34px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,.16);
+            border: 1px solid rgba(255,255,255,.24);
+            font-size: 21px;
+            line-height: 1;
+        }
+
+        .noc-ai-wave,
+        .noc-ai-wave::before,
+        .noc-ai-wave::after {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .noc-ai-wave {
+            border: 2px solid rgba(26,122,181,.38);
+            animation: nocAiWave 2.8s ease-out infinite;
+        }
+
+        .noc-ai-wave::before,
+        .noc-ai-wave::after {
+            content: "";
+            border: 2px solid rgba(26,122,181,.24);
+            animation: nocAiWave 2.8s ease-out infinite;
+        }
+
+        .noc-ai-wave::before { animation-delay: .9s; }
+        .noc-ai-wave::after { animation-delay: 1.8s; }
+
+        @keyframes nocAiWave {
+            0% { transform: scale(1); opacity: .85; }
+            70% { transform: scale(1.65); opacity: .12; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
+
+        .noc-ai-label {
+            position: absolute;
+            right: 74px;
+            bottom: 11px;
+            white-space: nowrap;
+            padding: 8px 12px;
+            border-radius: 999px;
+            color: #fff;
+            background: rgba(26,42,58,.94);
+            box-shadow: 0 8px 24px rgba(0,0,0,.14);
+            font-size: 12px;
+            font-weight: 600;
+            opacity: 0;
+            transform: translateX(8px);
+            pointer-events: none;
+            transition: opacity .25s ease, transform .25s ease;
+        }
+
+        .noc-ai-widget:hover .noc-ai-label,
+        .noc-ai-widget:focus-within .noc-ai-label {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .noc-ai-panel {
+            position: absolute;
+            right: 0;
+            bottom: 78px;
+            width: min(430px, calc(100vw - 32px));
+            height: min(680px, calc(100vh - 118px));
+            min-height: 460px;
+            border-radius: 24px;
+            overflow: hidden;
+            background: #fff;
+            border: 1px solid rgba(10,75,122,.16);
+            box-shadow: 0 24px 70px rgba(15,23,42,.22), 0 8px 24px rgba(10,75,122,.10);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(16px) scale(.96);
+            transform-origin: bottom right;
+            pointer-events: none;
+            transition: opacity .25s ease, transform .25s ease, visibility .25s ease;
+        }
+
+        .noc-ai-panel.open {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+        .noc-ai-panel iframe {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            background: transparent;
+        }
+
+        .noc-ai-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 3;
+            width: 32px;
+            height: 32px;
+            border: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #334155;
+            background: rgba(255,255,255,.92);
+            box-shadow: 0 4px 14px rgba(15,23,42,.16);
+            font-size: 18px;
+            line-height: 1;
+            transition: transform .2s ease, background .2s ease;
+        }
+
+        .noc-ai-close:hover {
+            transform: rotate(90deg);
+            background: #fff;
+        }
+
+        .noc-ai-widget.panel-open .noc-ai-wave,
+        .noc-ai-widget.panel-open .noc-ai-wave::before,
+        .noc-ai-widget.panel-open .noc-ai-wave::after {
+            animation: none;
+            opacity: 0;
+        }
+
+        @media (max-width: 600px) {
+            .noc-ai-widget { right: 16px; bottom: 16px; }
+            .noc-ai-launcher { width: 56px; height: 56px; }
+            .noc-ai-panel {
+                right: -4px;
+                bottom: 70px;
+                width: calc(100vw - 24px);
+                height: min(78vh, 680px);
+                min-height: 430px;
+                border-radius: 20px;
+            }
+            .noc-ai-label { display: none; }
+            .noc-ai-close { top: 8px; right: 8px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .noc-ai-wave,
+            .noc-ai-wave::before,
+            .noc-ai-wave::after { animation: none; }
+            .noc-ai-panel,
+            .noc-ai-launcher,
+            .noc-ai-label { transition: none; }
+        }
+
     </style>
 </head>
 <body>
@@ -938,6 +1139,31 @@
         </div>
     </footer>
 
+
+    <!-- ===== NOC AI ASSISTANT ===== -->
+    <div class="noc-ai-widget" id="nocAiWidget">
+        <div class="noc-ai-label">NOC AI Assistant</div>
+
+        <section class="noc-ai-panel" id="nocAiPanel" aria-hidden="true" aria-label="NOC AI Assistant">
+            <button type="button" class="noc-ai-close" id="nocAiClose"
+                    aria-label="Close NOC AI Assistant" title="Close">&times;</button>
+
+            <iframe id="nocAiFrame"
+                    src="./noc-assistant.html"
+                    title="Treasury NOC Assistant"
+                    loading="lazy"
+                    allow="clipboard-read; clipboard-write"></iframe>
+        </section>
+
+        <button type="button" class="noc-ai-launcher" id="nocAiLauncher"
+                aria-label="Open NOC AI Assistant"
+                aria-expanded="false"
+                title="NOC AI Assistant">
+            <span class="noc-ai-wave" aria-hidden="true"></span>
+            <span class="noc-ai-launcher-icon" aria-hidden="true">🤖</span>
+        </button>
+    </div>
+
     <!-- ===== LOCAL JS RESOURCES ===== -->
     <script src="./js/jquery.min.js?v=20250102"></script>
     <script src="./js/bootstrap.bundle.min.js?v=20250102"></script>
@@ -966,6 +1192,48 @@
                 }
             });
         });
+
+        // ===== NOC AI ASSISTANT WIDGET =====
+        (function() {
+            const widget = document.getElementById('nocAiWidget');
+            const launcher = document.getElementById('nocAiLauncher');
+            const panel = document.getElementById('nocAiPanel');
+            const closeBtn = document.getElementById('nocAiClose');
+
+            if (!widget || !launcher || !panel || !closeBtn) return;
+
+            function openAssistant() {
+                panel.classList.add('open');
+                widget.classList.add('panel-open');
+                panel.setAttribute('aria-hidden', 'false');
+                launcher.setAttribute('aria-expanded', 'true');
+                launcher.setAttribute('aria-label', 'Close NOC AI Assistant');
+                launcher.setAttribute('title', 'Close NOC AI Assistant');
+            }
+
+            function closeAssistant() {
+                panel.classList.remove('open');
+                widget.classList.remove('panel-open');
+                panel.setAttribute('aria-hidden', 'true');
+                launcher.setAttribute('aria-expanded', 'false');
+                launcher.setAttribute('aria-label', 'Open NOC AI Assistant');
+                launcher.setAttribute('title', 'NOC AI Assistant');
+                launcher.focus();
+            }
+
+            launcher.addEventListener('click', function() {
+                panel.classList.contains('open') ? closeAssistant() : openAssistant();
+            });
+
+            closeBtn.addEventListener('click', closeAssistant);
+
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && panel.classList.contains('open')) {
+                    closeAssistant();
+                }
+            });
+        })();
+
     </script>
 </body>
 </html>
