@@ -19,13 +19,8 @@ body {
   margin: 0;
   min-height: 100vh;
   font-family: Arial, sans-serif;
-  background:
-    linear-gradient(
-      135deg,
-      #eef4ff,
-      #f8fbff
-    );
-  color: #172033;
+  background:#fff0;
+  color: #007bff !important;
 }
 
 .container {
@@ -35,12 +30,12 @@ body {
 }
 
 .glass {
-  background: rgba(255,255,255,.70);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border: 1px solid rgba(255,255,255,.7);
+ background: linear-gradient(165deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 30%, rgba(255, 255, 255, 0.02) 60%, rgba(255, 255, 255, 0.08) 100%);
+  backdrop-filter: blur(52px);
+  -webkit-backdrop-filter: blur(52px);
+ 
   box-shadow:
-    0 15px 40px rgba(0,0,0,.08);
+    0 8px 32px rgba(0, 0, 0, 0.3) !important
 }
 
 .header {
@@ -80,7 +75,9 @@ button {
 }
 
 .secondary {
-  background: rgba(0,0,0,.07);
+  background: rgb(255 255 255);
+    color: #020202;
+    border: solid 1px #5bb3ff;
 }
 
 .tabs {
@@ -127,11 +124,12 @@ input,
 select,
 textarea {
   width: 100%;
-  border: 1px solid rgba(0,0,0,.12);
-  border-radius: 10px;
-  padding: 11px;
-  background: rgba(255,255,255,.75);
-  outline: none;
+    border: 1px solid #22b6ff6b;
+    border-radius: 10px;
+    padding: 11px;
+    background: #fff0 !important;
+    outline: none;
+    color: #64748b;
 }
 
 textarea {
@@ -210,7 +208,6 @@ th {
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.45);
   display: none;
   align-items: center;
   justify-content: center;
@@ -228,6 +225,10 @@ th {
   overflow-y: auto;
   border-radius: 25px;
   padding: 22px;
+  background: rgba(132, 132, 132, 0.02) !important;
+  backdrop-filter: blur(52px);
+  -webkit-backdrop-filter: blur(52px) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
 }
 
 .login {
@@ -662,7 +663,7 @@ th {
   id="knowledgeModal"
   class="modal">
 
-  <div class="modal-box glass">
+  <div class="modal-box">
 
     <h2>Knowledge Base</h2>
 
