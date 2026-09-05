@@ -9,7 +9,7 @@
   content="width=device-width, initial-scale=1.0"
 >
 
-<title>NOC Assistant</title>
+<title>Treasury NOC Assistant</title>
 
 <style>
 
@@ -218,17 +218,19 @@ body {
 
   display: flex;
 
+  flex-direction: column;
+
   margin-bottom: 14px;
 }
 
 .message.user {
 
-  justify-content: flex-end;
+  align-items: flex-end;
 }
 
 .message.bot {
 
-  justify-content: flex-start;
+  align-items: flex-start;
 }
 
 .bubble {
@@ -246,6 +248,8 @@ body {
   word-wrap: break-word;
 
   overflow-wrap: anywhere;
+
+  position: relative;
 }
 
 .message.bot .bubble {
@@ -285,6 +289,69 @@ body {
   color: white;
 }
 
+/* Bubble content wrapper */
+.bubble-content {
+  margin-bottom: 6px;
+}
+
+/* Bubble footer - contains source and timestamp */
+.bubble-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  color: var(--muted);
+  opacity: 0.7;
+  border-top: 1px solid rgba(128, 128, 128, 0.15);
+  padding-top: 4px;
+  margin-top: 2px;
+}
+
+.message.user .bubble-footer {
+  color: rgba(255, 255, 255, 0.7);
+  border-top-color: rgba(255, 255, 255, 0.15);
+}
+
+.bubble-footer .source {
+  font-style: italic;
+}
+
+.bubble-footer .timestamp {
+  white-space: nowrap;
+}
+
+/* Suggestion styling */
+.suggestion-item {
+  display: block;
+  padding: 8px 12px;
+  margin: 6px 0;
+  border-radius: 8px;
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 13px;
+}
+
+.suggestion-item:hover {
+  background: rgba(37, 99, 235, 0.16);
+}
+
+.suggestion-item.none {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.suggestion-item.none:hover {
+  background: rgba(239, 68, 68, 0.16);
+}
+
+.suggestion-prompt {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 10px 0 6px 0;
+  color: var(--text);
+}
 
 /* =====================================================
    TYPING
@@ -350,7 +417,9 @@ body {
   display: flex;
 
   gap: 8px;
+
   background: rgba(148, 163, 184, .13);
+
 }
 
 .question-input {
@@ -870,15 +939,9 @@ body {
    CONFIGURATION
 ===================================================== */
 
-
-
 const API_URL =
-  'https://script.google.com/macros/s/AKfycbydY8cV5tVkLysDzxBqQ9ebrI41i_jwB8-CzKXBibEQlpggyHNrcCkTs-R1j7PSwpGBzQ/exec';
+  'https://script.google.com/macros/s/AKfycbyoxCxrymyEl_yLPFCRoG0zmksjhvPSB3ZNczCM_cEuLgson0QB1g4eYUq6ShPgae7D/exec';
 
-
-/*
- * Browser storage keys.
- */
 
 const STORAGE_KEYS = {
 
@@ -977,6 +1040,11 @@ let branch =
 
 let waiting =
   false;
+
+// Store the current pending suggestions
+let currentSuggestions = [];
+let isAwaitingSuggestionResponse = false;
+let pendingQuestion = '';
 
 
 /* =====================================================
@@ -1254,9 +1322,6 @@ function saveUserDetails() {
 
       /*
        * Permanently store in browser.
-       *
-       * localStorage remains until the user
-       * clears browser storage or changes details.
        */
 
       localStorage.setItem(
@@ -1438,6 +1503,12 @@ chatForm.addEventListener(
 
     event.preventDefault();
 
+    // If we're awaiting a suggestion response, handle it
+    if (isAwaitingSuggestionResponse) {
+      handleSuggestionResponse();
+      return;
+    }
+
     sendQuestion();
   }
 );
@@ -1458,10 +1529,120 @@ questionInput.addEventListener(
 
       event.preventDefault();
 
-      sendQuestion();
+      if (isAwaitingSuggestionResponse) {
+        handleSuggestionResponse();
+      } else {
+        sendQuestion();
+      }
     }
   }
 );
+
+
+/* =====================================================
+   HANDLE SUGGESTION RESPONSE
+===================================================== */
+
+function handleSuggestionResponse() {
+  const input = questionInput.value.trim();
+  
+  if (!input) {
+    return;
+  }
+
+  const selectedIndex = parseInt(input) - 1;
+
+  if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= currentSuggestions.length) {
+    addBotMessage(
+      'Please enter a valid number from the list above.'
+    );
+    questionInput.value = '';
+    questionInput.focus();
+    return;
+  }
+
+  // Check if "None of these" was selected (last item)
+  if (selectedIndex === currentSuggestions.length - 1) {
+    // Submit to Unanswered_Queries
+    submitUnansweredQuery(pendingQuestion);
+    return;
+  }
+
+  // Display the selected suggestion's answer
+  const suggestion = currentSuggestions[selectedIndex];
+  displaySuggestionAnswer(suggestion);
+}
+
+
+/* =====================================================
+   DISPLAY SUGGESTION ANSWER
+===================================================== */
+
+function displaySuggestionAnswer(suggestion) {
+  isAwaitingSuggestionResponse = false;
+  currentSuggestions = [];
+  questionInput.value = '';
+  questionInput.placeholder = 'Type your question...';
+  questionInput.focus();
+
+  // Format the answer with source info
+  let sourceInfo = 'Showing result for: Suggested Question from Knowledge Base';
+
+  addBotMessageWithSource(
+    suggestion.answer,
+    sourceInfo,
+    suggestion.answerType || 'TEXT'
+  );
+}
+
+
+/* =====================================================
+   SUBMIT UNANSWERED QUERY
+===================================================== */
+
+function submitUnansweredQuery(question) {
+  isAwaitingSuggestionResponse = false;
+  currentSuggestions = [];
+  questionInput.placeholder = 'Type your question...';
+  
+  // Send to server as unanswered
+  waiting = true;
+  sendBtn.disabled = true;
+
+  jsonp(
+    'ask',
+    {
+      name: userName,
+      brCode: brCode,
+      question: question
+    },
+    function (response) {
+      waiting = false;
+      sendBtn.disabled = false;
+      questionInput.value = '';
+      questionInput.focus();
+
+      if (!response) {
+        addBotMessage('Unable to contact the chatbot server.');
+        return;
+      }
+
+      if (!response.success) {
+        addBotMessage(escapeHtml(response.error || 'Unable to process your question.'));
+        return;
+      }
+
+      // Show the no-answer message with query ID
+      let html = escapeHtml(response.answer || 'Sorry, I could not find a suitable answer.');
+
+      if (response.queryId) {
+        html += '<div class="query-id">Query ID: <strong>' + escapeHtml(response.queryId) + '</strong></div>';
+      }
+
+      addBotMessage(html);
+    }
+  );
+}
 
 
 /* =====================================================
@@ -1474,6 +1655,10 @@ function sendQuestion() {
     return;
   }
 
+  // Reset suggestion state
+  isAwaitingSuggestionResponse = false;
+  currentSuggestions = [];
+  questionInput.placeholder = 'Type your question...';
 
   const question =
     questionInput.value.trim();
@@ -1584,11 +1769,8 @@ function sendQuestion() {
 
 
       /*
-       * ------------------------------------------------
-       * ANSWER FOUND
-       * ------------------------------------------------
+       * Check if we have a direct answer
        */
-
       if (
         response.answered === true
       ) {
@@ -1602,15 +1784,18 @@ function sendQuestion() {
 
 
       /*
-       * ------------------------------------------------
-       * NO ANSWER
-       * ------------------------------------------------
-       *
-       * The backend has already written the question
-       * to Unanswered_Queries.
-       * ------------------------------------------------
+       * No direct answer - check if we have suggestions
        */
+      if (response.suggestions && response.suggestions.length > 0) {
+        // Show suggestions
+        showSuggestions(response.suggestions, question);
+        return;
+      }
 
+
+      /*
+       * No answer and no suggestions - log to unanswered
+       */
       let html =
         escapeHtml(
           response.answer ||
@@ -1647,6 +1832,37 @@ function sendQuestion() {
 
 
 /* =====================================================
+   SHOW SUGGESTIONS
+===================================================== */
+
+function showSuggestions(suggestions, originalQuestion) {
+  isAwaitingSuggestionResponse = true;
+  currentSuggestions = suggestions;
+  pendingQuestion = originalQuestion;
+
+  let html = '<div class="suggestion-prompt">🤔 I couldn\'t find an exact match. Did you mean one of these?</div>';
+
+  suggestions.forEach((suggestion, index) => {
+    const num = index + 1;
+    const questionText = suggestion.question || 'Question ' + num;
+    html += '<div class="suggestion-item">' + num + '. ' + escapeHtml(questionText) + '</div>';
+  });
+
+  // Add "None of these" option
+  const noneNum = suggestions.length + 1;
+  html += '<div class="suggestion-item none">' + noneNum + '. None of these — submit as new query</div>';
+
+  html += '<div style="margin-top:12px;font-size:13px;color:var(--muted);">Please type the number (1-' + noneNum + ') and press Enter.</div>';
+
+  addBotMessage(html);
+
+  // Focus input and show placeholder
+  questionInput.focus();
+  questionInput.placeholder = 'Enter number (1-' + noneNum + ')...';
+}
+
+
+/* =====================================================
    RENDER ANSWER
 ===================================================== */
 
@@ -1657,14 +1873,32 @@ function renderAnswer(
   let answer =
     response.answer || '';
 
+  let sourceInfo = '';
 
-  /*
-   * If answer type is HTML,
-   * render HTML.
-   *
-   * If TEXT, escape it and convert line breaks.
-   */
+  // Determine source info based on match type
+  if (response.matchType === 'EXACT') {
+    sourceInfo = 'Showing result for: Exact Question Match';
+  } else if (response.matchType === 'EXTERNAL') {
+    if (response.lookupBR) {
+      sourceInfo = 'Showing result for: ' + response.lookupBR + ' (External Source)';
+    } else {
+      sourceInfo = 'Showing result for: External Source';
+    }
+  } else if (response.matchType === 'BRANCH_LOOKUP' || response.lookupBR) {
+    sourceInfo = 'Showing result for: ' + (response.lookupBR || brCode);
+  } else if (response.matchType === 'KEYWORD') {
+    sourceInfo = 'Showing result for: Keyword Match';
+  } else if (response.source === 'External_Sources') {
+    if (response.lookupBR) {
+      sourceInfo = 'Showing result for: ' + response.lookupBR + ' (External Source)';
+    } else {
+      sourceInfo = 'Showing result for: External Source';
+    }
+  } else {
+    sourceInfo = 'Showing result for: ' + (response.lookupBR || brCode);
+  }
 
+  // If answer type is HTML, render HTML
   if (
     String(
       response.answerType || ''
@@ -1672,27 +1906,31 @@ function renderAnswer(
     'HTML'
   ) {
 
-    addBotMessage(
-      answer
+    addBotMessageWithSource(
+      answer,
+      sourceInfo,
+      'HTML'
     );
 
   } else {
 
-    addBotMessage(
+    addBotMessageWithSource(
       escapeHtml(
         answer
       )
       .replace(
         /\n/g,
         '<br>'
-      )
+      ),
+      sourceInfo,
+      'TEXT'
     );
   }
 }
 
 
 /* =====================================================
-   ADD USER MESSAGE
+   ADD USER MESSAGE WITH TIMESTAMP
 ===================================================== */
 
 function addUserMessage(
@@ -1716,10 +1954,29 @@ function addUserMessage(
   bubble.className =
     'bubble';
 
+  // Content wrapper
+  const content = document.createElement('div');
+  content.className = 'bubble-content';
+  content.innerHTML = html;
+  bubble.appendChild(content);
 
-  bubble.innerHTML =
-    html;
-
+  // Footer with timestamp
+  const footer = document.createElement('div');
+  footer.className = 'bubble-footer';
+  
+  // Left side empty for user (alignment)
+  const leftSpan = document.createElement('span');
+  leftSpan.style.visibility = 'hidden';
+  leftSpan.textContent = ' ';
+  
+  // Timestamp on right
+  const timestampSpan = document.createElement('span');
+  timestampSpan.className = 'timestamp';
+  timestampSpan.textContent = getCurrentTimestamp();
+  
+  footer.appendChild(leftSpan);
+  footer.appendChild(timestampSpan);
+  bubble.appendChild(footer);
 
   wrapper.appendChild(
     bubble
@@ -1740,7 +1997,6 @@ function addUserMessage(
 function addBotMessage(
   html
 ) {
-
   const wrapper =
     document.createElement(
       'div'
@@ -1758,10 +2014,29 @@ function addBotMessage(
   bubble.className =
     'bubble';
 
+  // Content wrapper
+  const content = document.createElement('div');
+  content.className = 'bubble-content';
+  content.innerHTML = html;
+  bubble.appendChild(content);
 
-  bubble.innerHTML =
-    html;
-
+  // Footer with timestamp (only timestamp for regular bot messages)
+  const footer = document.createElement('div');
+  footer.className = 'bubble-footer';
+  
+  // Left side empty for alignment
+  const leftSpan = document.createElement('span');
+  leftSpan.style.visibility = 'hidden';
+  leftSpan.textContent = ' ';
+  
+  // Timestamp on right
+  const timestampSpan = document.createElement('span');
+  timestampSpan.className = 'timestamp';
+  timestampSpan.textContent = getCurrentTimestamp();
+  
+  footer.appendChild(leftSpan);
+  footer.appendChild(timestampSpan);
+  bubble.appendChild(footer);
 
   wrapper.appendChild(
     bubble
@@ -1772,6 +2047,88 @@ function addBotMessage(
   );
 
   scrollChat();
+}
+
+
+/* =====================================================
+   ADD BOT MESSAGE WITH SOURCE INDICATOR
+===================================================== */
+
+function addBotMessageWithSource(
+  html,
+  sourceInfo,
+  answerType
+) {
+  const wrapper =
+    document.createElement(
+      'div'
+    );
+
+  wrapper.className =
+    'message bot';
+
+  const bubble =
+    document.createElement(
+      'div'
+    );
+
+  bubble.className =
+    'bubble';
+
+  // Content wrapper
+  const content = document.createElement('div');
+  content.className = 'bubble-content';
+  
+  if (answerType && answerType.toUpperCase() === 'HTML') {
+    content.innerHTML = html;
+  } else {
+    content.innerHTML = html;
+  }
+  bubble.appendChild(content);
+
+  // Footer with source and timestamp
+  const footer = document.createElement('div');
+  footer.className = 'bubble-footer';
+  
+  // Source on left
+  const sourceSpan = document.createElement('span');
+  sourceSpan.className = 'source';
+  sourceSpan.textContent = sourceInfo;
+  
+  // Timestamp on right
+  const timestampSpan = document.createElement('span');
+  timestampSpan.className = 'timestamp';
+  timestampSpan.textContent = getCurrentTimestamp();
+  
+  footer.appendChild(sourceSpan);
+  footer.appendChild(timestampSpan);
+  bubble.appendChild(footer);
+
+  wrapper.appendChild(
+    bubble
+  );
+
+  chat.appendChild(
+    wrapper
+  );
+
+  scrollChat();
+}
+
+
+/* =====================================================
+   GET CURRENT TIMESTAMP
+===================================================== */
+
+function getCurrentTimestamp() {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+  return hours + ':' + minutes + ':' + seconds + ' • ' + day + '/' + month + '/' + year;
 }
 
 
