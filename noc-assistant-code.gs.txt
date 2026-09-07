@@ -567,8 +567,9 @@ function askQuestion_(
         answer: result.answer,
         answerType: result.answerType || 'HTML',
         source: 'External_Sources',
-        matchType: 'EXTERNAL',
+        matchType: result.matchType || 'EXTERNAL',
         lookupBR: result.lookupBR || lookupBR,
+        matchedBy: result.matchedBy || 'External Source',
         score: result.score,
         rowNumber: result.rowNumber
       };
@@ -594,6 +595,9 @@ function askQuestion_(
 
       lookupBR:
         result.lookupBR || lookupBR,
+
+      matchedBy:
+        result.matchedBy || 'Knowledge Base',
 
       score:
         result.score,
@@ -1330,7 +1334,7 @@ function searchKnowledgeBase_(
     let source =
       'Knowledge_Base';
 
-    let externalLookupBR = null;
+    let matchedBy = 'Knowledge Base';
 
 
     /*
@@ -1371,8 +1375,6 @@ function searchKnowledgeBase_(
     ) {
 
       // Determine which BR to use for external lookup
-      // If there's an extracted BR from the question, use that
-      // Otherwise use the user's BR
       const externalLookupBR = lookupBR || brCode;
 
       const externalAnswer =
@@ -1395,13 +1397,16 @@ function searchKnowledgeBase_(
           'External_Sources';
 
         matchTypeUsed = 'EXTERNAL';
+        
+        matchedBy = externalAnswer.matchedBy || 'External Source';
 
         return {
           answer: answer,
           answerType: answerType || 'HTML',
           source: source,
           matchType: matchTypeUsed,
-          lookupBR: externalLookupBR,
+          lookupBR: externalAnswer.lookupBR || externalLookupBR,
+          matchedBy: matchedBy,
           score: score,
           rowNumber: i + 1
         };
@@ -1445,6 +1450,9 @@ function searchKnowledgeBase_(
 
         lookupBR:
           lookupBR || brCode,
+
+        matchedBy:
+          matchedBy,
 
         score:
           score,
@@ -1590,7 +1598,15 @@ function getExternalAnswer_(
             row,
             index['LOOKUP MODE']
           )
-        ).trim().toUpperCase()
+        ).trim().toUpperCase(),
+      
+      lookupValue:
+        String(
+          value_(
+            row,
+            index['LOOKUP VALUE']
+          )
+        ).trim()
     };
 
     break;
@@ -1696,29 +1712,112 @@ function getExternalAnswer_(
   const sourceHeaders =
     data[0];
 
-  // Determine lookup value based on lookup mode
   const lookupMode = config.lookupMode || 'EXACT';
+  const configuredLookupValue = config.lookupValue;
   
-  // For branch-specific lookups, use lookupBR (which may be extracted from question)
-  // For EXACT or KEYWORD mode, use the question text or keywords
+  // Build lookup values based on the configured lookup value type
   let lookupValues = [];
   
-  if (lookupMode === 'BRANCH' || lookupMode === 'MULTI') {
-    // Use the provided lookupBR or userBR
-    lookupValues.push(lookupBR || userBR);
-  } else if (lookupMode === 'EXACT') {
-    // Use the question text for exact matching
+  // Check what type of lookup this is
+  const isKeywordLookup = configuredLookupValue && 
+    (configuredLookupValue.toUpperCase() === 'MATCHED KEY WORDS' || 
+     configuredLookupValue.toUpperCase() === 'KEYWORDS' ||
+     configuredLookupValue.toUpperCase() === 'KEYWORD' ||
+     configuredLookupValue.toUpperCase() === 'MATCHED_KEY_WORDS');
+  
+  const isBranchLookup = configuredLookupValue && 
+    (configuredLookupValue.toUpperCase() === 'BRANCH ID' || 
+     configuredLookupValue.toUpperCase() === 'BR CODE' ||
+     configuredLookupValue.toUpperCase() === 'BRANCH' ||
+     configuredLookupValue.toUpperCase() === 'BRANCH_ID');
+  
+  // Determine which lookup strategy to use
+  const useKeywordSearch = lookupMode === 'KEYWORD' || 
+    (lookupMode === 'BOTH' && isKeywordLookup);
+  
+  const useBranchSearch = lookupMode === 'BRANCH' || 
+    (lookupMode === 'MULTI') ||
+    (lookupMode === 'BOTH' && isBranchLookup);
+  
+  // For EXACT mode
+  if (lookupMode === 'EXACT') {
+    if (configuredLookupValue && !isKeywordLookup && !isBranchLookup) {
+      lookupValues.push(configuredLookupValue);
+    }
     lookupValues.push(question);
-  } else if (lookupMode === 'KEYWORD') {
-    // Use keywords from the question
-    const words = normalizeText_(question).split(' ');
-    lookupValues = lookupValues.concat(words.filter(w => w.length > 2));
   }
   
-  // Also add the default user BR for fallback
-  if (userBR && lookupValues.indexOf(userBR) === -1) {
-    lookupValues.push(userBR);
+  // For BRANCH/MULTI/BOTH modes
+  if (useBranchSearch || lookupMode === 'BOTH' || lookupMode === 'MULTI') {
+    
+    // 1. Extract BR code from question
+    const extractedBR = extractBRFromQuestion_(question);
+    if (extractedBR) {
+      lookupValues.push(extractedBR);
+    }
+    
+    // 2. Extract any 3-4 digit number from question
+    const numberMatches = question.match(/\b(\d{3,4})\b/g);
+    if (numberMatches) {
+      numberMatches.forEach(function(num) {
+        const normalized = normalizeBRCode_(num);
+        if (normalized && normalized !== 'BRALL' && lookupValues.indexOf(normalized) === -1) {
+          lookupValues.push(normalized);
+        }
+        if (lookupValues.indexOf(num) === -1) {
+          lookupValues.push(num);
+        }
+      });
+    }
+    
+    // 3. Extract branch names/keywords from question
+    const stopWords = ['the', 'of', 'for', 'to', 'in', 'on', 'at', 'by', 'with', 'without', 'and', 'or', 'but', 'from', 'up', 'down', 'off', 'over', 'under', 'gateway', 'ip', 'address', 'what', 'is', 'are', 'was', 'were', 'am', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'please', 'tell', 'me', 'my', 'your', 'our', 'their', 'treasury', 'sub', 'branch'];
+    
+    const words = question.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(' ');
+    const meaningfulWords = words.filter(function(w) {
+      return w.length >= 3 && stopWords.indexOf(w) === -1;
+    });
+    
+    meaningfulWords.forEach(function(word) {
+      if (lookupValues.indexOf(word) === -1) {
+        lookupValues.push(word);
+      }
+    });
+    
+    // 4. Always add user's BR code as fallback
+    if (userBR && lookupValues.indexOf(userBR) === -1) {
+      lookupValues.push(userBR);
+    }
+    
+    // 5. Add lookupBR if provided
+    if (lookupBR && lookupValues.indexOf(lookupBR) === -1) {
+      lookupValues.push(lookupBR);
+    }
   }
+  
+  // For KEYWORD mode
+  if (useKeywordSearch || lookupMode === 'KEYWORD') {
+    if (configuredLookupValue && isKeywordLookup) {
+      const keywords = configuredLookupValue
+        .split(/[,;|\s]+/)
+        .map(function(k) { return k.trim().toLowerCase(); })
+        .filter(Boolean);
+      lookupValues = lookupValues.concat(keywords);
+    }
+    
+    // Extract meaningful words from question
+    const stopWords = ['the', 'of', 'for', 'to', 'in', 'on', 'at', 'by', 'with', 'without', 'and', 'or', 'but', 'from', 'up', 'down', 'off', 'over', 'under', 'gateway', 'ip', 'address', 'what', 'is', 'are', 'was', 'were', 'am', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'please', 'tell', 'me', 'my', 'your', 'our', 'their', 'treasury', 'sub', 'branch'];
+    const words = question.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(' ');
+    const meaningfulWords = words.filter(function(w) {
+      return w.length >= 3 && stopWords.indexOf(w) === -1;
+    });
+    lookupValues = lookupValues.concat(meaningfulWords);
+  }
+  
+  // Remove duplicates and empty values
+  lookupValues = lookupValues.filter(function(v, i, self) {
+    return v && self.indexOf(v) === i;
+  });
 
   /*
    * Search external sheet.
@@ -1736,6 +1835,7 @@ function getExternalAnswer_(
     let matched =
       false;
     let matchedValue = null;
+    let matchedBy = '';
 
     /*
      * Check reference columns.
@@ -1760,6 +1860,9 @@ function getExternalAnswer_(
 
       const normalizedCell =
         normalizeBRCode_(cell);
+      
+      const cellUpper = cell.toUpperCase();
+      const cellLower = cell.toLowerCase();
 
       // Check against all lookup values
       for (let v = 0; v < lookupValues.length; v++) {
@@ -1767,32 +1870,82 @@ function getExternalAnswer_(
         
         if (!lookupVal) continue;
         
-        // Direct comparison
-        if (cell.toUpperCase() === String(lookupVal).toUpperCase()) {
+        const lookupStr = String(lookupVal).toUpperCase();
+        const lookupLower = lookupVal.toLowerCase();
+        
+        // 1. Try exact match (BR code or exact text)
+        if (cellUpper === lookupStr) {
           matched = true;
           matchedValue = lookupVal;
+          matchedBy = 'Exact Match: ' + lookupVal;
           break;
         }
         
-        // Normalized BR comparison
+        // 2. Try normalized BR comparison
         if (normalizedCell && normalizedCell === lookupVal) {
           matched = true;
           matchedValue = lookupVal;
+          matchedBy = 'BR Code Match: ' + lookupVal;
           break;
         }
         
-        // For EXACT mode, check if cell matches the exact question
-        if (lookupMode === 'EXACT' && cell.toLowerCase() === lookupVal.toLowerCase()) {
+        // 3. Try case-insensitive contains (for keyword/name matching)
+        if (cellLower.indexOf(lookupLower) !== -1) {
           matched = true;
           matchedValue = lookupVal;
+          matchedBy = 'Keyword Match: "' + lookupVal + '"';
           break;
         }
         
-        // For KEYWORD mode, check if lookup value is in the cell
-        if (lookupMode === 'KEYWORD' && cell.toLowerCase().indexOf(String(lookupVal).toLowerCase()) !== -1) {
-          matched = true;
-          matchedValue = lookupVal;
-          break;
+        // 4. Try matching the lookup value within the cell (for treasury names)
+        if (useKeywordSearch || lookupMode === 'BOTH') {
+          const cellWords = cellLower.split(/[\s\-]+/);
+          for (let w = 0; w < cellWords.length; w++) {
+            if (cellWords[w].indexOf(lookupLower) !== -1 || lookupLower.indexOf(cellWords[w]) !== -1) {
+              if (cellWords[w].length >= 3) {
+                matched = true;
+                matchedValue = lookupVal;
+                matchedBy = 'Keyword Match: "' + lookupVal + '"';
+                break;
+              }
+            }
+          }
+          if (matched) break;
+        }
+        
+        // 5. Try matching treasury code numbers
+        const cellNumbers = cell.match(/\b(\d{3,4})\b/g);
+        if (cellNumbers) {
+          for (let n = 0; n < cellNumbers.length; n++) {
+            const normalizedNum = normalizeBRCode_(cellNumbers[n]);
+            if (cellNumbers[n] === lookupVal || normalizedNum === lookupVal || normalizedNum === lookupStr) {
+              matched = true;
+              matchedValue = lookupVal;
+              matchedBy = 'Treasury Code Match: ' + lookupVal;
+              break;
+            }
+          }
+          if (matched) break;
+        }
+        
+        // 6. Try matching partial words in the cell
+        if (!matched && lookupLower.length >= 3) {
+          const cellWords = cellLower.split(/[\s\-]+/);
+          for (let w = 0; w < cellWords.length; w++) {
+            if (cellWords[w].length >= 3 && cellWords[w].indexOf(lookupLower) !== -1) {
+              matched = true;
+              matchedValue = lookupVal;
+              matchedBy = 'Partial Match: "' + lookupVal + '"';
+              break;
+            }
+            if (cellWords[w].length >= 3 && lookupLower.indexOf(cellWords[w]) !== -1) {
+              matched = true;
+              matchedValue = lookupVal;
+              matchedBy = 'Partial Match: "' + lookupVal + '"';
+              break;
+            }
+          }
+          if (matched) break;
         }
       }
 
@@ -1869,7 +2022,8 @@ function getExternalAnswer_(
         ),
       answerType:
         'HTML',
-      lookupBR: matchedValue || lookupBR || userBR
+      lookupBR: matchedValue || lookupBR || userBR,
+      matchedBy: matchedBy
     };
   }
 
