@@ -1918,6 +1918,7 @@ $('#exportPowerOnCsvBtn').on('click', function() {
 //  Calculates branches from Backup sheet that haven't requested in Data sheet
 //  Fetches Admin Name, Treasury Name from "Branch Admin Details" sheet (columns B, D)
 //  Fetches Last Requested Date from Backup sheet (column D) - BOTTOM-UP approach
+//  Fetches Last Requested Time from Backup sheet (column E) - BOTTOM-UP approach
 //  Date filter: Filter by Last Requested Date
 // ============================================================
 
@@ -1960,11 +1961,11 @@ async function fetchAdminDetails() {
     }
 }
 
-// Function to fetch last requested date from Backup sheet (column D) - BOTTOM-UP
+// Function to fetch last requested date AND time from Backup sheet (columns D & E) - BOTTOM-UP
 // This ensures we get the LATEST/MOST RECENT entry for each branch
 async function fetchBackupData() {
     try {
-        const range = `${BACKUP_SHEET_NAME}!A:D`;
+        const range = `${BACKUP_SHEET_NAME}!A:E`;
         const data = await readSheetData(range);
         const backupMap = {};
         
@@ -1984,16 +1985,22 @@ async function fetchBackupData() {
                 const rawDate = row.length > 3 ? (row[3] || "").toString().trim() : '';
                 const convertedDate = convertToDDMMYYYY(rawDate);
                 
+                // Column E (index 4) contains the time
+                const rawTime = row.length > 4 ? (row[4] || "").toString().trim() : '';
+                
                 // Only store if we haven't already found a date for this branch
                 // Since we're going bottom-up, the first one we find is the LATEST
                 if (convertedDate && !backupMap[branch]) {
-                    backupMap[branch] = convertedDate;
+                    backupMap[branch] = {
+                        date: convertedDate,
+                        time: rawTime
+                    };
                 }
             }
         }
         
         backupDataCache = backupMap;
-        console.log('Backup data loaded (bottom-up, latest dates):', backupMap);
+        console.log('Backup data loaded (bottom-up, latest dates & times):', backupMap);
     } catch (err) {
         console.warn('Error fetching backup data:', err);
         backupDataCache = {};
@@ -2145,8 +2152,10 @@ $('#viewPendingBranchesBtn').on('click', async function() {
                     treasuryName: 'N/A' 
                 };
                 
-                // Get last requested date from backup cache (already latest date)
-                const lastRequestedDate = backupDataCache[branch] || 'N/A';
+                // Get last requested date & time from backup cache (already latest date)
+                const backupEntry = backupDataCache[branch];
+                const lastRequestedDate = backupEntry ? backupEntry.date : 'N/A';
+                const lastRequestedTime = backupEntry ? backupEntry.time : '';
                 
                 pendingBranchesList.push({
                     branch: branch,
@@ -2154,6 +2163,7 @@ $('#viewPendingBranchesBtn').on('click', async function() {
                     adminName: adminInfo.adminName,
                     contact: adminInfo.contact,
                     lastRequestedDate: lastRequestedDate,
+                    lastRequestedTime: lastRequestedTime,
                     status: "Pending - Not Requested"
                 });
             }
@@ -2275,7 +2285,7 @@ function renderPendingBranches(branches, filterDate) {
                         <th>Admin Name</th>
                         <th>Contact</th>
                         <th>Status</th>
-                        <th>Last Requested Date</th>
+                        <th>Last Requested Date & Time</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -2286,6 +2296,10 @@ function renderPendingBranches(branches, filterDate) {
             ? `<span class="treasury-badge"><i class="bi bi-bank"></i> ${item.treasuryName}</span>`
             : '<span class="text-muted">N/A</span>';
         
+        const dateTimeDisplay = item.lastRequestedDate && item.lastRequestedDate !== 'N/A' 
+            ? `${item.lastRequestedDate}${item.lastRequestedTime ? ' <span class="text-muted">' + formatTimeDisplay(item.lastRequestedTime) + '</span>' : ''}` 
+            : 'N/A';
+        
         html += `
             <tr>
                 <td>${index + 1}</td>
@@ -2294,7 +2308,7 @@ function renderPendingBranches(branches, filterDate) {
                 <td>${item.adminName}</td>
                 <td>${item.contact}</td>
                 <td><span class="badge-pending-branch"><i class="bi bi-clock"></i> ${item.status}</span></td>
-                <td>${item.lastRequestedDate}</td>
+                <td>${dateTimeDisplay}</td>
             </tr>
         `;
     });
@@ -2317,7 +2331,7 @@ function renderPendingBranches(branches, filterDate) {
     applyTableSearch('#pendingBranchesTable', '#pendingBranchesSearchInput');
 }
 
-// Export CSV for Pending Branches (updated with Contact column)
+// Export CSV for Pending Branches (updated with Contact and Time column)
 $('#exportPendingBranchesCsvBtn').on('click', function() {
     const branches = pendingBranchesCache;
     if (!branches || branches.length === 0) {
@@ -2330,14 +2344,15 @@ $('#exportPendingBranchesCsvBtn').on('click', function() {
         return;
     }
     
-    const headers = ['Branch', 'Treasury Name', 'Admin Name', 'Contact', 'Status', 'Last Requested Date'];
+    const headers = ['Branch', 'Treasury Name', 'Admin Name', 'Contact', 'Status', 'Last Requested Date', 'Last Requested Time'];
     const rows = branches.map(r => [
         r.branch,
         r.treasuryName || 'N/A',
         r.adminName || 'N/A',
         r.contact || 'N/A',
         r.status,
-        r.lastRequestedDate || 'N/A'
+        r.lastRequestedDate || 'N/A',
+        r.lastRequestedTime || 'N/A'
     ]);
     
     let csvContent = headers.join(',') + '\n';
