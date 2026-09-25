@@ -276,12 +276,82 @@
             opacity: 0.55;
             transition: opacity 0.2s ease;
         }
+
+        /*
+         * Keep the confirmation status area at a stable height.
+         * A table refresh therefore cannot make the table jump.
+         */
+        #confirmStatusMsg {
+            min-height: 34px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            box-sizing: border-box;
+            transition: none !important;
+        }
+
+        #confirmStatusMsg:empty {
+            visibility: hidden;
+        }
+
+        /*
+         * Small independent confirmation notification.
+         * It does not use SweetAlert, so it never interferes with
+         * the "Confirm Shutdown?" dialog for a new request.
+         */
+        .confirm-success-toast {
+            position: fixed;
+            top: 18px;
+            right: 18px;
+            z-index: 11000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: min(360px, calc(100vw - 36px));
+            padding: 9px 13px;
+            border: 1px solid #a7f3d0;
+            border-radius: 9px;
+            background: #ecfdf5;
+            color: #047857;
+            box-shadow: 0 5px 18px rgba(15, 23, 42, 0.14);
+            font-size: 0.82rem;
+            font-weight: 600;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            pointer-events: none;
+            transition: opacity .18s ease, transform .18s ease, visibility .18s ease;
+        }
+
+        .confirm-success-toast.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .confirm-success-toast .bi {
+            font-size: 0.95rem;
+            flex: 0 0 auto;
+        }
+
+        @media (max-width: 576px) {
+            .confirm-success-toast {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+        }
     </style>
 </head>
 
 <body>
 
 <div id="copyToast" class="toast-copy">✅ Copied to clipboard</div>
+<div id="confirmSuccessToast" class="confirm-success-toast" role="status" aria-live="polite">
+    <i class="bi bi-check-circle-fill"></i>
+    <span id="confirmSuccessToastText">Request confirmed successfully.</span>
+</div>
 
 <div class="loading-overlay" id="loadingOverlay">
     <div class="custom-loader"></div>
@@ -1368,6 +1438,30 @@ function showCopyToast(text) {
         }, 2000);
 }
 
+/* ============================================================
+   SMALL CONFIRMATION SUCCESS ALERT
+   ============================================================ */
+
+let confirmSuccessToastTimer = null;
+
+function showConfirmSuccessToast(message) {
+
+    const $toast = $('#confirmSuccessToast');
+    const $text = $('#confirmSuccessToastText');
+
+    if (!$toast.length) return;
+
+    $text.text(message || 'Request confirmed successfully.');
+
+    clearTimeout(confirmSuccessToastTimer);
+
+    $toast.addClass('show');
+
+    confirmSuccessToastTimer = setTimeout(function() {
+        $toast.removeClass('show');
+    }, 2200);
+}
+
 
 /* ============================================================
    DATE CONVERSION
@@ -1832,7 +1926,7 @@ function startAutoCheck() {
 
     checkCount = 0;
 
-    previousPendingCount = -1;
+    /* Keep the last known count so a new request can trigger a table refresh. */
 
     autoCheckStoppedByInactivity =
         false;
@@ -1988,7 +2082,23 @@ async function performAutoCheck() {
             data.values.length < 2
         ) {
 
+            const hadPendingRequests =
+                previousPendingCount > 0;
+
+            previousPendingCount =
+                0;
+
+            pendingCount =
+                0;
+
             updatePendingBadge(0);
+
+            if (
+                hadPendingRequests &&
+                !confirmActionInProgress
+            ) {
+                await refreshConfirmTableSilently();
+            }
 
             $('#refreshStatusText')
                 .text(
@@ -2066,6 +2176,15 @@ async function performAutoCheck() {
         }
 
 
+        /*
+         * Refresh the visible request table only when the pending
+         * count actually changes. Normal 5-second checks therefore
+         * do not rebuild the table or cause any visual jumping.
+         */
+        const countChanged =
+            previousPendingCount >= 0 &&
+            count !== previousPendingCount;
+
         previousPendingCount =
             count;
 
@@ -2077,11 +2196,13 @@ async function performAutoCheck() {
         );
 
 
-        /*
-         * DO NOT RELOAD TABLE HERE.
-         *
-         * This is the key fix.
-         */
+        if (
+            countChanged &&
+            !confirmActionInProgress
+        ) {
+            await refreshConfirmTableSilently();
+        }
+
 
         $('#refreshStatusText')
             .text(
@@ -2441,11 +2562,12 @@ $('#viewConfirmBtn').on(
             true
         );
 
-        $statusMsg
-            .hide()
-            .removeClass(
-                'error success info'
-            );
+        /*
+         * Do not hide or clear confirmStatusMsg while refreshing.
+         * Its reserved height also prevents the request table from
+         * jumping when the table contents are replaced.
+         */
+        $statusMsg.css('visibility', 'visible');
 
         showLoading();
 
@@ -2581,6 +2703,13 @@ $('#viewConfirmBtn').on(
             updatePendingBadge(
                 records.length
             );
+
+            /* Establish the displayed table as the auto-check baseline. */
+            pendingCount =
+                records.length;
+
+            previousPendingCount =
+                records.length;
 
 
             if (
@@ -2839,20 +2968,10 @@ async function refreshConfirmTableSilently() {
 
 
         /*
-         * Do not show another popup here.
+         * Do not touch confirmStatusMsg during a silent refresh.
+         * The existing message remains visible and its reserved
+         * height prevents the table from moving.
          */
-        $('#confirmStatusMsg')
-            .removeClass(
-                'error success'
-            )
-            .addClass('info')
-            .html(
-                `<i class="bi bi-list"></i>
-                Found ${records.length}
-                pending request(s) for date:
-                <strong>${date}</strong>.`
-            )
-            .show();
 
 
     } catch (err) {
@@ -3281,43 +3400,18 @@ function renderConfirmRecords(records) {
 
 
                 /*
-                 * IMPORTANT:
-                 *
-                 * Wait for the success dialog to finish.
-                 * We do NOT start a table refresh using
-                 * setTimeout() in parallel.
+                 * Show a small independent confirmation alert.
+                 * It does not open another SweetAlert, so the next
+                 * "Confirm Shutdown?" dialog remains independent.
                  */
-                await Swal.fire({
-
-                    icon:
-                        'success',
-
-                    title:
-                        'Confirmed!',
-
-                    text:
-                        `Shutdown confirmation updated for ${branch}`,
-
-                    timer:
-                        1800,
-
-                    timerProgressBar:
-                        true,
-
-                    showConfirmButton:
-                        false,
-
-                    allowOutsideClick:
-                        false,
-
-                    allowEscapeKey:
-                        false
-                });
+                showConfirmSuccessToast(
+                    `Shutdown confirmation updated for ${branch}`
+                );
 
 
                 /*
-                 * Refresh the table AFTER the success
-                 * message has completed.
+                 * Refresh the table silently after the update.
+                 * confirmStatusMsg is intentionally left untouched.
                  */
                 await refreshConfirmTableSilently();
 
