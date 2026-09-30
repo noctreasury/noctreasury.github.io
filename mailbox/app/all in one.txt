@@ -1,0 +1,8489 @@
+------code.gs--------------
+/**
+ * INTERNAL MAILBOX - Google Apps Script Backend
+ * Backend: Google Sheets + Google Drive
+ * Mail model: internal only; no Gmail delivery.
+ *
+ * Optimized version:
+ * - Mailbox_Index is the fast mailbox/listing index.
+ * - Normal mailbox requests do not read Emails.Body.
+ * - 25/50 pagination.
+ * - User-specific Mailbox_Index lookup.
+ * - Configuration and user caching.
+ * - Lightweight API actions.
+ */
+
+const CONFIG_SPREADSHEET_ID = '1nEVX-k4gQfXfl-pzEU4CNRshJtgjCiCtD-xiKCHqs2s';
+const SESSION_PREFIX = 'IMBX_SESSION_';
+const SESSION_SECONDS = 21600;
+const CONFIG_CACHE_KEY = 'IMBX_CONFIG_V4';
+const USERS_CACHE_KEY = 'IMBX_USERS_V3';
+const USER_INDEX_CACHE_PREFIX = 'IMBX_INDEX_V3_';
+const USER_INDEX_CACHE_SECONDS = 60;
+const USERS_CACHE_SECONDS = 60;
+const CONFIG_CACHE_SECONDS = 21600;
+
+const REQUIRED_HEADERS = {
+  Users: [
+    'User_ID','Email_Address','Password_Hash','Full_Name','Designation','Department',
+    'Mobile','Role','Status','Profile_Image_URL','Created_Date','Last_Login',
+    'Failed_Login_Count','Last_Failed_Login','Session_Revoked'
+  ],
+  Emails: [
+    'Mail_ID','Reference_No','Thread_ID','Message_ID','Parent_Message_ID','Sender_Email',
+    'Sender_Name','To_Email','Cc_Email','Bcc_Email','Subject','Body','Body_Type',
+    'Sent_DateTime','Received_DateTime','Folder','Status','Is_Read','Is_Starred',
+    'Is_Archived','Is_Spam','Is_Deleted','Label','Has_Attachment','Attachment_Count',
+    'Reply_To','Forwarded_From','Created_By','Last_Updated','Last_Updated_By'
+  ],
+  Mailbox_Index: [
+    'Mailbox_Record_ID','Mail_ID','Reference_No','User_ID','User_Email','Folder',
+    'Is_Read','Is_Starred','Is_Archived','Is_Spam','Is_Deleted','Received_DateTime',
+    'Last_Updated','Subject','Sender_Name','Sender_Email','To_Email','Label',
+    'Has_Attachment','Attachment_Count','Preview','Message_DateTime'
+  ],
+  Attachments: [
+    'Attachment_ID','Reference_No','Message_ID','Thread_ID','User_ID',
+    'Original_File_Name','Drive_File_Name','Drive_File_ID','Drive_URL','Mime_Type',
+    'File_Size','Drive_Folder_ID','Uploaded_By','Uploaded_DateTime','Status','Deleted_DateTime'
+  ]
+};
+
+function doGet(e) {
+  const action = (e && e.parameter && e.parameter.action) || 'health';
+  try {
+    if (action === 'health') return json_({ ok:true, service:'internal-mailbox', time:now_() });
+    return json_({ ok:false, error:'Use POST for mailbox operations.' });
+  } catch (err) {
+    return json_({ ok:false, error:String(err) });
+  }
+}
+
+function doPost(e) {
+  try {
+    const body = parseRequest_(e);
+    const action = String(body.action || '').trim();
+
+    switch (action) {
+      case 'login': return json_(login_(body));
+      case 'logout': return json_(logout_(body));
+      case 'bootstrap': return json_(bootstrap_(body));
+      case 'mailbox': return json_(listMessages_(body));
+      case 'listMessages': return json_(listMessages_(body)); // backward compatibility
+      case 'getMessage': return json_(getMessage_(body));
+      case 'sendMessage': return json_(sendMessage_(body));
+      case 'saveDraft': return json_(saveDraft_(body));
+      case 'updateMessage': return json_(updateMessage_(body));
+      case 'search': return json_(searchMessages_(body));
+      case 'suggestRecipients': return json_(suggestRecipients_(body));
+      case 'setupCheck': return json_(setupCheck_());
+      case 'clearCache': return json_(clearMailboxCaches_());
+      case 'rebuildMailboxIndex': return json_(rebuildMailboxIndexMetadata_());
+      default:
+        return json_({ ok:false, error:'Unknown action: ' + action });
+    }
+  } catch (err) {
+    console.error(err && err.stack ? err.stack : err);
+    return json_({ ok:false, error:String(err && err.message ? err.message : err) });
+  }
+}
+
+function parseRequest_(e) {
+  if (!e || !e.postData || !e.postData.contents) return {};
+  try { return JSON.parse(e.postData.contents); }
+  catch (_) { return {}; }
+}
+
+function json_(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function setupCheck_() {
+  const cfg = readConfig_();
+  const result = {
+    ok:true,
+    configSpreadsheetId:CONFIG_SPREADSHEET_ID,
+    usersSpreadsheetId:extractId_(cfg.USERS_SHEET_ID || cfg.USERS_SHEET_URL || ''),
+    mailDatabaseSpreadsheetId:extractId_(cfg.MAIL_DATABASE_SHEET_ID || cfg.MAIL_DATABASE_URL || ''),
+    driveRegisterSpreadsheetId:extractId_(cfg.DRIVE_REGISTER_SHEET_ID || cfg.DRIVE_REGISTER_URL || ''),
+    driveFolderId:extractId_(cfg.MAIL_DRIVE_FOLDER_ID || cfg.MAIL_DRIVE_FOLDER_URL || ''),
+    missing:[]
+  };
+  Object.keys(result).forEach(k => {
+    if (k !== 'missing' && result[k] === '') result.missing.push(k);
+  });
+  return result;
+}
+
+function bootstrap_(body) {
+  const session = requireSession_(body.token);
+  const cfg = readConfig_();
+  const user = getUserById_(session.userId);
+  if (!user) throw new Error('User account not found.');
+
+  return {
+    ok:true,
+    user:safeUser_(user),
+    config:{
+      appName:cfg.APP_NAME || 'Internal Mailbox',
+      appVersion:cfg.APP_VERSION || '1.0.0',
+      pageSize:[25,50].includes(Number(cfg.DEFAULT_PAGE_SIZE)) ? Number(cfg.DEFAULT_PAGE_SIZE) : 25,
+      timezone:cfg.TIMEZONE || Session.getScriptTimeZone() || 'Asia/Kolkata',
+      maxAttachmentSizeMB:Number(cfg.MAX_ATTACHMENT_SIZE_MB || 25),
+      maxAttachments:Number(cfg.MAX_ATTACHMENTS || 10),
+      allowCc:String(cfg.ALLOW_CC || 'YES').toUpperCase() === 'YES',
+      allowBcc:String(cfg.ALLOW_BCC || 'YES').toUpperCase() === 'YES'
+    }
+  };
+}
+
+function login_(body) {
+  const email = String(body.email || '').trim().toLowerCase();
+  const password = String(body.password || '');
+  if (!email || !password) throw new Error('Email address and password are required.');
+
+  const user = getUserByEmail_(email);
+  if (!user) throw new Error('Invalid login credentials.');
+  if (String(user.Status || '').toUpperCase() !== 'ACTIVE') throw new Error('User account is not active.');
+  if (String(user.Session_Revoked || '').toUpperCase() === 'YES') throw new Error('User session has been revoked.');
+
+  const expected = String(user.Password_Hash || '').trim();
+  const actual = sha256_(password);
+  if (!expected || expected.toLowerCase() !== actual.toLowerCase()) {
+    incrementFailedLogin_(user);
+    throw new Error('Invalid login credentials.');
+  }
+
+  const token = Utilities.getUuid() + Utilities.getUuid().replace(/-/g,'');
+  CacheService.getScriptCache().put(
+    SESSION_PREFIX + token,
+    JSON.stringify({ email:email, userId:String(user.User_ID), created:Date.now() }),
+    SESSION_SECONDS
+  );
+
+  updateUserLogin_(user);
+  return { ok:true, token:token, user:safeUser_(user) };
+}
+
+function logout_(body) {
+  if (body && body.token) CacheService.getScriptCache().remove(SESSION_PREFIX + body.token);
+  return { ok:true };
+}
+
+function requireSession_(token) {
+  token = String(token || '');
+  if (!token) throw new Error('Session expired. Please login again.');
+
+  const cache = CacheService.getScriptCache();
+  const raw = cache.get(SESSION_PREFIX + token);
+  if (!raw) throw new Error('Session expired. Please login again.');
+
+  const session = JSON.parse(raw);
+  const user = getUserById_(session.userId);
+
+  if (!user || String(user.Status || '').toUpperCase() !== 'ACTIVE') {
+    cache.remove(SESSION_PREFIX + token);
+    throw new Error('User account is inactive.');
+  }
+
+  if (String(user.Session_Revoked || '').toUpperCase() === 'YES') {
+    cache.remove(SESSION_PREFIX + token);
+    throw new Error('Session revoked. Please login again.');
+  }
+
+  cache.put(SESSION_PREFIX + token, raw, SESSION_SECONDS);
+  return session;
+}
+
+/* =========================================================
+   FAST MAILBOX LISTING
+========================================================= */
+
+function listMessages_(body) {
+  const session = requireSession_(body.token);
+  const folder = String(body.folder || 'INBOX').toUpperCase();
+  const search = String(body.search || '').trim().toLowerCase();
+  const page = Math.max(Number(body.page || 1), 1);
+  const pageSize = normalizePageSize_(body.pageSize || body.limit || 25);
+
+  /* Normal mailbox listing uses only Mailbox_Index. */
+  let rows = getMailboxIndexForUser_(session.userId);
+
+  rows = rows.filter(r => {
+    const rowFolder = String(r.Folder || '').toUpperCase();
+
+    if (folder === 'STARRED') {
+      if (String(r.Is_Starred || '').toUpperCase() !== 'YES') return false;
+    } else if (rowFolder !== folder) {
+      return false;
+    }
+
+    if (String(r.Is_Deleted || '').toUpperCase() === 'YES' && folder !== 'TRASH') {
+      return false;
+    }
+
+    return true;
+  });
+
+  if (search) {
+    rows = rows.filter(r => indexSearchText_(r).includes(search));
+  }
+
+  sortIndexRows_(rows);
+  return paginateIndexRows_(rows, folder, page, pageSize);
+}
+
+function normalizePageSize_(value) {
+  return Number(value) === 50 ? 50 : 25;
+}
+
+function indexSearchText_(r) {
+  return [
+    r.Subject,
+    r.Sender_Name,
+    r.Sender_Email,
+    r.To_Email,
+    r.Reference_No,
+    r.Label,
+    r.Preview
+  ].join(' ').toLowerCase();
+}
+
+function sortIndexRows_(rows) {
+  rows.sort((a,b) => {
+    const da = String(a.Message_DateTime || a.Received_DateTime || '');
+    const db = String(b.Message_DateTime || b.Received_DateTime || '');
+    return db.localeCompare(da);
+  });
+}
+
+function paginateIndexRows_(rows, folder, page, pageSize) {
+  const total = rows.length;
+  const totalPages = Math.max(Math.ceil(total / pageSize), 1);
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * pageSize;
+  const pageRows = rows.slice(start, start + pageSize);
+
+  return {
+    ok:true,
+    folder:folder,
+    page:safePage,
+    pageSize:pageSize,
+    total:total,
+    totalPages:totalPages,
+    hasPrevious:safePage > 1,
+    hasNext:safePage < totalPages,
+    messages:pageRows.map(mailboxIndexView_)
+  };
+}
+
+function mailboxIndexView_(r) {
+  return {
+    mailId:String(r.Mail_ID || ''),
+    referenceNo:String(r.Reference_No || ''),
+    senderEmail:String(r.Sender_Email || ''),
+    senderName:String(r.Sender_Name || ''),
+    to:String(r.To_Email || ''),
+    subject:String(r.Subject || ''),
+    body:String(r.Preview || ''),
+    bodyType:'TEXT',
+    date:String(r.Message_DateTime || r.Received_DateTime || ''),
+    folder:String(r.Folder || ''),
+    isRead:String(r.Is_Read || '').toUpperCase() === 'YES',
+    isStarred:String(r.Is_Starred || '').toUpperCase() === 'YES',
+    hasAttachment:String(r.Has_Attachment || '').toUpperCase() === 'YES',
+    attachmentCount:Number(r.Attachment_Count || 0),
+    label:String(r.Label || '')
+  };
+}
+
+/* =========================================================
+   FULL-TEXT SEARCH - deliberately separate/heavier action
+========================================================= */
+
+function searchMessages_(body) {
+  const session = requireSession_(body.token);
+  const folder = String(body.folder || 'INBOX').toUpperCase();
+  const search = String(body.search || '').trim().toLowerCase();
+  const page = Math.max(Number(body.page || 1), 1);
+  const pageSize = normalizePageSize_(body.pageSize || 25);
+
+  if (!search) return listMessages_(body);
+
+  const rows = getMailboxIndexForUser_(session.userId);
+  const emails = getSheetObjects_('Emails');
+  const emailMap = {};
+  emails.forEach(m => emailMap[String(m.Mail_ID)] = m);
+
+  const matches = [];
+
+  rows.forEach(r => {
+    const rowFolder = String(r.Folder || '').toUpperCase();
+    if (folder === 'STARRED') {
+      if (String(r.Is_Starred || '').toUpperCase() !== 'YES') return;
+    } else if (rowFolder !== folder) {
+      return;
+    }
+    if (String(r.Is_Deleted || '').toUpperCase() === 'YES' && folder !== 'TRASH') return;
+
+    const m = emailMap[String(r.Mail_ID)];
+    if (!m) return;
+
+    const hay = [
+      m.Subject,m.Sender_Name,m.Sender_Email,m.To_Email,m.Cc_Email,
+      m.Bcc_Email,m.Body,m.Reference_No,m.Label
+    ].join(' ').toLowerCase();
+
+    if (hay.includes(search)) matches.push(r);
+  });
+
+  sortIndexRows_(matches);
+  return paginateIndexRows_(matches, folder, page, pageSize);
+}
+
+/* =========================================================
+   GET ONE MESSAGE - only this action loads the complete body
+========================================================= */
+
+function getMessage_(body) {
+  const session = requireSession_(body.token);
+  const mailId = String(body.mailId || '').trim();
+  if (!mailId) throw new Error('Mail ID is required.');
+
+  const indexRows = getMailboxIndexForUser_(session.userId);
+  const r = indexRows.find(x => String(x.Mail_ID) === mailId);
+  if (!r) throw new Error('You do not have access to this message.');
+
+  const m = getObjectByKey_('Emails', 'Mail_ID', mailId);
+  if (!m) throw new Error('Message not found.');
+
+  if (String(r.Is_Read || '').toUpperCase() !== 'YES') {
+    updateMailboxIndex_(r.Mailbox_Record_ID, {
+      Is_Read:'YES',
+      Last_Updated:now_()
+    });
+    invalidateMailboxCache_(session.userId);
+    r.Is_Read = 'YES';
+  }
+
+  const attachments = getRowsByKey_(
+    'Attachments',
+    'Message_ID',
+    String(m.Message_ID || '')
+  ).filter(a => String(a.Status || '').toUpperCase() === 'ACTIVE');
+
+  return {
+    ok:true,
+    message:messageView_(m, r),
+    attachments:attachments.map(a => ({
+      attachmentId:a.Attachment_ID,
+      fileName:a.Original_File_Name,
+      fileId:a.Drive_File_ID,
+      url:a.Drive_URL,
+      mimeType:a.Mime_Type,
+      size:a.File_Size
+    }))
+  };
+}
+
+function messageView_(m, r) {
+  return {
+    mailId:String(m.Mail_ID || ''),
+    referenceNo:String(m.Reference_No || ''),
+    threadId:String(m.Thread_ID || ''),
+    messageId:String(m.Message_ID || ''),
+    senderEmail:String(m.Sender_Email || ''),
+    senderName:String(m.Sender_Name || ''),
+    to:String(m.To_Email || ''),
+    cc:String(m.Cc_Email || ''),
+    bcc:String(m.Bcc_Email || ''),
+    subject:String(m.Subject || ''),
+    body:String(m.Body || ''),
+    bodyType:String(m.Body_Type || 'TEXT'),
+    date:String(m.Sent_DateTime || m.Received_DateTime || ''),
+    folder:String(r.Folder || ''),
+    status:String(m.Status || ''),
+    isRead:String(r.Is_Read || '').toUpperCase() === 'YES',
+    isStarred:String(r.Is_Starred || '').toUpperCase() === 'YES',
+    hasAttachment:String(m.Has_Attachment || '').toUpperCase() === 'YES',
+    attachmentCount:Number(m.Attachment_Count || 0),
+    label:String(m.Label || '')
+  };
+}
+
+/* =========================================================
+   SEND
+========================================================= */
+
+function sendMessage_(body) {
+  const session = requireSession_(body.token);
+  const to = normalizeEmails_(body.to);
+  const cc = normalizeEmails_(body.cc);
+  const bcc = normalizeEmails_(body.bcc);
+  const subject = String(body.subject || '').trim();
+  const messageBody = String(body.body || '');
+
+  if (!to.length) throw new Error('At least one recipient is required.');
+  if (!subject) throw new Error('Subject is required.');
+
+  const allRecipients = unique_(to.concat(cc, bcc));
+  const users = allRecipients.map(getUserByEmail_).filter(Boolean);
+  if (users.length !== allRecipients.length) {
+    const known = users.map(u => String(u.Email_Address).toLowerCase());
+    const missing = allRecipients.filter(x => !known.includes(x));
+    throw new Error('Recipient is not an internal mailbox user: ' + missing.join(', '));
+  }
+
+  const cfg = readConfig_();
+  const maxAttachments = Number(cfg.MAX_ATTACHMENTS || 10);
+  const maxBytes = Number(cfg.MAX_ATTACHMENT_SIZE_MB || 25) * 1024 * 1024;
+  const files = Array.isArray(body.attachments) ? body.attachments : [];
+  if (files.length > maxAttachments) throw new Error('Too many attachments.');
+  files.forEach(f => {
+    if (Number(f.size || 0) > maxBytes) throw new Error('Attachment exceeds configured size limit: ' + f.name);
+  });
+
+  const mailId = nextId_('MAIL');
+  const messageId = nextId_('MSG');
+  const reference = nextReference_();
+  const threadId = body.threadId ? String(body.threadId) : nextId_('THR');
+  const now = now_();
+  const sender = getUserById_(session.userId);
+  if (!sender) throw new Error('Sender account not found.');
+  const bodyType = String(body.bodyType || 'TEXT').toUpperCase();
+  const preview = createPreview_(messageBody);
+
+  appendObject_('Emails', {
+    Mail_ID:mailId,
+    Reference_No:reference,
+    Thread_ID:threadId,
+    Message_ID:messageId,
+    Parent_Message_ID:String(body.parentMessageId || ''),
+    Sender_Email:String(sender.Email_Address),
+    Sender_Name:String(sender.Full_Name),
+    To_Email:to.join(', '),
+    Cc_Email:cc.join(', '),
+    Bcc_Email:bcc.join(', '),
+    Subject:subject,
+    Body:messageBody,
+    Body_Type:bodyType,
+    Sent_DateTime:now,
+    Received_DateTime:now,
+    Folder:'SENT',
+    Status:'SENT',
+    Is_Read:'YES',
+    Is_Starred:'NO',
+    Is_Archived:'NO',
+    Is_Spam:'NO',
+    Is_Deleted:'NO',
+    Label:String(body.label || ''),
+    Has_Attachment:files.length ? 'YES' : 'NO',
+    Attachment_Count:files.length,
+    Reply_To:String(body.replyTo || ''),
+    Forwarded_From:String(body.forwardedFrom || ''),
+    Created_By:String(sender.User_ID),
+    Last_Updated:now,
+    Last_Updated_By:String(sender.User_ID)
+  });
+
+  const indexBase = {
+    Mail_ID:mailId,
+    Reference_No:reference,
+    Subject:subject,
+    Sender_Name:String(sender.Full_Name),
+    Sender_Email:String(sender.Email_Address),
+    To_Email:to.join(', '),
+    Label:String(body.label || ''),
+    Has_Attachment:files.length ? 'YES' : 'NO',
+    Attachment_Count:files.length,
+    Preview:preview,
+    Message_DateTime:now,
+    Received_DateTime:now,
+    Last_Updated:now
+  };
+
+  appendObject_('Mailbox_Index', Object.assign({}, indexBase, {
+    Mailbox_Record_ID:nextId_('MBX'),
+    User_ID:String(sender.User_ID),
+    User_Email:String(sender.Email_Address),
+    Folder:'SENT',
+    Is_Read:'YES', Is_Starred:'NO', Is_Archived:'NO', Is_Spam:'NO', Is_Deleted:'NO'
+  }));
+
+  const affectedUsers = [String(sender.User_ID)];
+
+  users.forEach(recipient => {
+    if (String(recipient.User_ID) === String(sender.User_ID)) return;
+
+    appendObject_('Mailbox_Index', Object.assign({}, indexBase, {
+      Mailbox_Record_ID:nextId_('MBX'),
+      User_ID:String(recipient.User_ID),
+      User_Email:String(recipient.Email_Address),
+      Folder:'INBOX',
+      Is_Read:'NO', Is_Starred:'NO', Is_Archived:'NO', Is_Spam:'NO', Is_Deleted:'NO'
+    }));
+
+    affectedUsers.push(String(recipient.User_ID));
+  });
+
+  invalidateMailboxCache_(affectedUsers);
+
+  if (files.length) saveAttachments_(files, {
+    reference:reference,
+    messageId:messageId,
+    threadId:threadId,
+    userId:String(sender.User_ID),
+    uploadedBy:String(sender.User_ID),
+    now:now
+  });
+
+  return { ok:true, mailId:mailId, referenceNo:reference, threadId:threadId, messageId:messageId };
+}
+
+/* =========================================================
+   DRAFTS
+========================================================= */
+
+function saveDraft_(body) {
+  const session = requireSession_(body.token);
+  const sender = getUserById_(session.userId);
+  if (!sender) throw new Error('User account not found.');
+
+  const now = now_();
+  const mailId = String(body.mailId || nextId_('MAIL'));
+  const existing = getObjectByKey_('Emails', 'Mail_ID', mailId);
+
+  if (existing && String(existing.Sender_Email || '').toLowerCase() !== String(sender.Email_Address || '').toLowerCase()) {
+    throw new Error('You do not have access to this draft.');
+  }
+
+  const reference = existing ? String(existing.Reference_No || '') : nextReference_();
+  const threadId = String(body.threadId || (existing ? existing.Thread_ID : nextId_('THR')));
+  const messageId = existing ? String(existing.Message_ID || '') : nextId_('MSG');
+  const subject = String(body.subject || '');
+  const messageBody = String(body.body || '');
+
+  const values = {
+    Mail_ID:mailId, Reference_No:reference, Thread_ID:threadId, Message_ID:messageId,
+    Parent_Message_ID:String(body.parentMessageId || ''),
+    Sender_Email:String(sender.Email_Address), Sender_Name:String(sender.Full_Name),
+    To_Email:String(body.to || ''), Cc_Email:String(body.cc || ''), Bcc_Email:String(body.bcc || ''),
+    Subject:subject, Body:messageBody, Body_Type:String(body.bodyType || 'TEXT'),
+    Sent_DateTime:'', Received_DateTime:'', Folder:'DRAFT', Status:'DRAFT',
+    Is_Read:'YES', Is_Starred:'NO', Is_Archived:'NO', Is_Spam:'NO', Is_Deleted:'NO',
+    Label:String(body.label || ''), Has_Attachment:'NO', Attachment_Count:0,
+    Reply_To:String(body.replyTo || ''), Forwarded_From:String(body.forwardedFrom || ''),
+    Created_By:String(sender.User_ID), Last_Updated:now, Last_Updated_By:String(sender.User_ID)
+  };
+
+  if (existing) updateEmail_(mailId, values);
+  else appendObject_('Emails', values);
+
+  const idxRows = getMailboxIndexForUser_(sender.User_ID);
+  const idx = idxRows.find(x => String(x.Mail_ID) === mailId);
+  const indexValues = {
+    Folder:'DRAFT', Last_Updated:now,
+    Subject:subject,
+    Sender_Name:String(sender.Full_Name),
+    Sender_Email:String(sender.Email_Address),
+    To_Email:String(body.to || ''),
+    Label:String(body.label || ''),
+    Preview:createPreview_(messageBody),
+    Message_DateTime:now,
+    Has_Attachment:'NO',
+    Attachment_Count:0
+  };
+
+  if (idx) {
+    updateMailboxIndex_(idx.Mailbox_Record_ID, indexValues);
+  } else {
+    appendObject_('Mailbox_Index', Object.assign({}, indexValues, {
+      Mailbox_Record_ID:nextId_('MBX'),
+      Mail_ID:mailId,
+      Reference_No:reference,
+      User_ID:String(sender.User_ID),
+      User_Email:String(sender.Email_Address),
+      Is_Read:'YES', Is_Starred:'NO', Is_Archived:'NO', Is_Spam:'NO', Is_Deleted:'NO',
+      Received_DateTime:now
+    }));
+  }
+
+  invalidateMailboxCache_(sender.User_ID);
+  return { ok:true, mailId:mailId, referenceNo:reference, threadId:threadId, messageId:messageId };
+}
+
+/* =========================================================
+   LIGHTWEIGHT MESSAGE UPDATE
+========================================================= */
+
+function updateMessage_(body) {
+  const session = requireSession_(body.token);
+  const mailId = String(body.mailId || '');
+  if (!mailId) throw new Error('Mail ID is required.');
+
+  const rows = getMailboxIndexForUser_(session.userId);
+  const idx = rows.find(x => String(x.Mail_ID) === mailId);
+  if (!idx) throw new Error('Message not found.');
+
+  const allowed = ['Folder','Is_Read','Is_Starred','Is_Archived','Is_Spam','Is_Deleted'];
+  const changes = {};
+  allowed.forEach(k => { if (body[k] !== undefined) changes[k] = body[k]; });
+  changes.Last_Updated = now_();
+
+  updateMailboxIndex_(idx.Mailbox_Record_ID, changes);
+  invalidateMailboxCache_(session.userId);
+  return { ok:true };
+}
+
+/* =========================================================
+   RECIPIENT SUGGESTIONS
+========================================================= */
+
+function suggestRecipients_(body) {
+  const session = requireSession_(body.token);
+  const query = String(body.query || '').trim().toLowerCase();
+  if (!query) return { ok:true, items:[] };
+
+  const users = getUsersCached_();
+  const items = users
+    .filter(u => String(u.User_ID || '') !== String(session.userId))
+    .filter(u => String(u.Status || '').toUpperCase() === 'ACTIVE')
+    .filter(u => {
+      const hay = [u.Email_Address,u.Full_Name,u.Designation,u.Department]
+        .join(' ').toLowerCase();
+      return hay.includes(query);
+    })
+    .slice(0, 10)
+    .map(u => ({
+      userId:String(u.User_ID),
+      email:String(u.Email_Address),
+      name:String(u.Full_Name),
+      designation:String(u.Designation || ''),
+      department:String(u.Department || '')
+    }));
+
+  return { ok:true, items:items };
+}
+
+/* =========================================================
+   ATTACHMENTS
+========================================================= */
+
+function saveAttachments_(files, meta) {
+  const cfg = readConfig_();
+  const folderId = extractId_(cfg.MAIL_DRIVE_FOLDER_ID || cfg.MAIL_DRIVE_FOLDER_URL || '');
+  if (!folderId) throw new Error('MAIL_DRIVE_FOLDER_ID is not configured.');
+
+  const root = DriveApp.getFolderById(folderId);
+  const tz = cfg.TIMEZONE || Session.getScriptTimeZone() || 'Asia/Kolkata';
+  const year = Utilities.formatDate(new Date(), tz, 'yyyy');
+  const month = Utilities.formatDate(new Date(), tz, 'MM');
+  const yearFolder = getOrCreateFolder_(root, year);
+  const monthFolder = getOrCreateFolder_(yearFolder, month);
+  const mailFolder = getOrCreateFolder_(monthFolder, meta.reference);
+
+  files.forEach((f, i) => {
+    const bytes = Utilities.base64Decode(String(f.base64 || ''));
+    const blob = Utilities.newBlob(
+      bytes,
+      String(f.mimeType || 'application/octet-stream'),
+      String(f.name || ('attachment-' + (i + 1)))
+    );
+    const file = mailFolder.createFile(blob);
+    appendObject_('Attachments', {
+      Attachment_ID:nextId_('ATT'),
+      Reference_No:meta.reference,
+      Message_ID:meta.messageId,
+      Thread_ID:meta.threadId,
+      User_ID:meta.userId,
+      Original_File_Name:String(f.name || ''),
+      Drive_File_Name:file.getName(),
+      Drive_File_ID:file.getId(),
+      Drive_URL:file.getUrl(),
+      Mime_Type:String(f.mimeType || ''),
+      File_Size:bytes.length,
+      Drive_Folder_ID:mailFolder.getId(),
+      Uploaded_By:meta.uploadedBy,
+      Uploaded_DateTime:meta.now,
+      Status:'ACTIVE',
+      Deleted_DateTime:''
+    });
+  });
+}
+
+/* =========================================================
+   CONFIG / USERS CACHE
+========================================================= */
+
+function readConfig_() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(CONFIG_CACHE_KEY);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (_) {}
+  }
+
+  const ss = SpreadsheetApp.openById(CONFIG_SPREADSHEET_ID);
+  const sh = ss.getSheetByName('Configuration');
+  if (!sh) throw new Error('Configuration tab not found.');
+
+  const lastRow = sh.getLastRow();
+  const out = {};
+  if (lastRow >= 2) {
+    const values = sh.getRange(1, 1, lastRow, 2).getValues();
+    for (let i = 1; i < values.length; i++) {
+      const key = String(values[i][0] || '').trim();
+      if (key) out[key] = values[i][1];
+    }
+  }
+
+  try { cache.put(CONFIG_CACHE_KEY, JSON.stringify(out), CONFIG_CACHE_SECONDS); } catch (_) {}
+  return out;
+}
+
+function getUsersCached_() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(USERS_CACHE_KEY);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (_) {}
+  }
+
+  const users = getSheetObjects_('Users');
+  try { cache.put(USERS_CACHE_KEY, JSON.stringify(users), USERS_CACHE_SECONDS); } catch (_) {}
+  return users;
+}
+
+function invalidateUsersCache_() {
+  CacheService.getScriptCache().remove(USERS_CACHE_KEY);
+}
+
+function clearMailboxCaches_() {
+  const cache = CacheService.getScriptCache();
+  cache.remove(CONFIG_CACHE_KEY);
+  cache.remove(USERS_CACHE_KEY);
+  return { ok:true };
+}
+
+function getUserIndexCacheKey_(userId) {
+  return USER_INDEX_CACHE_PREFIX + String(userId);
+}
+
+function invalidateMailboxCache_(userIds) {
+  const ids = Array.isArray(userIds) ? userIds : [userIds];
+  const cache = CacheService.getScriptCache();
+  ids.forEach(id => {
+    if (id !== undefined && id !== null && String(id)) {
+      cache.remove(getUserIndexCacheKey_(id));
+    }
+  });
+}
+
+/* =========================================================
+   SHEET ACCESS
+========================================================= */
+
+function getSpreadsheetFor_(type) {
+  const cfg = readConfig_();
+  let raw = '';
+  if (type === 'Users') raw = cfg.USERS_SHEET_ID || cfg.USERS_SHEET_URL;
+  if (type === 'Emails' || type === 'Mailbox_Index') raw = cfg.MAIL_DATABASE_SHEET_ID || cfg.MAIL_DATABASE_URL;
+  if (type === 'Attachments') raw = cfg.DRIVE_REGISTER_SHEET_ID || cfg.DRIVE_REGISTER_URL;
+  const id = extractId_(raw);
+  if (!id) throw new Error('Spreadsheet ID is not configured for ' + type);
+  return SpreadsheetApp.openById(id);
+}
+
+function getSheetObjects_(sheetName) {
+  const type = sheetName === 'Users' ? 'Users' :
+    (sheetName === 'Attachments' ? 'Attachments' : 'Emails');
+  const ss = getSpreadsheetFor_(type);
+  let sh = ss.getSheetByName(sheetName);
+  if (!sh && sheetName === 'Mailbox_Index') sh = ss.insertSheet('Mailbox_Index');
+  if (!sh) throw new Error('Sheet/tab not found: ' + sheetName);
+
+  const lastRow = sh.getLastRow();
+  const lastColumn = sh.getLastColumn();
+  if (lastRow < 1 || lastColumn < 1) return [];
+
+  const values = sh.getRange(1, 1, lastRow, lastColumn).getValues();
+  const headers = values[0].map(String);
+  return values.slice(1).filter(row => row.some(v => v !== '')).map(row => {
+    const o = {};
+    headers.forEach((h, i) => o[h] = row[i] instanceof Date ? formatDate_(row[i]) : row[i]);
+    return o;
+  });
+}
+
+/* User-specific index lookup: only the matching User_ID rows are converted. */
+function getMailboxIndexForUser_(userId) {
+  const key = getUserIndexCacheKey_(userId);
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(key);
+
+  if (cached) {
+    try { return JSON.parse(cached); } catch (_) {}
+  }
+
+  const ss = getSpreadsheetFor_('Mailbox_Index');
+  let sh = ss.getSheetByName('Mailbox_Index');
+  if (!sh) sh = ss.insertSheet('Mailbox_Index');
+
+  const lastRow = sh.getLastRow();
+  const lastColumn = sh.getLastColumn();
+  if (lastRow < 2 || lastColumn < 1) return [];
+
+  const values = sh.getRange(1, 1, lastRow, lastColumn).getValues();
+  const headers = values[0].map(String);
+  const userCol = headers.indexOf('User_ID');
+
+  if (userCol < 0) {
+    throw new Error('Missing column User_ID in Mailbox_Index');
+  }
+
+  const cfg = readConfig_();
+  const tz = cfg.TIMEZONE || Session.getScriptTimeZone() || 'Asia/Kolkata';
+  const rows = [];
+
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i];
+    if (String(row[userCol]) !== String(userId)) continue;
+
+    const obj = {};
+    headers.forEach((h, c) => {
+      obj[h] = row[c] instanceof Date
+        ? Utilities.formatDate(row[c], tz, 'dd/MM/yyyy HH:mm:ss')
+        : row[c];
+    });
+    rows.push(obj);
+  }
+
+  try {
+    cache.put(key, JSON.stringify(rows), USER_INDEX_CACHE_SECONDS);
+  } catch (_) {
+    // Very large mailboxes can exceed CacheService size; normal operation continues.
+  }
+
+  return rows;
+}
+
+/* Reads one matching row or rows by scanning only the key column first. */
+function getObjectByKey_(sheetName, keyHeader, keyValue) {
+  const rows = getRowsByKey_(sheetName, keyHeader, keyValue);
+  return rows.length ? rows[0] : null;
+}
+
+function getRowsByKey_(sheetName, keyHeader, keyValue) {
+  const type = sheetName === 'Users' ? 'Users' :
+    (sheetName === 'Attachments' ? 'Attachments' : 'Emails');
+  const ss = getSpreadsheetFor_(type);
+  let sh = ss.getSheetByName(sheetName);
+  if (!sh && sheetName === 'Mailbox_Index') sh = ss.insertSheet('Mailbox_Index');
+  if (!sh) throw new Error('Sheet/tab not found: ' + sheetName);
+
+  const lastRow = sh.getLastRow();
+  const lastColumn = sh.getLastColumn();
+  if (lastRow < 2 || lastColumn < 1) return [];
+
+  const headers = sh.getRange(1, 1, 1, lastColumn).getValues()[0].map(String);
+  const keyCol = headers.indexOf(keyHeader);
+  if (keyCol < 0) throw new Error('Missing column ' + keyHeader + ' in ' + sheetName);
+
+  const keyValues = sh.getRange(2, keyCol + 1, lastRow - 1, 1).getValues();
+  const matchedRows = [];
+  for (let i = 0; i < keyValues.length; i++) {
+    if (String(keyValues[i][0]) === String(keyValue)) matchedRows.push(i + 2);
+  }
+  if (!matchedRows.length) return [];
+
+  const out = [];
+  matchedRows.forEach(rowNumber => {
+    const row = sh.getRange(rowNumber, 1, 1, lastColumn).getValues()[0];
+    const o = {};
+    headers.forEach((h, i) => o[h] = row[i] instanceof Date ? formatDate_(row[i]) : row[i]);
+    out.push(o);
+  });
+  return out;
+}
+
+function appendObject_(sheetName, obj) {
+  const type = sheetName === 'Users' ? 'Users' :
+    (sheetName === 'Attachments' ? 'Attachments' : 'Emails');
+  const ss = getSpreadsheetFor_(type);
+  let sh = ss.getSheetByName(sheetName);
+  if (!sh) sh = ss.insertSheet(sheetName);
+
+  ensureHeaders_(sh, REQUIRED_HEADERS[sheetName] || Object.keys(obj));
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+  const row = headers.map(h => obj[h] === undefined ? '' : obj[h]);
+  sh.getRange(sh.getLastRow() + 1, 1, 1, row.length).setValues([row]);
+}
+
+function ensureHeaders_(sh, headers) {
+  const lastColumn = sh.getLastColumn();
+  const current = lastColumn
+    ? sh.getRange(1, 1, 1, lastColumn).getValues()[0].map(String)
+    : [];
+
+  if (!current.length || current.every(x => !x)) {
+    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+    return;
+  }
+
+  const missing = headers.filter(h => !current.includes(h));
+  if (missing.length) {
+    sh.getRange(1, current.length + 1, 1, missing.length).setValues([missing]);
+  }
+}
+
+/* Updates only the key column first, then the specific changed cells. */
+function updateByKey_(sheetName, keyHeader, keyValue, changes) {
+  const type = sheetName === 'Users' ? 'Users' :
+    (sheetName === 'Attachments' ? 'Attachments' : 'Emails');
+  const ss = getSpreadsheetFor_(type);
+  const sh = ss.getSheetByName(sheetName);
+  if (!sh) throw new Error('Sheet/tab not found: ' + sheetName);
+
+  const lastRow = sh.getLastRow();
+  const lastColumn = sh.getLastColumn();
+  if (lastRow < 2) throw new Error('Record not found: ' + keyValue);
+
+  const headers = sh.getRange(1, 1, 1, lastColumn).getValues()[0].map(String);
+  const keyCol = headers.indexOf(keyHeader);
+  if (keyCol < 0) throw new Error('Missing column ' + keyHeader);
+
+  const keyValues = sh.getRange(2, keyCol + 1, lastRow - 1, 1).getValues();
+  let rowNumber = 0;
+  for (let i = 0; i < keyValues.length; i++) {
+    if (String(keyValues[i][0]) === String(keyValue)) {
+      rowNumber = i + 2;
+      break;
+    }
+  }
+  if (!rowNumber) throw new Error('Record not found: ' + keyValue);
+
+  Object.keys(changes).forEach(k => {
+    const c = headers.indexOf(k);
+    if (c >= 0) sh.getRange(rowNumber, c + 1).setValue(changes[k]);
+  });
+}
+
+function updateMailboxIndex_(recordId, changes) {
+  updateByKey_('Mailbox_Index', 'Mailbox_Record_ID', recordId, changes);
+}
+
+function updateEmail_(mailId, changes) {
+  updateByKey_('Emails', 'Mail_ID', mailId, changes);
+}
+
+/* =========================================================
+   USER FUNCTIONS
+========================================================= */
+
+function getUserByEmail_(email) {
+  const target = String(email || '').trim().toLowerCase();
+  return getUsersCached_().find(u =>
+    String(u.Email_Address || '').trim().toLowerCase() === target
+  ) || null;
+}
+
+function getUserById_(id) {
+  return getUsersCached_().find(u =>
+    String(u.User_ID || '') === String(id)
+  ) || null;
+}
+
+function safeUser_(u) {
+  return {
+    userId:String(u.User_ID || ''),
+    email:String(u.Email_Address || ''),
+    name:String(u.Full_Name || ''),
+    designation:String(u.Designation || ''),
+    department:String(u.Department || ''),
+    role:String(u.Role || ''),
+    profileImageUrl:String(u.Profile_Image_URL || '')
+  };
+}
+
+function incrementFailedLogin_(user) {
+  const count = Number(user.Failed_Login_Count || 0) + 1;
+  updateByKey_('Users', 'User_ID', user.User_ID, {
+    Failed_Login_Count:count,
+    Last_Failed_Login:now_()
+  });
+  invalidateUsersCache_();
+}
+
+function updateUserLogin_(user) {
+  updateByKey_('Users', 'User_ID', user.User_ID, {
+    Last_Login:now_(),
+    Failed_Login_Count:0,
+    Last_Failed_Login:''
+  });
+  invalidateUsersCache_();
+}
+
+/* =========================================================
+   INDEX MIGRATION
+   Run once after deploying this version.
+========================================================= */
+
+function rebuildMailboxIndexMetadata_() {
+  const ss = getSpreadsheetFor_('Mailbox_Index');
+  let sh = ss.getSheetByName('Mailbox_Index');
+  if (!sh) throw new Error('Mailbox_Index tab not found.');
+
+  ensureHeaders_(sh, REQUIRED_HEADERS.Mailbox_Index);
+
+  const emails = getSheetObjects_('Emails');
+  const emailMap = {};
+  emails.forEach(m => emailMap[String(m.Mail_ID)] = m);
+
+  const lastRow = sh.getLastRow();
+  const lastColumn = sh.getLastColumn();
+  if (lastRow < 2) return { ok:true, updated:0 };
+
+  const headers = sh.getRange(1, 1, 1, lastColumn).getValues()[0].map(String);
+  const col = {};
+  headers.forEach((h, i) => col[h] = i);
+
+  const values = sh.getRange(2, 1, lastRow - 1, lastColumn).getValues();
+  let updated = 0;
+
+  values.forEach(row => {
+    const mailId = String(row[col.Mail_ID] || '');
+    const email = emailMap[mailId];
+    if (!mailId || !email) return;
+
+    row[col.Subject] = String(email.Subject || '');
+    row[col.Sender_Name] = String(email.Sender_Name || '');
+    row[col.Sender_Email] = String(email.Sender_Email || '');
+    row[col.To_Email] = String(email.To_Email || '');
+    row[col.Label] = String(email.Label || '');
+    row[col.Has_Attachment] = String(email.Has_Attachment || 'NO');
+    row[col.Attachment_Count] = Number(email.Attachment_Count || 0);
+    row[col.Preview] = createPreview_(email.Body);
+    row[col.Message_DateTime] = String(email.Sent_DateTime || email.Received_DateTime || '');
+    updated++;
+  });
+
+  sh.getRange(2, 1, values.length, lastColumn).setValues(values);
+  clearMailboxCaches_();
+  return { ok:true, updated:updated };
+}
+
+function createPreview_(value) {
+  return String(value || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .substring(0, 180);
+}
+
+/* =========================================================
+   IDs / UTILITIES
+========================================================= */
+
+function nextReference_() {
+  const cfg = readConfig_();
+  const prefix = String(cfg.REFERENCE_PREFIX || 'MLR-MAIL');
+  const tz = cfg.TIMEZONE || Session.getScriptTimeZone() || 'Asia/Kolkata';
+  const year = Utilities.formatDate(new Date(), tz, 'yyyy');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const key = 'MAIL_SEQ_' + year;
+    const next = Number(props.getProperty(key) || 0) + 1;
+    props.setProperty(key, String(next));
+    return prefix + '-' + year + '-' + ('000000' + next).slice(-6);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function nextId_(prefix) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const key = 'SEQ_' + prefix;
+    const next = Number(props.getProperty(key) || 0) + 1;
+    props.setProperty(key, String(next));
+    return prefix + Utilities.formatString('%06d', next);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function normalizeEmails_(value) {
+  if (Array.isArray(value)) {
+    return unique_(value.map(x => String(x).trim().toLowerCase()).filter(Boolean));
+  }
+  return unique_(String(value || '').split(/[;,]/).map(x => x.trim().toLowerCase()).filter(Boolean));
+}
+
+function unique_(arr) {
+  return Array.from(new Set(arr));
+}
+
+function sha256_(text) {
+  const bytes = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    text,
+    Utilities.Charset.UTF_8
+  );
+  return bytes.map(b => {
+    const v = (b < 0 ? b + 256 : b).toString(16);
+    return v.length === 1 ? '0' + v : v;
+  }).join('');
+}
+
+function now_() {
+  const cfg = readConfig_();
+  return Utilities.formatDate(
+    new Date(),
+    cfg.TIMEZONE || Session.getScriptTimeZone() || 'Asia/Kolkata',
+    'dd/MM/yyyy HH:mm:ss'
+  );
+}
+
+function formatDate_(d) {
+  const cfg = readConfig_();
+  return Utilities.formatDate(
+    d,
+    cfg.TIMEZONE || Session.getScriptTimeZone() || 'Asia/Kolkata',
+    'dd/MM/yyyy HH:mm:ss'
+  );
+}
+
+function extractId_(value) {
+  const s = String(value || '').trim();
+  const m = s.match(/[-\w]{20,}/);
+  return m ? m[0] : '';
+}
+
+function getOrCreateFolder_(parent, name) {
+  const it = parent.getFoldersByName(name);
+  return it.hasNext() ? it.next() : parent.createFolder(name);
+}
+-----------Mailbox.html----------------------
+<!doctype html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>MailBox | Mailbox</title>
+
+  <!--begin::Theme Init-->
+  <script>
+    (() => {
+      'use strict';
+
+      const root = document.documentElement;
+
+      if (root.getAttribute('data-lte-color-mode') === 'off') {
+        return;
+      }
+
+      const STORAGE_KEY = 'lte-theme';
+      let stored = null;
+
+      try {
+        stored = localStorage.getItem(STORAGE_KEY);
+      } catch (_) {}
+
+      const authored = root.getAttribute('data-bs-theme');
+
+      let resolved = 'light';
+
+      if (stored === 'dark' || stored === 'light') {
+        resolved = stored;
+      } else if (authored === 'dark' || authored === 'light') {
+        resolved = authored;
+      } else if (
+        globalThis.matchMedia &&
+        globalThis.matchMedia('(prefers-color-scheme: dark)').matches
+      ) {
+        resolved = 'dark';
+      }
+
+      root.setAttribute('data-bs-theme', resolved);
+      root.style.colorScheme = resolved;
+
+      if (resolved !== authored) {
+        root.setAttribute('data-lte-theme-resolved', '');
+      }
+    })();
+  </script>
+  <!--end::Theme Init-->
+
+  <!--begin::Accessibility Meta Tags-->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#007bff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+  <!--end::Accessibility Meta Tags-->
+
+  <!--begin::Primary Meta Tags-->
+  <meta name="title" content="MailBox | Mailbox" />
+  <meta name="author" content="MailBox" />
+  <meta
+    name="description"
+    content="MailBox"
+  />
+  <!--end::Primary Meta Tags-->
+
+  <meta name="supported-color-schemes" content="light dark" />
+
+  <link rel="preload" href="../css/adminlte.css" as="style" />
+
+  <!--begin::Fonts-->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/@fontsource/source-sans-3@5.0.12/index.css"
+    crossorigin="anonymous"
+    media="print"
+    onload="this.media = 'all'"
+  />
+  <!--end::Fonts-->
+
+  <!--begin::OverlayScrollbars-->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/styles/overlayscrollbars.min.css"
+    crossorigin="anonymous"
+  />
+  <!--end::OverlayScrollbars-->
+
+  <!--begin::Bootstrap Icons-->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    crossorigin="anonymous"
+  />
+  <!--end::Bootstrap Icons-->
+
+  <!--begin::AdminLTE-->
+  <link rel="stylesheet" href="../css/adminlte.css" />
+  <!--end::AdminLTE-->
+
+  <style>
+    /* =========================================================
+       MailBox - Inbox Page
+       ========================================================= */
+
+    .mail-folder-link {
+      transition: all 0.15s ease-in-out;
+    }
+
+    .mail-folder-link.active {
+      background-color: var(--bs-primary) !important;
+      color: #fff !important;
+    }
+
+    .mail-folder-link.active i,
+    .mail-folder-link.active span {
+      color: #fff !important;
+    }
+
+    .mail-folder-link:not(.active):hover {
+      background-color: var(--bs-tertiary-bg);
+    }
+
+    .mail-label-link {
+      cursor: pointer;
+      transition: background-color 0.15s ease-in-out;
+    }
+
+    .mail-label-link.active {
+      background-color: var(--bs-primary-bg-subtle);
+      font-weight: 600;
+    }
+
+    .mail-label-link:hover {
+      background-color: var(--bs-tertiary-bg);
+    }
+
+    .mail-loading {
+      min-height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .mail-loading .spinner-border {
+      width: 2rem;
+      height: 2rem;
+    }
+
+    .mail-empty {
+      min-height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .mail-empty i {
+      font-size: 2.5rem;
+      opacity: 0.45;
+    }
+
+    .mail-error {
+      min-height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 0.75rem;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .message-row {
+      transition: background-color 0.15s ease-in-out;
+    }
+
+    .message-row:hover {
+      background-color: var(--bs-tertiary-bg);
+    }
+
+    .message-row.unread {
+      font-weight: 600;
+      background-color: var(--bs-secondary-bg);
+    }
+
+    .message-row.unread:hover {
+      background-color: var(--bs-tertiary-bg);
+    }
+
+    .mail-toolbar {
+      min-height: 52px;
+    }
+
+    .folder-title-icon {
+      width: 30px;
+      text-align: center;
+    }
+
+    .label-empty {
+      padding: 1rem;
+      text-align: center;
+      color: var(--bs-secondary-color);
+      font-size: 0.875rem;
+    }
+
+    @media (max-width: 575.98px) {
+      .mail-toolbar .btn-group .btn {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+      }
+
+      .mail-toolbar .message-range {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+
+<div class="app-wrapper">
+
+  <!-- =========================================================
+       HEADER
+       ========================================================= -->
+  <nav class="app-header navbar navbar-expand bg-body">
+
+    <div class="container-fluid">
+
+      <!-- Left Navbar -->
+      <ul class="navbar-nav">
+
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            data-lte-toggle="sidebar"
+            href="#"
+            role="button"
+            aria-label="Toggle sidebar"
+          >
+            <i class="bi bi-list"></i>
+          </a>
+        </li>
+
+      </ul>
+
+      <!-- Right Navbar -->
+      <ul class="navbar-nav ms-auto">
+
+        <!-- Search -->
+        <li class="nav-item d-md-none">
+          <a
+            class="nav-link"
+            href="../pages/search-results.html"
+            aria-label="Search"
+          >
+            <i class="bi bi-search" aria-hidden="true"></i>
+          </a>
+        </li>
+
+        <!-- Fullscreen -->
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            href="#"
+            data-lte-toggle="fullscreen"
+            aria-label="Toggle fullscreen"
+          >
+            <i
+              data-lte-icon="maximize"
+              class="bi bi-arrows-fullscreen"
+            ></i>
+
+            <i
+              data-lte-icon="minimize"
+              class="bi bi-fullscreen-exit d-none"
+            ></i>
+          </a>
+        </li>
+
+        <!-- Color Mode -->
+        <li class="nav-item dropdown">
+
+          <a
+            class="nav-link"
+            href="#"
+            id="bd-theme"
+            aria-label="Toggle color scheme"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            <i
+              class="bi bi-sun-fill"
+              data-lte-theme-icon="light"
+            ></i>
+
+            <i
+              class="bi bi-moon-fill d-none"
+              data-lte-theme-icon="dark"
+            ></i>
+
+            <i
+              class="bi bi-circle-half d-none"
+              data-lte-theme-icon="auto"
+            ></i>
+          </a>
+
+          <ul
+            class="dropdown-menu dropdown-menu-end"
+            aria-labelledby="bd-theme"
+            style="--bs-dropdown-min-width: 8rem"
+          >
+
+            <li>
+              <button
+                type="button"
+                class="dropdown-item d-flex align-items-center"
+                data-bs-theme-value="light"
+                aria-pressed="false"
+              >
+                <i class="bi bi-sun-fill me-2"></i>
+                Light
+                <i class="bi bi-check-lg ms-auto d-none"></i>
+              </button>
+            </li>
+
+            <li>
+              <button
+                type="button"
+                class="dropdown-item d-flex align-items-center"
+                data-bs-theme-value="dark"
+                aria-pressed="false"
+              >
+                <i class="bi bi-moon-fill me-2"></i>
+                Dark
+                <i class="bi bi-check-lg ms-auto d-none"></i>
+              </button>
+            </li>
+
+            <li>
+              <button
+                type="button"
+                class="dropdown-item d-flex align-items-center active"
+                data-bs-theme-value="auto"
+                aria-pressed="true"
+              >
+                <i class="bi bi-circle-half me-2"></i>
+                Auto
+                <i class="bi bi-check-lg ms-auto d-none"></i>
+              </button>
+            </li>
+
+          </ul>
+
+        </li>
+
+        <!-- =====================================================
+             LOGOUT
+             Same implementation used in read.html
+             ===================================================== -->
+        <li class="nav-item">
+          <button
+            id="logout-button"
+            class="btn btn-link nav-link text-danger"
+            type="button"
+            aria-label="Logout"
+            title="Logout"
+          >
+            <i
+              class="bi bi-box-arrow-right"
+              aria-hidden="true"
+            ></i>
+
+            <span class="d-none d-md-inline ms-1">
+              Logout
+            </span>
+          </button>
+        </li>
+
+      </ul>
+
+    </div>
+  </nav>
+
+
+  <!-- =========================================================
+       SIDEBAR
+       ========================================================= -->
+  <aside
+    class="app-sidebar bg-body-secondary shadow"
+    data-bs-theme="dark"
+  >
+
+    <!-- Brand -->
+    <div class="sidebar-brand">
+
+      <a
+        href="mailbox.html"
+        class="brand-link"
+      >
+
+        <img
+          src="../assets/img/AdminLTELogo.png"
+          alt="MailBox Logo"
+          class="brand-image opacity-75 shadow"
+        />
+
+        <span class="brand-text fw-light">
+          MailBox
+        </span>
+
+      </a>
+
+    </div>
+
+
+    <!-- Sidebar Search -->
+    <div
+      class="sidebar-search"
+      role="search"
+    >
+
+      <label
+        for="sidebar-search-input"
+        class="visually-hidden"
+      >
+        Filter menu
+      </label>
+
+      <input
+        type="search"
+        id="sidebar-search-input"
+        class="form-control form-control-sm"
+        placeholder="Filter menu…"
+        autocomplete="off"
+        data-lte-toggle="sidebar-search"
+        data-lte-target="#navigation"
+      />
+
+      <p
+        class="fs-7 text-secondary mt-2 mb-0"
+        data-lte-search-empty
+        role="status"
+        hidden
+      >
+        No matching pages.
+      </p>
+
+    </div>
+
+
+    <!-- Sidebar Navigation -->
+    <div class="sidebar-wrapper">
+
+      <nav
+        class="mt-2"
+        aria-label="Main navigation"
+      >
+
+        <ul
+          class="nav sidebar-menu flex-column"
+          data-lte-toggle="treeview"
+          data-accordion="false"
+          id="navigation"
+        >
+
+          <li class="nav-item menu-open">
+
+            <a
+              href="#"
+              class="nav-link active"
+            >
+
+              <i class="nav-icon bi bi-envelope"></i>
+
+              <p>
+                Mailbox
+                <i class="nav-arrow bi bi-chevron-right"></i>
+              </p>
+
+            </a>
+
+
+            <ul class="nav nav-treeview">
+
+              <li class="nav-item">
+
+                <a
+                  href="mailbox.html"
+                  class="nav-link active"
+                >
+
+                  <i class="nav-icon bi bi-circle"></i>
+
+                  <p>
+                    Folders
+                  </p>
+
+                </a>
+
+              </li>
+
+
+              <li class="nav-item">
+
+                <a
+                  href="compose.html"
+                  class="nav-link"
+                >
+
+                  <i class="nav-icon bi bi-circle"></i>
+
+                  <p>
+                    Compose
+                  </p>
+
+                </a>
+
+              </li>
+
+            </ul>
+
+          </li>
+
+        </ul>
+
+      </nav>
+
+    </div>
+
+  </aside>
+
+
+  <!-- =========================================================
+       MAIN
+       ========================================================= -->
+  <main class="app-main">
+
+    <!-- Page Header -->
+    <div class="app-content-header">
+
+      <div class="container-fluid">
+
+        <div class="row">
+
+          <div class="col-sm-6">
+
+            <h1
+              class="mb-0 fs-3"
+              id="page-heading"
+            >
+              Inbox
+            </h1>
+
+          </div>
+
+
+          <div class="col-sm-6">
+
+            <nav aria-label="breadcrumb">
+
+              <ol class="breadcrumb float-sm-end">
+
+                <li class="breadcrumb-item">
+                  <a href="mailbox.html">
+                    Home
+                  </a>
+                </li>
+
+                <li
+                  class="breadcrumb-item active"
+                  aria-current="page"
+                  id="breadcrumb-folder"
+                >
+                  Inbox
+                </li>
+
+              </ol>
+
+            </nav>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- Main Content -->
+    <div class="app-content">
+
+      <div class="container-fluid">
+
+        <div class="row g-3">
+
+
+          <!-- ===================================================
+               LEFT FOLDER PANEL
+               =================================================== -->
+          <div class="col-lg-3">
+
+            <!-- Compose -->
+            <a
+              href="compose.html"
+              class="btn btn-primary w-100 mb-3"
+            >
+
+              <i
+                class="bi bi-pencil-square me-1"
+                aria-hidden="true"
+              ></i>
+
+              Compose
+
+            </a>
+
+
+            <!-- Folders -->
+            <div class="card">
+
+              <div class="card-header">
+
+                <h3
+                  class="card-title"
+                  style="font-size: 1em;"
+                >
+                  Folders
+                </h3>
+
+              </div>
+
+
+              <div class="card-body p-0">
+
+                <ul
+                  class="nav nav-pills flex-column mb-0"
+                  id="folder-list"
+                >
+
+                  <!-- Inbox -->
+                  <li class="nav-item">
+
+                    <a
+                      href="mailbox.html"
+                      class="nav-link mail-folder-link rounded-0 d-flex justify-content-between"
+                      data-folder="INBOX"
+                      data-label="Inbox"
+                    >
+
+                      <span>
+                        <i class="bi bi-inbox me-2"></i>
+                        Inbox
+                      </span>
+
+                      <span
+                        class="badge text-bg-primary folder-count"
+                        data-count-folder="INBOX"
+                      ></span>
+
+                    </a>
+
+                  </li>
+
+
+                  <!-- Sent -->
+                  <li class="nav-item">
+
+                    <a
+                      href="#"
+                      class="nav-link mail-folder-link rounded-0"
+                      data-folder="SENT"
+                      data-label="Sent"
+                    >
+
+                      <i class="bi bi-send me-2"></i>
+                      Sent
+
+                    </a>
+
+                  </li>
+
+
+                  <!-- Drafts -->
+                  <li class="nav-item">
+
+                    <a
+                      href="#"
+                      class="nav-link mail-folder-link rounded-0 d-flex justify-content-between"
+                      data-folder="DRAFT"
+                      data-label="Drafts"
+                    >
+
+                      <span>
+                        <i class="bi bi-file-earmark me-2"></i>
+                        Drafts
+                      </span>
+
+                      <span
+                        class="badge text-bg-secondary folder-count"
+                        data-count-folder="DRAFT"
+                      ></span>
+
+                    </a>
+
+                  </li>
+
+
+                  <!-- Starred -->
+                  <li class="nav-item">
+
+                    <a
+                      href="#"
+                      class="nav-link mail-folder-link rounded-0"
+                      data-folder="STARRED"
+                      data-label="Starred"
+                    >
+
+                      <i class="bi bi-star me-2"></i>
+                      Starred
+
+                    </a>
+
+                  </li>
+
+
+                  <!-- Archive -->
+                  <li class="nav-item">
+
+                    <a
+                      href="#"
+                      class="nav-link mail-folder-link rounded-0"
+                      data-folder="ARCHIVE"
+                      data-label="Archive"
+                    >
+
+                      <i class="bi bi-archive me-2"></i>
+                      Archive
+
+                    </a>
+
+                  </li>
+
+
+                  <!-- Spam -->
+                  <li class="nav-item">
+
+                    <a
+                      href="#"
+                      class="nav-link mail-folder-link rounded-0"
+                      data-folder="SPAM"
+                      data-label="Spam"
+                    >
+
+                      <i class="bi bi-exclamation-octagon me-2"></i>
+                      Spam
+
+                    </a>
+
+                  </li>
+
+
+                  <!-- Trash -->
+                  <li class="nav-item">
+
+                    <a
+                      href="#"
+                      class="nav-link mail-folder-link rounded-0"
+                      data-folder="TRASH"
+                      data-label="Trash"
+                    >
+
+                      <i class="bi bi-trash me-2"></i>
+                      Trash
+
+                    </a>
+
+                  </li>
+
+                </ul>
+
+              </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 LABELS
+                 ================================================= -->
+            <div class="card mt-3" style="display:none" >
+
+              <div class="card-header">
+
+                <h3
+                  class="card-title"
+                  style="font-size: 1em;"
+                >
+                  Labels
+                </h3>
+
+              </div>
+
+
+              <div class="card-body p-0">
+
+                <ul
+                  class="nav flex-column mb-0"
+                  id="label-list"
+                >
+
+                  <!-- Dynamically populated -->
+
+                  <li
+                    class="label-empty"
+                    id="label-loading"
+                  >
+                    Loading labels…
+                  </li>
+
+                </ul>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- ===================================================
+               MESSAGE LIST
+               =================================================== -->
+          <div class="col-lg-9">
+
+            <div class="card">
+
+
+              <!-- Card Header -->
+              <div class="card-header">
+
+                <h3
+                  class="card-title d-flex align-items-center gap-2"
+                  id="folder-title"
+                >
+
+                  <i
+                    class="bi bi-inbox folder-title-icon"
+                    id="folder-title-icon"
+                  ></i>
+
+                  <span>
+                    Inbox
+                  </span>
+
+                </h3>
+
+              </div>
+
+
+              <!-- Card Body -->
+              <div class="card-body p-0">
+
+
+                <!-- Toolbar -->
+                <div
+                  class="d-flex align-items-center flex-wrap gap-2 px-3 py-2 border-bottom mail-toolbar"
+                >
+
+                  <!-- Select All -->
+                  <div class="form-check mb-0">
+
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="select-all"
+                    />
+
+                    <label
+                      class="form-check-label visually-hidden"
+                      for="select-all"
+                    >
+                      Select all
+                    </label>
+
+                  </div>
+
+
+                  <!-- Search -->
+                  <div class="input-group input-group-sm ms-0 ms-md-3" style="max-width:320px; flex:1 1 220px;">
+
+                    <span class="input-group-text">
+                      <i class="bi bi-search" aria-hidden="true"></i>
+                    </span>
+
+                    <input
+                      type="search"
+                      class="form-control"
+                      id="mail-search"
+                      placeholder="Search mail..."
+                      autocomplete="off"
+                      spellcheck="false"
+                      aria-label="Search mail"
+                    >
+
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      id="mail-search-clear"
+                      title="Clear search"
+                      aria-label="Clear search"
+                      style="display:none;"
+                    >
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+
+                  </div>
+
+
+                  <!-- Toolbar Buttons -->
+                  <div class="btn-group btn-group-sm ms-3">
+
+                    <button
+                      id="refresh-button"
+                      class="btn btn-outline-secondary"
+                      type="button"
+                      title="Refresh"
+                      aria-label="Refresh"
+                    >
+                      <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+
+
+                    <button
+                      class="btn btn-outline-secondary"
+                      type="button"
+                      title="Mark as read"
+                      id="toolbar-read"
+                      disabled
+                    >
+                      <i class="bi bi-envelope-open"></i>
+                    </button>
+
+
+                    <button
+                      class="btn btn-outline-secondary"
+                      type="button"
+                      title="Mark as unread"
+                      id="toolbar-unread"
+                      disabled
+                    >
+                      <i class="bi bi-envelope"></i>
+                    </button>
+
+
+                    <button
+                      class="btn btn-outline-secondary"
+                      type="button"
+                      title="Archive"
+                      id="toolbar-archive"
+                    >
+                      <i class="bi bi-archive"></i>
+                    </button>
+
+
+                    <button
+                      class="btn btn-outline-secondary"
+                      type="button"
+                      title="Mark as spam"
+                      id="toolbar-spam"
+                    >
+                      <i class="bi bi-exclamation-octagon"></i>
+                    </button>
+
+
+                    <button
+                      class="btn btn-outline-secondary"
+                      type="button"
+                      title="Delete"
+                      id="toolbar-delete"
+                    >
+                      <i class="bi bi-trash"></i>
+                    </button>
+
+                  </div>
+
+
+                  <!-- Range / pagination -->
+                  <span
+                    class="ms-auto text-secondary small message-range"
+                    id="message-range"
+                  >
+                    0 of 0
+                  </span>
+
+                  <div class="d-flex align-items-center gap-1 ms-2">
+
+                    <select
+                      id="mail-page-size"
+                      class="form-select form-select-sm"
+                      style="width:auto;"
+                      title="Messages per page"
+                      aria-label="Messages per page"
+                    >
+                      <option value="25">25</option>
+                      <option value="50">50</option>
+                    </select>
+
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-secondary"
+                      id="mail-prev-page"
+                      title="Previous page"
+                      aria-label="Previous page"
+                      disabled
+                    >
+                      <i class="bi bi-chevron-left"></i>
+                    </button>
+
+                    <span
+                      id="mail-page-number"
+                      class="text-secondary small px-1"
+                    >
+                      1 / 1
+                    </span>
+
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-secondary"
+                      id="mail-next-page"
+                      title="Next page"
+                      aria-label="Next page"
+                      disabled
+                    >
+                      <i class="bi bi-chevron-right"></i>
+                    </button>
+
+                  </div>
+
+                </div>
+
+
+                <!-- Message List -->
+                <ul
+                  class="list-group list-group-flush mb-0"
+                  id="message-list"
+                >
+
+                  <!-- Loading content inserted here -->
+
+                </ul>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <!-- =========================================================
+       FOOTER
+       ========================================================= -->
+  <footer class="app-footer">
+
+    <div class="float-end d-none d-sm-inline">
+      MailBox
+    </div>
+
+    <strong>
+      Copyright &copy; 2014-2026&nbsp;
+
+      <a
+        href="#"
+        class="text-decoration-none"
+      >
+        MailBox
+      </a>.
+
+    </strong>
+
+    All rights reserved.
+
+  </footer>
+
+</div>
+
+
+<!-- ===========================================================
+     JAVASCRIPT LIBRARIES
+     =========================================================== -->
+
+<script
+  src="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/browser/overlayscrollbars.browser.es6.min.js"
+  crossorigin="anonymous"
+></script>
+
+
+<script
+  src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+  crossorigin="anonymous"
+></script>
+
+
+<script
+  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"
+  crossorigin="anonymous"
+></script>
+
+
+<script src="../js/adminlte.js"></script>
+
+
+<!-- ===========================================================
+     OverlayScrollbars
+     =========================================================== -->
+<script>
+  const SELECTOR_SIDEBAR_WRAPPER = '.sidebar-wrapper';
+
+  const Default = {
+    scrollbarTheme: 'os-theme-light',
+    scrollbarAutoHide: 'leave',
+    scrollbarClickScroll: true
+  };
+
+  document.addEventListener('DOMContentLoaded', function () {
+
+    const sidebarWrapper =
+      document.querySelector(SELECTOR_SIDEBAR_WRAPPER);
+
+    const isMobile = window.innerWidth <= 992;
+
+    if (
+      sidebarWrapper &&
+      typeof OverlayScrollbarsGlobal !== 'undefined' &&
+      OverlayScrollbarsGlobal.OverlayScrollbars !== undefined &&
+      !isMobile
+    ) {
+
+      OverlayScrollbarsGlobal.OverlayScrollbars(
+        sidebarWrapper,
+        {
+          scrollbars: {
+            theme: Default.scrollbarTheme,
+            autoHide: Default.scrollbarAutoHide,
+            clickScroll: Default.scrollbarClickScroll
+          }
+        }
+      );
+
+    }
+
+  });
+</script>
+
+
+<!-- ===========================================================
+     MAILBOX API 
+     =========================================================== -->
+<script>
+  window.MAILBOX_API_URL =
+    'https://script.google.com/macros/s/AKfycbztFYkp6V7YglnFLtZ7GbEXzoctYiBilV4lA4VgLm3WFKF8lYENWdM90_zy0uC1gmdG/exec';
+</script>
+
+<script src="mailbox-api.js"></script>
+
+
+<!-- ===========================================================
+     MAILBOX APPLICATION
+     =========================================================== -->
+<script>
+(() => {
+
+  'use strict';
+
+
+  /* =========================================================
+     LOGIN
+     ========================================================= */
+
+  MailboxAPI.requireLogin();
+
+
+  /* =========================================================
+     DOM
+     ========================================================= */
+
+  const messageList =
+    document.getElementById('message-list');
+
+  const messageRange =
+    document.getElementById('message-range');
+
+  const pageSizeSelect =
+    document.getElementById('mail-page-size');
+
+  const previousPageButton =
+    document.getElementById('mail-prev-page');
+
+  const nextPageButton =
+    document.getElementById('mail-next-page');
+
+  const pageNumber =
+    document.getElementById('mail-page-number');
+
+  const selectAll =
+    document.getElementById('select-all');
+
+  const refreshButton =
+    document.getElementById('refresh-button');
+
+  const searchInput =
+    document.getElementById('mail-search');
+
+  const searchClearButton =
+    document.getElementById('mail-search-clear');
+
+  const toolbarArchive =
+    document.getElementById('toolbar-archive');
+
+  const toolbarSpam =
+    document.getElementById('toolbar-spam');
+
+  const toolbarDelete =
+    document.getElementById('toolbar-delete');
+
+  const toolbarRead =
+    document.getElementById('toolbar-read');
+
+  const toolbarUnread =
+    document.getElementById('toolbar-unread');
+
+  const folderTitle =
+    document.getElementById('folder-title');
+
+  const folderTitleIcon =
+    document.getElementById('folder-title-icon');
+
+  const pageHeading =
+    document.getElementById('page-heading');
+
+  const breadcrumbFolder =
+    document.getElementById('breadcrumb-folder');
+
+  const labelList =
+    document.getElementById('label-list');
+
+  const logoutButton =
+    document.getElementById('logout-button');
+
+
+  /* =========================================================
+     FOLDER DEFINITIONS
+     ========================================================= */
+
+  const folders = {
+
+    INBOX: {
+      label: 'Inbox',
+      icon: 'bi-inbox'
+    },
+
+    SENT: {
+      label: 'Sent',
+      icon: 'bi-send'
+    },
+
+    DRAFT: {
+      label: 'Drafts',
+      icon: 'bi-file-earmark'
+    },
+
+    STARRED: {
+      label: 'Starred',
+      icon: 'bi-star'
+    },
+
+    ARCHIVE: {
+      label: 'Archive',
+      icon: 'bi-archive'
+    },
+
+    SPAM: {
+      label: 'Spam',
+      icon: 'bi-exclamation-octagon'
+    },
+
+    TRASH: {
+      label: 'Trash',
+      icon: 'bi-trash'
+    }
+
+  };
+
+
+  /* =========================================================
+     STATE
+     ========================================================= */
+
+  let currentFolder = 'INBOX';
+
+  let currentMessages = [];
+
+  let currentLabel = '';
+
+  let isLoading = false;
+
+  let currentPage = 1;
+  let currentPageSize = 25;
+  let totalPages = 1;
+  let totalMessages = 0;
+
+  /* =========================================================
+     SILENT AUTO REFRESH
+     ---------------------------------------------------------
+     Refreshes the currently selected folder every 10 seconds.
+     No loading spinner, page jump, popup, or button animation
+     is triggered by the background refresh.
+     ========================================================= */
+
+  const SILENT_REFRESH_INTERVAL = 10000;
+
+  let silentRefreshTimer = null;
+  let silentRefreshRunning = false;
+  let lastSilentSignature = '';
+  let pageIsVisible = !document.hidden;
+
+  function messageSignature(messages) {
+    return (Array.isArray(messages) ? messages : [])
+      .map(message => [
+        message?.mailId || '',
+        message?.date || '',
+        message?.subject || '',
+        message?.senderEmail || '',
+        message?.senderName || '',
+        message?.isRead ? '1' : '0',
+        message?.isStarred ? '1' : '0',
+        message?.label || '',
+        message?.body || ''
+      ].join('¦'))
+      .join('§');
+  }
+
+  function updateSilentSignature(messages) {
+    lastSilentSignature = messageSignature(messages);
+  }
+
+  async function silentRefresh() {
+    if (
+      silentRefreshRunning ||
+      isLoading ||
+      !pageIsVisible ||
+      !MailboxAPI.user()
+    ) {
+      return;
+    }
+
+    silentRefreshRunning = true;
+
+    try {
+      const searchValue =
+        searchInput ? searchInput.value || '' : '';
+
+      const data = await MailboxAPI.list(
+        currentFolder,
+        searchValue,
+        currentPage,
+        currentPageSize
+      );
+
+      const freshMessages =
+        Array.isArray(data?.messages)
+          ? data.messages
+          : [];
+
+      const freshSignature =
+        messageSignature(freshMessages);
+
+      /*
+       * Do nothing when the returned mail data has not changed.
+       * This is what makes the refresh silent.
+       */
+      if (freshSignature === lastSilentSignature) {
+        return;
+      }
+
+      /*
+       * Preserve the current page, folder and label. Only redraw
+       * when the server actually returned different mail data.
+       */
+      currentMessages = freshMessages;
+
+      renderMessages(currentMessages);
+      renderLabels(currentMessages);
+      updatePagination(data);
+
+      updateSilentSignature(currentMessages);
+
+    } catch (error) {
+      /*
+       * Background refresh must never replace the user's mail
+       * list with an error screen. A session error is handled
+       * quietly by sending the user to login.
+       */
+      if (/session/i.test(error?.message || '')) {
+        MailboxAPI.clearSession();
+        window.location.href = 'login.html';
+      }
+    } finally {
+      silentRefreshRunning = false;
+    }
+  }
+
+  function startSilentRefresh() {
+    stopSilentRefresh();
+
+    silentRefreshTimer =
+      window.setInterval(
+        silentRefresh,
+        SILENT_REFRESH_INTERVAL
+      );
+  }
+
+  function stopSilentRefresh() {
+    if (silentRefreshTimer !== null) {
+      window.clearInterval(silentRefreshTimer);
+      silentRefreshTimer = null;
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    pageIsVisible = !document.hidden;
+
+    if (pageIsVisible) {
+      /*
+       * Immediately check once when the user returns to the tab,
+       * then continue with the normal 10-second interval.
+       */
+      silentRefresh();
+    }
+  });
+
+  window.addEventListener('beforeunload', stopSilentRefresh);
+
+
+  /* =========================================================
+     STORAGE
+     ========================================================= */
+
+  const STORAGE_KEY =
+    'mailbox-selected-folder';
+
+
+  function saveFolder(folder) {
+
+    try {
+      sessionStorage.setItem(
+        STORAGE_KEY,
+        folder
+      );
+    } catch (_) {}
+
+  }
+
+
+  function getSavedFolder() {
+
+    try {
+
+      const folder =
+        sessionStorage.getItem(STORAGE_KEY);
+
+      if (folder && folders[folder]) {
+        return folder;
+      }
+
+    } catch (_) {}
+
+    return 'INBOX';
+
+  }
+
+
+  /* =========================================================
+     ESCAPE HTML
+     ========================================================= */
+
+  function esc(value) {
+
+    return String(value ?? '')
+      .replace(
+        /[&<>"']/g,
+        character => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        }[character])
+      );
+
+  }
+
+
+  /* =========================================================
+     DATE
+     ========================================================= */
+
+  function dateLabel(value) {
+
+    const text =
+      String(value || '');
+
+    return (
+      text.split(' ')[0] ||
+      text
+    );
+
+  }
+
+
+  /* =========================================================
+     BODY PREVIEW
+     ========================================================= */
+
+  function bodyPreview(value) {
+
+    return String(value || '')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 110);
+
+  }
+
+
+  /* =========================================================
+     LOADING STATE
+     ========================================================= */
+
+  function showLoading() {
+
+    isLoading = true;
+
+    messageList.innerHTML = `
+
+      <li class="list-group-item p-0">
+
+        <div class="mail-loading">
+
+          <div
+            class="spinner-border text-primary"
+            role="status"
+            aria-hidden="true"
+          ></div>
+
+          <div class="text-secondary">
+            Loading ${esc(
+              folders[currentFolder]?.label || 'messages'
+            )}…
+          </div>
+
+        </div>
+
+      </li>
+
+    `;
+
+    messageRange.textContent =
+      'Loading…';
+
+    selectAll.checked = false;
+    selectAll.disabled = true;
+    updateToolbarState();
+    if (previousPageButton) previousPageButton.disabled = true;
+    if (nextPageButton) nextPageButton.disabled = true;
+
+  }
+
+
+  /* =========================================================
+     EMPTY STATE
+     ========================================================= */
+
+  function showEmpty(message = 'No messages found.') {
+
+    messageList.innerHTML = `
+
+      <li class="list-group-item p-0">
+
+        <div class="mail-empty">
+
+          <i
+            class="bi bi-envelope-open text-secondary"
+            aria-hidden="true"
+          ></i>
+
+          <div class="text-secondary">
+            ${esc(message)}
+          </div>
+
+        </div>
+
+      </li>
+
+    `;
+
+    messageRange.textContent =
+      '0 of 0';
+
+    selectAll.checked = false;
+    selectAll.disabled = true;
+
+  }
+
+
+  /* =========================================================
+     ERROR STATE
+     ========================================================= */
+
+  function showError(error) {
+
+    const message =
+      error?.message ||
+      'Unable to load messages.';
+
+    messageList.innerHTML = `
+
+      <li class="list-group-item p-0">
+
+        <div class="mail-error">
+
+          <i
+            class="bi bi-exclamation-triangle text-danger"
+            style="font-size:2rem;"
+            aria-hidden="true"
+          ></i>
+
+          <div class="fw-semibold">
+            Unable to load messages
+          </div>
+
+          <div class="text-secondary small">
+            ${esc(message)}
+          </div>
+
+          <button
+            type="button"
+            class="btn btn-sm btn-primary"
+            id="retry-load-button"
+          >
+            <i class="bi bi-arrow-clockwise me-1"></i>
+            Retry
+          </button>
+
+        </div>
+
+      </li>
+
+    `;
+
+    messageRange.textContent =
+      'Error';
+
+    selectAll.checked = false;
+    selectAll.disabled = true;
+
+    document
+      .getElementById('retry-load-button')
+      ?.addEventListener(
+        'click',
+        load
+      );
+
+  }
+
+
+  /* =========================================================
+     UPDATE FOLDER HEADER
+     ========================================================= */
+
+  function updateFolderHeader() {
+
+    const folder =
+      folders[currentFolder] ||
+      folders.INBOX;
+
+    pageHeading.textContent =
+      folder.label;
+
+    breadcrumbFolder.textContent =
+      folder.label;
+
+    folderTitle.querySelector('span')?.remove();
+
+    const titleText =
+      document.createElement('span');
+
+    titleText.textContent =
+      folder.label;
+
+    folderTitle.appendChild(titleText);
+
+
+    folderTitleIcon.className =
+      `bi ${folder.icon} folder-title-icon`;
+
+  }
+
+
+  /* =========================================================
+     SELECTED FOLDER
+     ========================================================= */
+
+  function updateFolderSelection() {
+
+    document
+      .querySelectorAll('.mail-folder-link')
+      .forEach(link => {
+
+        const isSelected =
+          link.dataset.folder === currentFolder;
+
+        link.classList.toggle(
+          'active',
+          isSelected
+        );
+
+        link.setAttribute(
+          'aria-current',
+          isSelected
+            ? 'page'
+            : 'false'
+        );
+
+      });
+
+  }
+
+
+  /* =========================================================
+     LABEL EXTRACTION
+     ========================================================= */
+
+  function getLabels(messages) {
+
+    const labels =
+      new Map();
+
+    messages.forEach(message => {
+
+      const value =
+        String(message?.label || '')
+          .trim();
+
+      if (!value) {
+        return;
+      }
+
+      value
+        .split(',')
+        .map(x => x.trim())
+        .filter(Boolean)
+        .forEach(label => {
+
+          if (!labels.has(label)) {
+            labels.set(
+              label,
+              labels.size
+            );
+          }
+
+        });
+
+    });
+
+    return [...labels.keys()];
+
+  }
+
+
+  /* =========================================================
+     RENDER LABELS
+     ========================================================= */
+
+  function renderLabels(messages) {
+
+    const labels =
+      getLabels(messages);
+
+    labelList.innerHTML = '';
+
+
+    /* All messages */
+
+    const allItem =
+      document.createElement('li');
+
+    allItem.className =
+      'nav-item';
+
+    allItem.innerHTML = `
+
+      <a
+        href="#"
+        class="nav-link mail-label-link ${currentLabel === '' ? 'active' : ''}"
+        data-label=""
+      >
+
+        <i
+          class="bi bi-tags me-2"
+          aria-hidden="true"
+        ></i>
+
+        All labels
+
+      </a>
+
+    `;
+
+    labelList.appendChild(
+      allItem
+    );
+
+
+    if (!labels.length) {
+
+      const empty =
+        document.createElement('li');
+
+      empty.className =
+        'label-empty';
+
+      empty.textContent =
+        'No labels found';
+
+      labelList.appendChild(
+        empty
+      );
+
+    } else {
+
+      labels.forEach(label => {
+
+        const item =
+          document.createElement('li');
+
+        item.className =
+          'nav-item';
+
+        item.innerHTML = `
+
+          <a
+            href="#"
+            class="nav-link mail-label-link ${currentLabel === label ? 'active' : ''}"
+            data-label="${esc(label)}"
+          >
+
+            <i
+              class="bi bi-circle-fill text-primary me-2"
+              style="font-size:.6rem"
+              aria-hidden="true"
+            ></i>
+
+            ${esc(label)}
+
+          </a>
+
+        `;
+
+        labelList.appendChild(
+          item
+        );
+
+      });
+
+    }
+
+
+    labelList
+      .querySelectorAll('.mail-label-link')
+      .forEach(link => {
+
+        link.addEventListener(
+          'click',
+          event => {
+
+            event.preventDefault();
+
+            currentLabel =
+              link.dataset.label || '';
+
+            renderMessages(
+              currentMessages
+            );
+
+            renderLabels(
+              currentMessages
+            );
+
+          }
+        );
+
+      });
+
+  }
+
+
+  /* =========================================================
+     FILTER BY LABEL
+     ========================================================= */
+
+  function filteredMessages(messages) {
+
+    if (!currentLabel) {
+      return messages;
+    }
+
+    return messages.filter(message => {
+
+      const labels =
+        String(message?.label || '')
+          .split(',')
+          .map(x => x.trim())
+          .filter(Boolean);
+
+      return labels.some(
+        label =>
+          label.toLowerCase() ===
+          currentLabel.toLowerCase()
+      );
+
+    });
+
+  }
+
+
+  /* =========================================================
+     SELECTED MESSAGE IDS
+     ========================================================= */
+
+  function selectedMessageIds() {
+
+    return Array.from(
+      messageList.querySelectorAll('.msg-check:checked')
+    )
+      .map(checkbox => checkbox.dataset.id)
+      .filter(Boolean);
+
+  }
+
+
+  function updateToolbarState() {
+
+    const hasSelection =
+      selectedMessageIds().length > 0;
+
+    [
+      toolbarArchive,
+      toolbarSpam,
+      toolbarDelete,
+      toolbarRead,
+      toolbarUnread
+    ].forEach(button => {
+      if (button) button.disabled = !hasSelection;
+    });
+
+  }
+
+
+  async function applyToSelected(changes) {
+
+    const ids = selectedMessageIds();
+
+    if (!ids.length) return;
+
+    const buttons = [
+      toolbarArchive,
+      toolbarSpam,
+      toolbarDelete,
+      toolbarRead,
+      toolbarUnread
+    ].filter(Boolean);
+
+    buttons.forEach(button => button.disabled = true);
+
+    try {
+
+      await Promise.all(
+        ids.map(mailId =>
+          MailboxAPI.update(
+            Object.assign({ mailId }, changes)
+          )
+        )
+      );
+
+      await load(currentPage);
+
+    } catch (error) {
+
+      if (/session/i.test(error?.message || '')) {
+        MailboxAPI.clearSession();
+        window.location.href = 'login.html';
+        return;
+      }
+
+      showError(error);
+
+    } finally {
+
+      updateToolbarState();
+
+    }
+
+  }
+
+
+  /* =========================================================
+     RENDER MESSAGES
+     ========================================================= */
+
+  function renderMessages(messages) {
+
+    const filtered =
+      filteredMessages(messages);
+
+    messageList.innerHTML = '';
+
+    isLoading = false;
+
+
+    if (!filtered.length) {
+
+      if (currentLabel) {
+
+        showEmpty(
+          `No messages with label "${currentLabel}".`
+        );
+
+      } else {
+
+        showEmpty(
+          'No messages found.'
+        );
+
+      }
+
+      return;
+
+    }
+
+
+    filtered.forEach(
+      (message, index) => {
+
+        const li =
+          document.createElement('li');
+
+        li.className =
+          'list-group-item d-flex align-items-center gap-2 message-row' +
+          (
+            message.isRead
+              ? ''
+              : ' unread'
+          );
+
+
+        const mailId =
+          message.mailId || '';
+
+
+        const subject =
+          message.subject ||
+          '(No subject)';
+
+
+        const sender =
+          message.senderName ||
+          message.senderEmail ||
+          '(Unknown sender)';
+
+
+        const preview =
+          bodyPreview(
+            message.body
+          );
+
+
+        const date =
+          dateLabel(
+            message.date
+          );
+
+
+        const isStarred =
+          message.isStarred === true ||
+          String(message.isStarred || '')
+            .toUpperCase() === 'YES';
+
+
+        const label =
+          String(
+            message.label || ''
+          ).trim();
+
+
+        li.innerHTML = `
+
+          <div class="form-check mb-0">
+
+            <input
+              class="form-check-input msg-check"
+              type="checkbox"
+              data-id="${esc(mailId)}"
+              id="msg-${index}"
+            >
+
+            <label
+              class="form-check-label visually-hidden"
+              for="msg-${index}"
+            >
+              Select ${esc(subject)}
+            </label>
+
+          </div>
+
+
+          <button
+            class="btn btn-link p-0 lh-1 star-btn ${
+              isStarred
+                ? 'text-warning'
+                : 'text-secondary'
+            }"
+            type="button"
+            title="${
+              isStarred
+                ? 'Unstar'
+                : 'Star'
+            }"
+            aria-label="${
+              isStarred
+                ? 'Unstar'
+                : 'Star'
+            }"
+            data-id="${esc(mailId)}"
+          >
+
+            <i
+              class="bi ${
+                isStarred
+                  ? 'bi-star-fill'
+                  : 'bi-star'
+              }"
+              aria-hidden="true"
+            ></i>
+
+          </button>
+
+
+          <a
+            href="read.html?id=${encodeURIComponent(mailId)}"
+            class="flex-grow-1 d-flex flex-column flex-md-row gap-md-3 text-decoration-none text-body"
+            style="min-width:0"
+          >
+
+            <span
+              class="text-truncate"
+              style="min-width:9rem"
+              title="${esc(sender)}"
+            >
+              ${esc(sender)}
+            </span>
+
+
+            <span
+              class="flex-grow-1 text-truncate"
+              style="min-width:0"
+            >
+
+              ${
+                label
+                  ? `
+                    <span
+                      class="badge text-bg-primary me-2"
+                    >
+                      ${esc(label)}
+                    </span>
+                  `
+                  : ''
+              }
+
+              ${esc(subject)}
+
+              ${
+                preview
+                  ? `
+                    <span
+                      class="fw-normal text-secondary"
+                    >
+                      &nbsp;&mdash;
+                      ${esc(preview)}
+                    </span>
+                  `
+                  : ''
+              }
+
+            </span>
+
+
+            <span
+              class="text-secondary small text-md-end"
+              style="min-width:5rem"
+            >
+              ${esc(date)}
+            </span>
+
+          </a>
+
+        `;
+
+
+        messageList.appendChild(
+          li
+        );
+
+      }
+    );
+
+
+    messageRange.textContent =
+      `1–${filtered.length} of ${filtered.length}`;
+
+
+    selectAll.disabled = false;
+    selectAll.checked = false;
+    updateToolbarState();
+
+    messageList
+      .querySelectorAll('.msg-check')
+      .forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+          const boxes = Array.from(
+            messageList.querySelectorAll('.msg-check')
+          );
+          selectAll.checked =
+            boxes.length > 0 &&
+            boxes.every(box => box.checked);
+          updateToolbarState();
+        });
+      });
+
+
+    /* =======================================================
+       STAR BUTTONS
+       ======================================================= */
+
+    messageList
+      .querySelectorAll('.star-btn')
+      .forEach(button => {
+
+        button.addEventListener(
+          'click',
+          async event => {
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const icon =
+              button.querySelector('i');
+
+            const currentlyStarred =
+              icon.classList.contains(
+                'bi-star-fill'
+              );
+
+
+            button.disabled = true;
+
+            try {
+
+              await MailboxAPI.update({
+
+                mailId:
+                  button.dataset.id,
+
+                Is_Starred:
+                  currentlyStarred
+                    ? 'NO'
+                    : 'YES'
+
+              });
+
+              await load();
+
+            } catch (error) {
+
+              showError(
+                error
+              );
+
+            } finally {
+
+              button.disabled = false;
+
+            }
+
+          }
+        );
+
+      });
+
+  }
+
+
+  /* =========================================================
+     PAGINATION
+     ========================================================= */
+
+  function updatePagination(data) {
+
+    const page = Number(data?.page || 1);
+    const pageSize = Number(data?.pageSize || currentPageSize || 25);
+    const total = Number(data?.total || 0);
+    const pages = Math.max(Number(data?.totalPages || 1), 1);
+
+    currentPage = page;
+    currentPageSize = pageSize === 50 ? 50 : 25;
+    totalPages = pages;
+    totalMessages = total;
+
+    if (pageSizeSelect) {
+      pageSizeSelect.value = String(currentPageSize);
+    }
+
+    if (pageNumber) {
+      pageNumber.textContent = `${currentPage} / ${totalPages}`;
+    }
+
+    if (messageRange) {
+      if (!total) {
+        messageRange.textContent = '0 of 0';
+      } else {
+        const start = ((currentPage - 1) * currentPageSize) + 1;
+        const end = Math.min(currentPage * currentPageSize, total);
+        messageRange.textContent = `${start}–${end} of ${total}`;
+      }
+    }
+
+    if (previousPageButton) {
+      previousPageButton.disabled = currentPage <= 1 || isLoading || total === 0;
+    }
+
+    if (nextPageButton) {
+      nextPageButton.disabled = currentPage >= totalPages || isLoading || total === 0;
+    }
+  }
+
+
+  /* =========================================================
+     LOAD MESSAGES
+     ========================================================= */
+
+  async function load(page = currentPage) {
+
+    if (isLoading) return;
+
+    showLoading();
+
+    try {
+
+      const searchValue =
+        searchInput ? searchInput.value || '' : '';
+
+      const data =
+        await MailboxAPI.list(
+          currentFolder,
+          searchValue,
+          page,
+          currentPageSize
+        );
+
+      currentMessages =
+        Array.isArray(data?.messages)
+          ? data.messages
+          : [];
+
+      renderMessages(currentMessages);
+      renderLabels(currentMessages);
+      updatePagination(data);
+
+      updateSilentSignature(currentMessages);
+
+    } catch (error) {
+
+      isLoading = false;
+
+      if (/session/i.test(error?.message || '')) {
+        MailboxAPI.clearSession();
+        window.location.href = 'login.html';
+        return;
+      }
+
+      showError(error);
+
+    } finally {
+
+      isLoading = false;
+
+      if (previousPageButton) {
+        previousPageButton.disabled = currentPage <= 1 || totalMessages === 0;
+      }
+
+      if (nextPageButton) {
+        nextPageButton.disabled = currentPage >= totalPages || totalMessages === 0;
+      }
+
+    }
+  }
+
+
+  /* =========================================================
+     FOLDER CLICK
+     ========================================================= */
+
+  document
+    .querySelectorAll('.mail-folder-link')
+    .forEach(link => {
+
+      link.addEventListener(
+        'click',
+        async event => {
+
+          event.preventDefault();
+
+
+          const folder =
+            link.dataset.folder;
+
+
+          if (!folders[folder]) {
+            return;
+          }
+
+
+          if (
+            folder === currentFolder &&
+            !isLoading
+          ) {
+
+            return;
+
+          }
+
+
+          currentFolder =
+            folder;
+
+          currentPage = 1;
+
+
+          currentLabel =
+            '';
+
+
+          saveFolder(
+            currentFolder
+          );
+
+
+          updateFolderSelection();
+
+          updateFolderHeader();
+
+          renderLabels([]);
+
+
+          await load();
+
+        }
+      );
+
+    });
+
+
+  /* =========================================================
+     SEARCH
+     ========================================================= */
+
+  let searchTimer;
+
+  function runSearch() {
+
+    clearTimeout(searchTimer);
+
+    searchTimer = setTimeout(async () => {
+
+      currentPage = 1;
+      currentLabel = '';
+      updateToolbarState();
+
+      try {
+        await load(1);
+      } catch (error) {
+        showError(error);
+      }
+
+    }, 300);
+
+  }
+
+
+  searchInput?.addEventListener('input', () => {
+
+    if (searchClearButton) {
+      searchClearButton.style.display =
+        searchInput.value.trim() ? '' : 'none';
+    }
+
+    runSearch();
+
+  });
+
+
+  searchInput?.addEventListener('keydown', event => {
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      searchInput.value = '';
+      if (searchClearButton) searchClearButton.style.display = 'none';
+      runSearch();
+    }
+
+  });
+
+
+  searchClearButton?.addEventListener('click', () => {
+
+    searchInput.value = '';
+    searchClearButton.style.display = 'none';
+    searchInput.focus();
+    runSearch();
+
+  });
+
+
+  document.addEventListener('keydown', event => {
+
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      searchInput?.focus();
+    }
+
+  });
+
+
+  /* =========================================================
+     PAGINATION CONTROLS
+     ========================================================= */
+
+  previousPageButton?.addEventListener('click', async () => {
+    if (currentPage <= 1 || isLoading) return;
+    await load(currentPage - 1);
+  });
+
+  nextPageButton?.addEventListener('click', async () => {
+    if (currentPage >= totalPages || isLoading) return;
+    await load(currentPage + 1);
+  });
+
+  pageSizeSelect?.addEventListener('change', async () => {
+    currentPageSize = Number(pageSizeSelect.value) === 50 ? 50 : 25;
+    currentPage = 1;
+    await load(1);
+  });
+
+
+  /* =========================================================
+     TOOLBAR ACTIONS
+     ========================================================= */
+
+  toolbarArchive?.addEventListener('click', () =>
+    applyToSelected({
+      Folder: 'ARCHIVE',
+      Is_Archived: 'YES',
+      Is_Spam: 'NO',
+      Is_Deleted: 'NO'
+    })
+  );
+
+
+  toolbarSpam?.addEventListener('click', () => {
+    if (!window.confirm('Move the selected message(s) to Spam?')) return;
+    applyToSelected({
+      Folder: 'SPAM',
+      Is_Spam: 'YES',
+      Is_Archived: 'NO',
+      Is_Deleted: 'NO'
+    });
+  });
+
+
+  toolbarDelete?.addEventListener('click', () => {
+    if (!window.confirm('Move the selected message(s) to Trash?')) return;
+    applyToSelected({
+      Folder: 'TRASH',
+      Is_Deleted: 'YES'
+    });
+  });
+
+
+  toolbarRead?.addEventListener('click', () =>
+    applyToSelected({ Is_Read: 'YES' })
+  );
+
+
+  toolbarUnread?.addEventListener('click', () =>
+    applyToSelected({ Is_Read: 'NO' })
+  );
+
+
+  /* =========================================================
+     REFRESH
+     ========================================================= */
+
+  refreshButton?.addEventListener(
+    'click',
+    async () => {
+
+      refreshButton.disabled =
+        true;
+
+      try {
+
+        await load();
+
+      } finally {
+
+        refreshButton.disabled =
+          false;
+
+      }
+
+    }
+  );
+
+
+  /* =========================================================
+     SELECT ALL
+     ========================================================= */
+
+  selectAll?.addEventListener(
+    'change',
+    () => {
+
+      messageList
+        .querySelectorAll(
+          '.msg-check'
+        )
+        .forEach(
+          checkbox => {
+            checkbox.checked =
+              selectAll.checked;
+          }
+        );
+
+      updateToolbarState();
+
+    }
+  );
+
+
+  /* =========================================================
+     LOGOUT
+     Same implementation used in read.html
+     ========================================================= */
+
+  logoutButton?.addEventListener(
+    'click',
+    async () => {
+
+      const button =
+        document.getElementById(
+          'logout-button'
+        );
+
+
+      if (button) {
+        button.disabled = true;
+      }
+
+
+      try {
+
+        await MailboxAPI.logout();
+
+      } catch (_) {}
+
+
+      MailboxAPI.clearSession();
+
+
+      window.location.href =
+        'login.html';
+
+    }
+  );
+
+
+  /* =========================================================
+     USER INFORMATION
+     ========================================================= */
+
+  const user =
+    MailboxAPI.user();
+
+
+  if (user) {
+
+    document
+      .querySelectorAll(
+        '[data-mailbox-user-name]'
+      )
+      .forEach(
+        element => {
+          element.textContent =
+            user.name;
+        }
+      );
+
+  }
+
+
+  /* =========================================================
+     INITIALISE
+     ========================================================= */
+
+  currentFolder =
+    getSavedFolder();
+
+
+  updateFolderSelection();
+
+  updateFolderHeader();
+
+  renderLabels([]);
+
+  updateToolbarState();
+
+
+  load().finally(() => {
+    startSilentRefresh();
+  });
+
+
+})();
+</script>
+
+
+<!-- ===========================================================
+     COLOR MODE / APEX SUPPORT
+     =========================================================== -->
+<script>
+(() => {
+
+  'use strict';
+
+
+  const mode = () =>
+    document.documentElement
+      .getAttribute('data-bs-theme') === 'dark'
+      ? 'dark'
+      : 'light';
+
+
+  globalThis.Apex ||= {};
+
+  const apex =
+    globalThis.Apex;
+
+
+  apex.theme = {
+    mode: mode()
+  };
+
+
+  apex.chart =
+    Object.assign(
+      apex.chart || {},
+      {
+        background: 'transparent'
+      }
+    );
+
+
+  new MutationObserver(
+    () => {
+
+      const next =
+        mode();
+
+
+      apex.theme = {
+        mode: next
+      };
+
+
+      const instances =
+        apex._chartInstances || [];
+
+
+      for (
+        const { chart } of instances
+      ) {
+
+        try {
+
+          chart.updateOptions(
+            {
+              theme: {
+                mode: next
+              }
+            },
+            false,
+            false
+          );
+
+        } catch (_) {}
+
+      }
+
+    }
+  ).observe(
+    document.documentElement,
+    {
+      attributes: true,
+      attributeFilter: [
+        'data-bs-theme'
+      ]
+    }
+  );
+
+})();
+</script>
+
+</body>
+</html>
+-------------read.html---------------------------
+<!doctype html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>MailBox | Mailbox - Read</title>
+
+  <script>
+    (() => {
+      'use strict';
+      const root = document.documentElement;
+      if (root.getAttribute('data-lte-color-mode') === 'off') return;
+
+      const STORAGE_KEY = 'lte-theme';
+      let stored = null;
+      try { stored = localStorage.getItem(STORAGE_KEY); } catch {}
+      const authored = root.getAttribute('data-bs-theme');
+      let resolved = 'light';
+      if (stored === 'dark' || stored === 'light') resolved = stored;
+      else if (authored === 'dark' || authored === 'light') resolved = authored;
+      else if (globalThis.matchMedia('(prefers-color-scheme: dark)').matches) resolved = 'dark';
+
+      root.setAttribute('data-bs-theme', resolved);
+      root.style.colorScheme = resolved;
+      if (resolved !== authored) root.setAttribute('data-lte-theme-resolved', '');
+    })();
+  </script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#007bff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+
+  <link rel="preload" href="../css/adminlte.css" as="style" />
+
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@fontsource/source-sans-3@5.0.12/index.css"
+        integrity="sha256-tXJfXfp6Ewt1ilPzLDtQnJV4hclT9XuaZUKyUvmyr+Q="
+        crossorigin="anonymous"
+        media="print"
+        onload="this.media = 'all'" />
+
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/styles/overlayscrollbars.min.css"
+        crossorigin="anonymous" />
+
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+        crossorigin="anonymous" />
+
+  <link rel="stylesheet" href="../css/adminlte.css" />
+
+  <style>
+    .message-body {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      line-height: 1.65;
+    }
+    .message-body.message-html {
+      white-space: normal;
+    }
+    .attachment-card {
+      height: 100%;
+    }
+    .attachment-icon {
+      min-width: 42px;
+    }
+  </style>
+</head>
+
+<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+<div class="app-wrapper">
+
+  <!-- Header -->
+  <nav class="app-header navbar navbar-expand bg-body">
+    <div class="container-fluid">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" data-lte-toggle="sidebar" href="#" role="button" aria-label="Toggle sidebar">
+            <i class="bi bi-list"></i>
+          </a>
+        </li>
+      </ul>
+
+      <ul class="navbar-nav ms-auto">
+       
+        <li class="nav-item d-md-none">
+          <a class="nav-link" href="mailbox.html" aria-label="Mailbox">
+            <i class="bi bi-envelope" aria-hidden="true"></i>
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="#" data-lte-toggle="fullscreen" aria-label="Toggle fullscreen">
+            <i data-lte-icon="maximize" class="bi bi-arrows-fullscreen"></i>
+            <i data-lte-icon="minimize" class="bi bi-fullscreen-exit d-none"></i>
+          </a>
+        </li>
+
+        <li class="nav-item dropdown">
+          <a class="nav-link" href="#" id="bd-theme" aria-label="Toggle color scheme"
+             data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-sun-fill" data-lte-theme-icon="light"></i>
+            <i class="bi bi-moon-fill d-none" data-lte-theme-icon="dark"></i>
+            <i class="bi bi-circle-half d-none" data-lte-theme-icon="auto"></i>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="bd-theme"
+              style="--bs-dropdown-min-width: 8rem">
+            <li>
+              <button type="button" class="dropdown-item d-flex align-items-center"
+                      data-bs-theme-value="light" aria-pressed="false">
+                <i class="bi bi-sun-fill me-2"></i>Light
+                <i class="bi bi-check-lg ms-auto d-none"></i>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="dropdown-item d-flex align-items-center"
+                      data-bs-theme-value="dark" aria-pressed="false">
+                <i class="bi bi-moon-fill me-2"></i>Dark
+                <i class="bi bi-check-lg ms-auto d-none"></i>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="dropdown-item d-flex align-items-center active"
+                      data-bs-theme-value="auto" aria-pressed="true">
+                <i class="bi bi-circle-half me-2"></i>Auto
+                <i class="bi bi-check-lg ms-auto d-none"></i>
+              </button>
+            </li>
+          </ul>
+        </li>
+ <li class="nav-item">
+          <button id="logout-button" class="btn btn-link nav-link text-danger" type="button" aria-label="Logout" title="Logout">
+            <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+            <span class="d-none d-md-inline ms-1">Logout</span>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Sidebar -->
+  <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
+    <div class="sidebar-brand">
+      <a href="mailbox.html" class="brand-link">
+        <img src="../assets/img/AdminLTELogo.png" alt="AdminLTE Logo"
+             class="brand-image opacity-75 shadow" />
+        <span class="brand-text fw-light">MailBox</span>
+      </a>
+    </div>
+
+    <div class="sidebar-search" role="search">
+      <label for="sidebar-search-input" class="visually-hidden">Filter menu</label>
+      <input type="search" id="sidebar-search-input"
+             class="form-control form-control-sm"
+             placeholder="Filter menu…" autocomplete="off"
+             data-lte-toggle="sidebar-search" data-lte-target="#navigation" />
+      <p class="fs-7 text-secondary mt-2 mb-0" data-lte-search-empty role="status" hidden>
+        No matching pages.
+      </p>
+    </div>
+
+    <div class="sidebar-wrapper">
+      <nav class="mt-2" aria-label="Main navigation">
+        <ul class="nav sidebar-menu flex-column"
+            data-lte-toggle="treeview" data-accordion="false" id="navigation">
+          <li class="nav-item menu-open">
+            <a href="#" class="nav-link active">
+              <i class="nav-icon bi bi-envelope"></i>
+              <p>Mailbox <i class="nav-arrow bi bi-chevron-right"></i></p>
+            </a>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="mailbox.html" class="nav-link">
+                  <i class="nav-icon bi bi-circle"></i>
+                  <p>Folders</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="compose.html" class="nav-link">
+                  <i class="nav-icon bi bi-circle"></i>
+                  <p>Compose</p>
+                </a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="app-main">
+    <div class="app-content-header">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-sm-6">
+            <h1 class="mb-0 fs-3">Read Message</h1>
+          </div>
+          <div class="col-sm-6">
+            <nav aria-label="breadcrumb">
+              <ol class="breadcrumb float-sm-end">
+                <li class="breadcrumb-item"><a href="mailbox.html">Home</a></li>
+                <li class="breadcrumb-item"><a href="mailbox.html">Mailbox</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Read</li>
+              </ol>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-content">
+      <div class="container-fluid">
+
+        <div id="alert" class="alert d-none" role="alert"></div>
+
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 id="subject" class="card-title">Loading...</h3>
+
+            <div class="btn-group btn-group-sm">
+              <a href="mailbox.html"
+                 class="btn btn-outline-secondary"
+                 title="Back to inbox"
+                 aria-label="Back to inbox">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i>
+              </a>
+
+              <button id="previous-message" class="btn btn-outline-secondary"
+                      type="button" title="Previous" aria-label="Previous message">
+                <i class="bi bi-chevron-up" aria-hidden="true"></i>
+              </button>
+
+              <button id="next-message" class="btn btn-outline-secondary"
+                      type="button" title="Next" aria-label="Next message">
+                <i class="bi bi-chevron-down" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="card-body">
+
+            <!-- Sender meta -->
+            <div class="d-flex gap-3 align-items-start mb-4">
+              <div id="sender-avatar"
+                   class="flex-shrink-0 rounded-circle bg-primary-subtle text-primary
+                          d-flex align-items-center justify-content-center fw-semibold"
+                   style="width:48px;height:48px"
+                   aria-hidden="true">--</div>
+
+              <div class="flex-grow-1">
+                <div class="d-flex justify-content-between gap-3">
+                  <div class="min-w-0">
+                    <p id="sender-name" class="mb-0 fw-semibold"></p>
+                    <small id="sender-email" class="text-secondary"></small>
+                  </div>
+                  <small id="message-date" class="text-secondary text-nowrap"></small>
+                </div>
+
+                <div class="small text-secondary mt-2">
+                  <div><strong>To:</strong> <span id="message-to"></span></div>
+                  <div id="cc-row"><strong>CC:</strong> <span id="message-cc"></span></div>
+                  <div id="bcc-row"><strong>BCC:</strong> <span id="message-bcc"></span></div>
+                  <div><strong>Reference:</strong> <span id="message-reference"></span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Body -->
+            <div id="message-body" class="message-body mb-4"></div>
+
+            <!-- Attachments -->
+            <div id="attachments-section" class="d-none">
+              <h6 class="fw-semibold">Attachments</h6>
+              <div id="attachments" class="row g-2 mb-3"></div>
+            </div>
+
+          </div>
+
+          <div class="card-footer d-flex gap-2">
+            <button id="reply-button" class="btn btn-primary" type="button">
+              <i class="bi bi-reply me-1" aria-hidden="true"></i>Reply
+            </button>
+
+            <button id="forward-button" class="btn btn-outline-secondary" type="button">
+              <i class="bi bi-arrow-90deg-right me-1" aria-hidden="true"></i>Forward
+            </button>
+
+            <button id="archive-button" class="btn btn-outline-secondary ms-auto" type="button">
+              <i class="bi bi-archive me-1" aria-hidden="true"></i>Archive
+            </button>
+
+            <button id="delete-button" class="btn btn-outline-danger" type="button">
+              <i class="bi bi-trash me-1" aria-hidden="true"></i>Delete
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="float-end d-none d-sm-inline">Internal Mailbox</div>
+    <strong>
+      Copyright &copy; 2014-2026&nbsp;
+      <a href="mailbox.html" class="text-decoration-none">Internal Mailbox</a>.
+    </strong>
+    All rights reserved.
+  </footer>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/browser/overlayscrollbars.browser.es6.min.js"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"
+        crossorigin="anonymous"></script>
+<script src="../js/adminlte.js"></script>
+
+<!-- Existing mailbox API client -->
+<script>
+  window.MAILBOX_API_URL = window.MAILBOX_API_URL || 'https://script.google.com/macros/s/AKfycbztFYkp6V7YglnFLtZ7GbEXzoctYiBilV4lA4VgLm3WFKF8lYENWdM90_zy0uC1gmdG/exec';
+</script>
+<script src="mailbox-api.js"></script>
+
+<script>
+  const SELECTOR_SIDEBAR_WRAPPER = '.sidebar-wrapper';
+  const Default = {
+    scrollbarTheme: 'os-theme-light',
+    scrollbarAutoHide: 'leave',
+    scrollbarClickScroll: true,
+  };
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const sidebarWrapper = document.querySelector(SELECTOR_SIDEBAR_WRAPPER);
+    const isMobile = window.innerWidth <= 992;
+
+    if (
+      sidebarWrapper &&
+      globalThis.OverlayScrollbarsGlobal?.OverlayScrollbars !== undefined &&
+      !isMobile
+    ) {
+      globalThis.OverlayScrollbarsGlobal.OverlayScrollbars(sidebarWrapper, {
+        scrollbars: {
+          theme: Default.scrollbarTheme,
+          autoHide: Default.scrollbarAutoHide,
+          clickScroll: Default.scrollbarClickScroll,
+        },
+      });
+    }
+  });
+</script>
+
+<script>
+(async () => {
+  'use strict';
+
+  MailboxAPI.requireLogin();
+
+  const params = new URLSearchParams(window.location.search);
+  const mailId = params.get('id');
+
+  const $ = id => document.getElementById(id);
+
+  $('logout-button')?.addEventListener('click', async () => {
+    const button = $('logout-button');
+    if (button) button.disabled = true;
+    try { await MailboxAPI.logout(); } catch (_) {}
+    MailboxAPI.clearSession();
+    window.location.href = 'login.html';
+  });
+
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    }[ch]));
+  }
+
+  function escapeAttr(value) { return escapeHtml(value); }
+
+  function showAlert(message, type = 'danger') {
+    const box = $('alert');
+    box.textContent = message;
+    box.className = `alert alert-${type}`;
+  }
+
+  function initials(name, email) {
+    const source = String(name || email || '?').trim();
+    const parts = source.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return source.substring(0, 2).toUpperCase();
+  }
+
+  function formatSize(bytes) {
+    const n = Number(bytes || 0);
+    if (!n) return '';
+    if (n < 1024) return `${n} B`;
+    if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+    if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
+    return `${(n / 1024 / 1024 / 1024).toFixed(1)} GB`;
+  }
+
+  function attachmentIcon(mimeType, fileName) {
+    const mime = String(mimeType || '').toLowerCase();
+    const name = String(fileName || '').toLowerCase();
+
+    if (mime.includes('pdf') || name.endsWith('.pdf'))
+      return 'bi-file-earmark-pdf-fill text-danger';
+    if (mime.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(name))
+      return 'bi-file-earmark-image-fill text-primary';
+    if (mime.includes('word') || /\.(doc|docx)$/i.test(name))
+      return 'bi-file-earmark-word-fill text-primary';
+    if (mime.includes('excel') || /\.(xls|xlsx|csv)$/i.test(name))
+      return 'bi-file-earmark-spreadsheet-fill text-success';
+    if (mime.includes('zip') || /\.(zip|rar|7z)$/i.test(name))
+      return 'bi-file-earmark-zip-fill text-warning';
+    return 'bi-paperclip text-secondary';
+  }
+
+  function renderAttachments(items) {
+    const section = $('attachments-section');
+    const container = $('attachments');
+
+    if (!Array.isArray(items) || !items.length) {
+      section.classList.add('d-none');
+      container.innerHTML = '';
+      return;
+    }
+
+    section.classList.remove('d-none');
+
+    container.innerHTML = items.map(item => {
+      const icon = attachmentIcon(item.mimeType, item.fileName);
+      const size = formatSize(item.size);
+
+      return `
+        <div class="col-md-6">
+          <div class="card attachment-card">
+            <div class="card-body py-2 px-3 d-flex align-items-center gap-2">
+              <i class="bi ${icon} fs-3 attachment-icon" aria-hidden="true"></i>
+              <div class="flex-grow-1 min-w-0">
+                <p class="mb-0 small fw-semibold text-truncate"
+                   title="${escapeHtml(item.fileName)}">
+                  ${escapeHtml(item.fileName || 'Attachment')}
+                </p>
+                <small class="text-secondary">
+                  ${escapeHtml(size || item.mimeType || '')}
+                </small>
+              </div>
+              <a href="${escapeAttr(item.url || '#')}"
+                 class="btn btn-sm btn-outline-secondary"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 title="Open attachment"
+                 aria-label="Open attachment">
+                <i class="bi bi-download" aria-hidden="true"></i>
+              </a>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function renderMessage(result) {
+    const m = result.message || {};
+
+    document.title = `${m.subject || 'Message'} | MailBox - Read`;
+
+    $('subject').textContent = m.subject || '(No subject)';
+    $('sender-name').textContent = m.senderName || m.senderEmail || '';
+    $('sender-email').textContent = m.senderEmail ? `<${m.senderEmail}>` : '';
+    $('sender-avatar').textContent = initials(m.senderName, m.senderEmail);
+    $('message-date').textContent = m.date || '';
+    $('message-to').textContent = m.to || '';
+    $('message-cc').textContent = m.cc || '';
+    $('message-bcc').textContent = m.bcc || '';
+    $('message-reference').textContent = m.referenceNo || '';
+
+    $('cc-row').classList.toggle('d-none', !String(m.cc || '').trim());
+    $('bcc-row').classList.toggle('d-none', !String(m.bcc || '').trim());
+
+    const body = $('message-body');
+
+    if (String(m.bodyType || '').toUpperCase() === 'HTML') {
+      body.classList.add('message-html');
+      body.innerHTML = m.body || '';
+    } else {
+      body.classList.remove('message-html');
+      body.textContent = m.body || '';
+    }
+
+    renderAttachments(Array.isArray(result.attachments) ? result.attachments : []);
+  }
+
+  async function updateMessage(changes) {
+    return MailboxAPI.update(Object.assign({ mailId }, changes));
+  }
+
+  $('reply-button').addEventListener('click', () => {
+  if (!mailId) {
+    showAlert('Message ID is missing.');
+    return;
+  }
+
+  window.location.href =
+    `compose.html?mode=reply&id=${encodeURIComponent(mailId)}`;
+});
+
+
+$('forward-button').addEventListener('click', () => {
+  if (!mailId) {
+    showAlert('Message ID is missing.');
+    return;
+  }
+
+  window.location.href =
+    `compose.html?mode=forward&id=${encodeURIComponent(mailId)}`;
+});
+
+  $('archive-button').addEventListener('click', async () => {
+    const button = $('archive-button');
+    button.disabled = true;
+
+    try {
+      await updateMessage({
+        Folder: 'ARCHIVE',
+        Is_Archived: 'YES',
+        Is_Deleted: 'NO',
+        Is_Spam: 'NO'
+      });
+      window.location.href = 'mailbox.html';
+    } catch (err) {
+      button.disabled = false;
+      showAlert(err.message || 'Unable to archive message.');
+    }
+  });
+
+  $('delete-button').addEventListener('click', async () => {
+    const button = $('delete-button');
+
+    if (!window.confirm('Move this message to Trash?')) return;
+
+    button.disabled = true;
+
+    try {
+      await updateMessage({
+        Folder: 'TRASH',
+        Is_Deleted: 'YES'
+      });
+      window.location.href = 'mailbox.html';
+    } catch (err) {
+      button.disabled = false;
+      showAlert(err.message || 'Unable to delete message.');
+    }
+  });
+
+  $('previous-message').addEventListener('click', () => {
+    window.history.back();
+  });
+
+  $('next-message').addEventListener('click', () => {
+    window.history.forward();
+  });
+
+  try {
+    if (!mailId) throw new Error('Message ID is missing.');
+
+    const result = await MailboxAPI.get(mailId);
+    renderMessage(result);
+  } catch (err) {
+    $('subject').textContent = 'Unable to load message';
+    showAlert(err.message || 'Unable to load message.');
+  }
+})();
+</script>
+
+</body>
+</html>
+------------------compose.html-------------------
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>MailBox | Mailbox - Compose</title>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const root = document.documentElement;
+      if (root.getAttribute('data-lte-color-mode') === 'off') return;
+
+      const STORAGE_KEY = 'lte-theme';
+      let stored = null;
+
+      try {
+        stored = localStorage.getItem(STORAGE_KEY);
+      } catch (_) {}
+
+      const authored = root.getAttribute('data-bs-theme');
+
+      let resolved = 'light';
+
+      if (stored === 'dark' || stored === 'light') {
+        resolved = stored;
+      } else if (authored === 'dark' || authored === 'light') {
+        resolved = authored;
+      } else if (
+        globalThis.matchMedia &&
+        globalThis.matchMedia('(prefers-color-scheme: dark)').matches
+      ) {
+        resolved = 'dark';
+      }
+
+      root.setAttribute('data-bs-theme', resolved);
+      root.style.colorScheme = resolved;
+
+      if (resolved !== authored) {
+        root.setAttribute('data-lte-theme-resolved', '');
+      }
+    })();
+  </script>
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#007bff" />
+
+  <link rel="preload" href="../css/adminlte.css" as="style" />
+
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/@fontsource/source-sans-3@5.0.12/index.css"
+    crossorigin="anonymous"
+  />
+
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/styles/overlayscrollbars.min.css"
+    crossorigin="anonymous"
+  />
+
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    crossorigin="anonymous"
+  />
+
+  <link rel="stylesheet" href="../css/adminlte.css" />
+
+  <style>
+
+    /* =========================================================
+       EXISTING LOADING
+    ========================================================= */
+
+    .compose-loading {
+      display: none;
+    }
+
+    .compose-loading.show {
+      display: flex;
+    }
+
+
+    /* =========================================================
+       FORWARDED MESSAGE
+    ========================================================= */
+
+    .forwarded-message {
+      border-left: 3px solid var(--bs-border-color);
+      padding-left: 1rem;
+      margin-top: 1rem;
+    }
+
+    .forwarded-header {
+      font-size: .875rem;
+      color: var(--bs-secondary-color);
+      margin-bottom: .75rem;
+    }
+
+    .forwarded-body {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .forwarded-body.html-body {
+      white-space: normal;
+    }
+
+    .original-attachments {
+      margin-top: 1rem;
+    }
+
+    .original-attachment {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .65rem .75rem;
+      border: 1px solid var(--bs-border-color);
+      border-radius: .375rem;
+      margin-bottom: .5rem;
+    }
+
+    .original-attachment .attachment-name {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .original-attachment .attachment-name span {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .mode-badge {
+      font-size: .75rem;
+    }
+
+    #mail-body {
+      min-height: 16rem;
+    }
+
+
+    /* =========================================================
+       SENDING ANIMATION
+    ========================================================= */
+
+    .send-progress {
+      display: none;
+      align-items: center;
+      gap: .85rem;
+      margin-top: .75rem;
+      padding: .8rem 1rem;
+      border: 1px solid var(--bs-border-color);
+      border-radius: .5rem;
+      background: var(--bs-tertiary-bg);
+      overflow: hidden;
+    }
+
+    .send-progress.show {
+      display: flex;
+      animation: sendPanelIn .25s ease-out;
+    }
+
+    .send-plane {
+      position: relative;
+      flex: 0 0 2.5rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      background: var(--bs-primary);
+      color: #fff;
+      box-shadow: 0 .35rem 1rem rgba(13,110,253,.25);
+      animation: sendPulse 1.15s ease-in-out infinite;
+    }
+
+    .send-plane i {
+      animation: sendFly 1.1s ease-in-out infinite;
+    }
+
+    .send-bar {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .send-progress .progress {
+      height: .4rem;
+      overflow: hidden;
+    }
+
+    .send-progress .progress-bar {
+      width: 100%;
+      animation:
+        sendProgressMove 1.25s linear infinite;
+    }
+
+    @keyframes sendPanelIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes sendPulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.1);
+      }
+    }
+
+    @keyframes sendFly {
+      0%, 100% {
+        transform:
+          translate(0, 0)
+          rotate(0deg);
+      }
+
+      35% {
+        transform:
+          translate(.15rem, -.12rem)
+          rotate(-8deg);
+      }
+
+      65% {
+        transform:
+          translate(.22rem, -.05rem)
+          rotate(6deg);
+      }
+    }
+
+    @keyframes sendProgressMove {
+      0% {
+        transform: translateX(-70%);
+      }
+
+      100% {
+        transform: translateX(70%);
+      }
+    }
+
+
+    /* =========================================================
+       EMAIL AUTOCOMPLETE
+    ========================================================= */
+
+    .recipient-suggest-wrap {
+      position: relative;
+    }
+
+    .recipient-suggestions {
+      position: absolute;
+      z-index: 1080;
+      top: 100%;
+      left: 0;
+      right: 0;
+      max-height: 280px;
+      overflow-y: auto;
+      display: none;
+
+      background: var(--bs-body-bg);
+      color: var(--bs-body-color);
+      border: 1px solid var(--bs-border-color);
+      border-radius: .375rem;
+      box-shadow: 0 .5rem 1rem rgba(0,0,0,.12);
+    }
+
+    .recipient-suggestions.show {
+      display: block;
+    }
+
+    .recipient-suggestion {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: 0;
+      padding: .6rem .75rem;
+      background: transparent;
+      color: inherit;
+    }
+
+    .recipient-suggestion:hover,
+    .recipient-suggestion.active {
+      background: var(--bs-tertiary-bg);
+    }
+
+    .recipient-suggestion small {
+      display: block;
+      color: var(--bs-secondary-color);
+    }
+
+
+    /* =========================================================
+       CUSTOM SUCCESS MODAL
+    ========================================================= */
+
+    .mail-success-modal .modal-content {
+      border: 0;
+      border-radius: 1rem;
+      overflow: hidden;
+      box-shadow:
+        0 1rem 3rem rgba(0,0,0,.20);
+    }
+
+    .mail-success-icon {
+      width: 76px;
+      height: 76px;
+      margin: 0 auto 1rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(25,135,84,.12);
+      color: var(--bs-success);
+      animation: successPop .45s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .mail-success-icon i {
+      font-size: 2.5rem;
+      animation: successCheck .45s ease-out .1s both;
+    }
+
+    .mail-success-reference {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      margin-top: .75rem;
+      padding: .45rem .75rem;
+      border-radius: .5rem;
+      background: var(--bs-tertiary-bg);
+      color: var(--bs-secondary-color);
+      font-size: .875rem;
+    }
+
+    @keyframes successPop {
+      0% {
+        transform: scale(.65);
+        opacity: 0;
+      }
+
+      70% {
+        transform: scale(1.08);
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    @keyframes successCheck {
+      from {
+        transform: scale(.4) rotate(-25deg);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1) rotate(0);
+        opacity: 1;
+      }
+    }
+
+
+    /* =========================================================
+       DISABLED COMPOSE STATE
+    ========================================================= */
+
+    #compose-form.is-sending {
+      opacity: .72;
+    }
+
+    #compose-form.is-sending input,
+    #compose-form.is-sending textarea,
+    #compose-form.is-sending button,
+    #compose-form.is-sending select {
+      cursor: not-allowed;
+    }
+
+    .compose-footer-disabled {
+      cursor: not-allowed !important;
+    }
+
+  </style>
+</head>
+
+
+<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+
+<div class="app-wrapper">
+
+
+  <!-- =======================================================
+       HEADER
+  ======================================================== -->
+
+  <nav class="app-header navbar navbar-expand bg-body">
+
+    <div class="container-fluid">
+
+      <ul class="navbar-nav">
+
+        <li class="nav-item">
+
+          <a
+            class="nav-link"
+            data-lte-toggle="sidebar"
+            href="#"
+            role="button"
+            aria-label="Toggle sidebar"
+          >
+            <i class="bi bi-list"></i>
+          </a>
+
+        </li>
+
+      </ul>
+
+
+      <ul class="navbar-nav ms-auto">
+
+
+        <!-- FULLSCREEN -->
+
+        <li class="nav-item">
+
+          <a
+            class="nav-link"
+            href="#"
+            data-lte-toggle="fullscreen"
+            aria-label="Toggle fullscreen"
+          >
+
+            <i
+              data-lte-icon="maximize"
+              class="bi bi-arrows-fullscreen"
+            ></i>
+
+            <i
+              data-lte-icon="minimize"
+              class="bi bi-fullscreen-exit d-none"
+            ></i>
+
+          </a>
+
+        </li>
+
+
+        <!-- THEME -->
+
+        <li class="nav-item dropdown">
+
+          <a
+            class="nav-link"
+            href="#"
+            id="bd-theme"
+            aria-label="Toggle color scheme"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+
+            <i
+              class="bi bi-sun-fill"
+              data-lte-theme-icon="light"
+            ></i>
+
+            <i
+              class="bi bi-moon-fill d-none"
+              data-lte-theme-icon="dark"
+            ></i>
+
+            <i
+              class="bi bi-circle-half d-none"
+              data-lte-theme-icon="auto"
+            ></i>
+
+          </a>
+
+
+          <ul
+            class="dropdown-menu dropdown-menu-end"
+            aria-labelledby="bd-theme"
+          >
+
+            <li>
+
+              <button
+                type="button"
+                class="dropdown-item"
+                data-bs-theme-value="light"
+              >
+
+                <i class="bi bi-sun-fill me-2"></i>
+                Light
+
+              </button>
+
+            </li>
+
+
+            <li>
+
+              <button
+                type="button"
+                class="dropdown-item"
+                data-bs-theme-value="dark"
+              >
+
+                <i class="bi bi-moon-fill me-2"></i>
+                Dark
+
+              </button>
+
+            </li>
+
+
+            <li>
+
+              <button
+                type="button"
+                class="dropdown-item active"
+                data-bs-theme-value="auto"
+              >
+
+                <i class="bi bi-circle-half me-2"></i>
+                Auto
+
+              </button>
+
+            </li>
+
+          </ul>
+
+        </li>
+
+
+        <!-- =================================================
+             LOGOUT
+        ================================================== -->
+
+        <li class="nav-item">
+
+          <button
+            id="logout-button"
+            type="button"
+            class="nav-link border-0 bg-transparent"
+            title="Logout"
+            aria-label="Logout"
+          >
+
+            <i class="bi bi-box-arrow-right text-danger"></i>
+            <span class="text-danger">
+              Logout
+            </span>
+          </button>
+
+        </li>
+
+      </ul>
+
+    </div>
+
+  </nav>
+
+
+
+  <!-- =======================================================
+       SIDEBAR
+  ======================================================== -->
+
+  <aside
+    class="app-sidebar bg-body-secondary shadow"
+    data-bs-theme="dark"
+  >
+
+    <div class="sidebar-brand">
+
+      <a
+        href="mailbox.html"
+        class="brand-link"
+      >
+
+        <img
+          src="../assets/img/AdminLTELogo.png"
+          alt="AdminLTE Logo"
+          class="brand-image opacity-75 shadow"
+        />
+
+        <span class="brand-text fw-light">
+          MailBox
+        </span>
+
+      </a>
+
+    </div>
+
+
+    <div class="sidebar-search" role="search">
+
+      <label
+        for="sidebar-search-input"
+        class="visually-hidden"
+      >
+        Filter menu
+      </label>
+
+      <input
+        type="search"
+        id="sidebar-search-input"
+        class="form-control form-control-sm"
+        placeholder="Filter menu…"
+        autocomplete="off"
+        data-lte-toggle="sidebar-search"
+        data-lte-target="#navigation"
+      />
+
+    </div>
+
+
+    <div class="sidebar-wrapper">
+
+      <nav
+        class="mt-2"
+        aria-label="Main navigation"
+      >
+
+        <ul
+          class="nav sidebar-menu flex-column"
+          data-lte-toggle="treeview"
+          data-accordion="false"
+          id="navigation"
+        >
+
+          <li class="nav-item menu-open">
+
+            <a
+              href="#"
+              class="nav-link active"
+            >
+
+              <i class="nav-icon bi bi-envelope"></i>
+
+              <p>
+                Mailbox
+                <i class="nav-arrow bi bi-chevron-right"></i>
+              </p>
+
+            </a>
+
+
+            <ul class="nav nav-treeview">
+
+              <li class="nav-item">
+
+                <a
+                  href="mailbox.html"
+                  class="nav-link"
+                >
+
+                  <i class="nav-icon bi bi-circle"></i>
+
+                  <p>
+                    Folders
+                  </p>
+
+                </a>
+
+              </li>
+
+
+              <li class="nav-item">
+
+                <a
+                  href="compose.html"
+                  class="nav-link active"
+                >
+
+                  <i class="nav-icon bi bi-circle"></i>
+
+                  <p>
+                    Compose
+                  </p>
+
+                </a>
+
+              </li>
+
+            </ul>
+
+          </li>
+
+        </ul>
+
+      </nav>
+
+    </div>
+
+  </aside>
+
+
+
+  <!-- =======================================================
+       MAIN
+  ======================================================== -->
+
+  <main class="app-main">
+
+
+    <!-- HEADER -->
+
+    <div class="app-content-header">
+
+      <div class="container-fluid">
+
+        <div class="row">
+
+          <div class="col-sm-6">
+
+            <h1 class="mb-0 fs-3">
+              Compose Message
+            </h1>
+
+          </div>
+
+
+          <div class="col-sm-6">
+
+            <nav aria-label="breadcrumb">
+
+              <ol class="breadcrumb float-sm-end">
+
+                <li class="breadcrumb-item">
+                  <a href="mailbox.html">
+                    Home
+                  </a>
+                </li>
+
+                <li class="breadcrumb-item">
+                  <a href="mailbox.html">
+                    Mailbox
+                  </a>
+                </li>
+
+                <li
+                  id="breadcrumb-mode"
+                  class="breadcrumb-item active"
+                  aria-current="page"
+                >
+                  Compose
+                </li>
+
+              </ol>
+
+            </nav>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+
+    <!-- CONTENT -->
+
+    <div class="app-content">
+
+      <div class="container-fluid">
+
+
+        <!-- NORMAL ALERT -->
+
+        <div
+          id="alert"
+          class="alert d-none"
+          role="alert"
+        ></div>
+
+
+        <!-- LOADING -->
+
+        <div
+          id="compose-loading"
+          class="alert alert-info compose-loading align-items-center gap-2"
+        >
+
+          <span
+            class="spinner-border spinner-border-sm"
+            aria-hidden="true"
+          ></span>
+
+          <span id="loading-text">
+            Loading message...
+          </span>
+
+        </div>
+
+
+
+        <!-- CARD -->
+
+        <div class="card">
+
+
+          <div
+            class="card-header d-flex justify-content-between align-items-center"
+          >
+
+            <div class="d-flex align-items-center gap-2">
+
+              <h3
+                id="card-title"
+                class="card-title mb-0"
+              >
+                New Message
+              </h3>
+
+              <span
+                id="mode-badge"
+                class="badge text-bg-primary mode-badge d-none"
+              ></span>
+
+            </div>
+
+          </div>
+
+
+
+          <!-- FORM -->
+
+          <div class="card-body">
+
+            <form
+              id="compose-form"
+              class="row g-3"
+            >
+
+
+              <!-- TO -->
+
+              <div class="col-12">
+
+                <label
+                  class="form-label"
+                  for="mail-to"
+                >
+                  To
+                </label>
+
+                <div class="recipient-suggest-wrap">
+
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="mail-to"
+                    placeholder="Type a name or email address…"
+                    autocomplete="off"
+                    aria-autocomplete="list"
+                    aria-expanded="false"
+                    aria-controls="recipient-suggestions"
+                  />
+
+                  <div
+                    id="recipient-suggestions"
+                    class="recipient-suggestions"
+                    role="listbox"
+                    aria-label="Email suggestions"
+                  ></div>
+
+                </div>
+
+              </div>
+
+
+
+              <!-- CC -->
+
+              <div class="col-md-6">
+
+                <label
+                  class="form-label"
+                  for="mail-cc"
+                >
+                  Cc
+                </label>
+
+                <input
+                  type="text"
+                  class="form-control"
+                  id="mail-cc"
+                />
+
+              </div>
+
+
+
+              <!-- BCC -->
+
+              <div class="col-md-6">
+
+                <label
+                  class="form-label"
+                  for="mail-bcc"
+                >
+                  Bcc
+                </label>
+
+                <input
+                  type="text"
+                  class="form-control"
+                  id="mail-bcc"
+                />
+
+              </div>
+
+
+
+              <!-- SUBJECT -->
+
+              <div class="col-12">
+
+                <label
+                  class="form-label"
+                  for="mail-subject"
+                >
+                  Subject
+                </label>
+
+                <input
+                  type="text"
+                  class="form-control"
+                  id="mail-subject"
+                />
+
+              </div>
+
+
+
+              <!-- MESSAGE -->
+
+              <div class="col-12">
+
+                <label
+                  class="form-label"
+                  for="mail-body"
+                >
+                  Message
+                </label>
+
+                <textarea
+                  id="mail-body"
+                  class="form-control"
+                  rows="12"
+                  placeholder="Write your message…"
+                ></textarea>
+
+                <div
+                  id="forwarded-preview"
+                  class="d-none"
+                ></div>
+
+              </div>
+
+
+
+              <!-- ATTACHMENTS -->
+
+              <div class="col-12">
+
+                <label
+                  class="form-label"
+                  for="mail-attach"
+                >
+                  Attachments
+                </label>
+
+                <input
+                  type="file"
+                  class="form-control"
+                  id="mail-attach"
+                  multiple
+                />
+
+                <div
+                  id="attachment-status"
+                  class="form-text"
+                ></div>
+
+
+                <div
+                  id="original-attachments"
+                  class="original-attachments d-none"
+                >
+
+                  <div class="fw-semibold mb-2">
+                    Original attachments
+                  </div>
+
+                  <div
+                    id="original-attachment-list"
+                  ></div>
+
+                </div>
+
+              </div>
+
+            </form>
+
+          </div>
+
+
+
+          <!-- FOOTER -->
+
+          <div class="card-footer d-flex gap-2">
+
+            <button
+              id="send-button"
+              class="btn btn-primary"
+              type="button"
+            >
+
+              <i class="bi bi-send me-1"></i>
+
+              <span id="send-button-text">
+                Send
+              </span>
+
+            </button>
+
+
+            <button
+              id="draft-button"
+              class="btn btn-outline-secondary"
+              type="button"
+            >
+
+              <i class="bi bi-file-earmark me-1"></i>
+
+              Save draft
+
+            </button>
+
+
+            <button
+              id="discard-button"
+              class="btn btn-outline-danger ms-auto"
+              type="button"
+            >
+
+              <i class="bi bi-x-lg me-1"></i>
+
+              Discard
+
+            </button>
+
+          </div>
+
+
+
+          <!-- SEND PROGRESS -->
+
+          <div class="px-3 pb-3">
+
+            <div
+              id="send-progress"
+              class="send-progress"
+              role="status"
+              aria-live="polite"
+            >
+
+              <span
+                class="send-plane"
+                aria-hidden="true"
+              >
+
+                <i class="bi bi-send-fill"></i>
+
+              </span>
+
+
+              <div class="send-bar">
+
+                <div
+                  class="small fw-semibold"
+                  id="send-progress-text"
+                >
+                  Sending message…
+                </div>
+
+                <div
+                  class="progress mt-1"
+                  aria-hidden="true"
+                >
+
+                  <div
+                    id="send-progress-bar"
+                    class="progress-bar progress-bar-striped progress-bar-animated"
+                  ></div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+
+
+  <!-- =======================================================
+       FOOTER
+  ======================================================== -->
+
+  <footer class="app-footer">
+
+    <div class="float-end d-none d-sm-inline">
+      Internal Mailbox
+    </div>
+
+    <strong>
+      Copyright &copy; 2014-2026&nbsp;
+
+      <a
+        href="mailbox.html"
+        class="text-decoration-none"
+      >
+        Internal Mailbox
+      </a>.
+
+    </strong>
+
+    All rights reserved.
+
+  </footer>
+
+</div>
+
+
+
+<!-- =========================================================
+     CUSTOM MESSAGE SENT MODAL
+========================================================= -->
+
+<div
+  class="modal fade mail-success-modal"
+  id="mail-success-modal"
+  tabindex="-1"
+  aria-labelledby="mail-success-title"
+  aria-hidden="true"
+>
+
+  <div
+    class="modal-dialog modal-dialog-centered"
+  >
+
+    <div class="modal-content">
+
+      <div class="modal-body text-center p-4 p-md-5">
+
+
+        <div
+          class="mail-success-icon"
+          aria-hidden="true"
+        >
+
+          <i class="bi bi-check-lg"></i>
+
+        </div>
+
+
+        <h3
+          id="mail-success-title"
+          class="fw-semibold mb-2"
+        >
+          Message Sent
+        </h3>
+
+
+        <p
+          class="text-secondary mb-0"
+        >
+          Your message has been successfully delivered.
+        </p>
+
+
+        <div
+          id="success-reference"
+          class="mail-success-reference"
+        >
+
+          <i class="bi bi-hash"></i>
+
+          <span>
+            Reference: —
+          </span>
+
+        </div>
+
+
+        <div class="mt-4">
+
+          <button
+            id="success-ok-button"
+            type="button"
+            class="btn btn-primary px-4"
+          >
+
+            <i class="bi bi-check2 me-1"></i>
+
+            OK
+
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<!-- =========================================================
+     LIBRARIES
+========================================================= -->
+
+<script
+  src="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/browser/overlayscrollbars.browser.es6.min.js"
+  crossorigin="anonymous"
+></script>
+
+<script
+  src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+  crossorigin="anonymous"
+></script>
+
+<script
+  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"
+  crossorigin="anonymous"
+></script>
+
+<script src="../js/adminlte.js"></script>
+
+
+
+<!-- =========================================================
+     MAILBOX API
+========================================================= -->
+
+<script>
+
+  window.MAILBOX_API_URL =
+    window.MAILBOX_API_URL ||
+    'https://script.google.com/macros/s/AKfycbztFYkp6V7YglnFLtZ7GbEXzoctYiBilV4lA4VgLm3WFKF8lYENWdM90_zy0uC1gmdG/exec';
+
+</script>
+
+<script src="mailbox-api.js"></script>
+
+
+
+<!-- =========================================================
+     COMPOSE SCRIPT
+========================================================= -->
+
+<script>
+(() => {
+
+  'use strict';
+
+
+  /* =========================================================
+     LOGIN
+  ========================================================= */
+
+  MailboxAPI.requireLogin();
+
+
+
+  /* =========================================================
+     ELEMENTS
+  ========================================================= */
+
+  const composeForm =
+    document.getElementById('compose-form');
+
+  const to =
+    document.getElementById('mail-to');
+
+  const cc =
+    document.getElementById('mail-cc');
+
+  const bcc =
+    document.getElementById('mail-bcc');
+
+  const subject =
+    document.getElementById('mail-subject');
+
+  const body =
+    document.getElementById('mail-body');
+
+  const files =
+    document.getElementById('mail-attach');
+
+  const sendBtn =
+    document.getElementById('send-button');
+
+  const draftBtn =
+    document.getElementById('draft-button');
+
+  const discardBtn =
+    document.getElementById('discard-button');
+
+  const sendButtonText =
+    document.getElementById('send-button-text');
+
+  const alertBox =
+    document.getElementById('alert');
+
+  const loadingBox =
+    document.getElementById('compose-loading');
+
+  const loadingText =
+    document.getElementById('loading-text');
+
+  const cardTitle =
+    document.getElementById('card-title');
+
+  const modeBadge =
+    document.getElementById('mode-badge');
+
+  const breadcrumbMode =
+    document.getElementById('breadcrumb-mode');
+
+  const forwardedPreview =
+    document.getElementById('forwarded-preview');
+
+  const originalAttachments =
+    document.getElementById('original-attachments');
+
+  const originalAttachmentList =
+    document.getElementById('original-attachment-list');
+
+  const attachmentStatus =
+    document.getElementById('attachment-status');
+
+  const sendProgress =
+    document.getElementById('send-progress');
+
+  const sendProgressText =
+    document.getElementById('send-progress-text');
+
+  const logoutButton =
+    document.getElementById('logout-button');
+
+  const successModalElement =
+    document.getElementById('mail-success-modal');
+
+  const successReference =
+    document.getElementById('success-reference');
+
+  const successOkButton =
+    document.getElementById('success-ok-button');
+
+
+
+  /* =========================================================
+     SUCCESS MODAL
+  ========================================================= */
+
+  let successModal = null;
+
+  if (
+    successModalElement &&
+    globalThis.bootstrap?.Modal
+  ) {
+
+    successModal =
+      new bootstrap.Modal(
+        successModalElement,
+        {
+          backdrop: 'static',
+          keyboard: false
+        }
+      );
+
+  }
+
+
+  function showSuccessModal(referenceNo) {
+
+    const reference =
+      String(referenceNo || '').trim();
+
+
+    if (successReference) {
+
+      successReference.innerHTML =
+        reference
+          ? `
+              <i class="bi bi-hash"></i>
+              <span>
+                Reference: ${escapeHtml(reference)}
+              </span>
+            `
+          : `
+              <i class="bi bi-check-circle"></i>
+              <span>
+                Message processed successfully
+              </span>
+            `;
+
+    }
+
+
+    if (successModal) {
+
+      successModal.show();
+
+    } else {
+
+      showAlert(
+        reference
+          ? `Message sent successfully. Reference: ${reference}`
+          : 'Message sent successfully.',
+        'success'
+      );
+
+    }
+
+  }
+
+
+  if (successOkButton) {
+
+    successOkButton.addEventListener(
+      'click',
+      () => {
+
+        if (successModal) {
+          successModal.hide();
+        }
+
+        clearForm();
+
+        window.location.href =
+          'mailbox.html';
+
+      }
+    );
+
+  }
+
+
+
+  /* =========================================================
+     LOGOUT
+  ========================================================= */
+
+  if (logoutButton) {
+
+    logoutButton.addEventListener(
+      'click',
+      async () => {
+
+        if (isSending) return;
+
+
+        const confirmed =
+          window.confirm(
+            'Are you sure you want to logout?'
+          );
+
+
+        if (!confirmed) return;
+
+
+        try {
+
+          if (
+            typeof MailboxAPI.logout ===
+            'function'
+          ) {
+
+            await MailboxAPI.logout();
+
+          }
+
+        } catch (err) {
+
+          console.warn(
+            'Logout API failed:',
+            err
+          );
+
+        }
+
+
+        /*
+         * Support the common local/session
+         * storage keys used by the mailbox.
+         */
+        try {
+
+          [
+            'mailboxUser',
+            'mailbox_user',
+            'MAILBOX_USER',
+            'mailboxSession',
+            'mailbox_session',
+            'MAILBOX_SESSION'
+          ].forEach(key => {
+
+            localStorage.removeItem(key);
+            sessionStorage.removeItem(key);
+
+          });
+
+        } catch (_) {}
+
+
+        window.location.href =
+          'login.html';
+
+      }
+    );
+
+  }
+
+
+
+  /* =========================================================
+     TO FIELD AUTOCOMPLETE
+  ========================================================= */
+
+  const suggestionBox =
+    document.getElementById(
+      'recipient-suggestions'
+    );
+
+  let suggestionItems = [];
+
+  let activeSuggestion = -1;
+
+  let suggestionTimer = null;
+
+  let suggestionRequestId = 0;
+
+
+  function currentRecipientFragment() {
+
+    const value =
+      to.value;
+
+    const comma =
+      value.lastIndexOf(',');
+
+
+    return {
+
+      prefix:
+        value.slice(0, comma + 1),
+
+      query:
+        value.slice(comma + 1).trim()
+
+    };
+
+  }
+
+
+  function hideSuggestions() {
+
+    suggestionBox.classList.remove(
+      'show'
+    );
+
+    suggestionBox.innerHTML = '';
+
+    to.setAttribute(
+      'aria-expanded',
+      'false'
+    );
+
+    suggestionItems = [];
+
+    activeSuggestion = -1;
+
+  }
+
+
+  function renderSuggestions(items) {
+
+    suggestionItems =
+      Array.isArray(items)
+        ? items
+        : [];
+
+
+    activeSuggestion = -1;
+
+
+    if (!suggestionItems.length) {
+
+      hideSuggestions();
+
+      return;
+
+    }
+
+
+    suggestionBox.innerHTML =
+      suggestionItems.map(
+        (item, index) => `
+
+          <button
+            type="button"
+            class="recipient-suggestion"
+            role="option"
+            data-index="${index}"
+            aria-selected="false"
+          >
+
+            <span class="fw-semibold">
+
+              ${escapeHtml(
+                item.name ||
+                item.email
+              )}
+
+            </span>
+
+            <small>
+
+              ${escapeHtml(
+                item.email
+              )}
+
+              ${
+                item.department
+                  ? ' · ' +
+                    escapeHtml(
+                      item.department
+                    )
+                  : ''
+              }
+
+            </small>
+
+          </button>
+
+        `
+      ).join('');
+
+
+    suggestionBox.classList.add(
+      'show'
+    );
+
+
+    to.setAttribute(
+      'aria-expanded',
+      'true'
+    );
+
+  }
+
+
+  function chooseSuggestion(index) {
+
+    const item =
+      suggestionItems[index];
+
+
+    if (
+      !item ||
+      !item.email
+    ) {
+      return;
+    }
+
+
+    const fragment =
+      currentRecipientFragment();
+
+
+    to.value =
+      fragment.prefix +
+      item.email +
+      ', ';
+
+
+    hideSuggestions();
+
+    to.focus();
+
+  }
+
+
+  async function lookupRecipientSuggestions(
+    query
+  ) {
+
+    const requestId =
+      ++suggestionRequestId;
+
+
+    try {
+
+      const result =
+        await MailboxAPI.suggestRecipients(
+          query
+        );
+
+
+      if (
+        requestId !==
+        suggestionRequestId
+      ) {
+        return;
+      }
+
+
+      renderSuggestions(
+        Array.isArray(
+          result?.items
+        )
+          ? result.items
+          : (
+              Array.isArray(
+                result?.suggestions
+              )
+                ? result.suggestions
+                : []
+            )
+      );
+
+    } catch (err) {
+
+      console.warn(
+        'Recipient suggestions unavailable:',
+        err
+      );
+
+      hideSuggestions();
+
+    }
+
+  }
+
+
+  to.addEventListener(
+    'input',
+    () => {
+
+      clearTimeout(
+        suggestionTimer
+      );
+
+
+      const {
+        query
+      } =
+        currentRecipientFragment();
+
+
+      if (
+        query.length < 2
+      ) {
+
+        suggestionRequestId++;
+
+        hideSuggestions();
+
+        return;
+
+      }
+
+
+      suggestionTimer =
+        setTimeout(
+          () => {
+
+            lookupRecipientSuggestions(
+              query
+            );
+
+          },
+          220
+        );
+
+    }
+  );
+
+
+  to.addEventListener(
+    'keydown',
+    event => {
+
+      if (
+        !suggestionBox.classList.contains(
+          'show'
+        )
+      ) {
+        return;
+      }
+
+
+      if (
+        event.key ===
+        'ArrowDown' ||
+        event.key ===
+        'ArrowUp'
+      ) {
+
+        event.preventDefault();
+
+
+        const delta =
+          event.key ===
+          'ArrowDown'
+            ? 1
+            : -1;
+
+
+        activeSuggestion =
+          (
+            activeSuggestion +
+            delta +
+            suggestionItems.length
+          ) %
+          suggestionItems.length;
+
+
+        [
+          ...suggestionBox.querySelectorAll(
+            '.recipient-suggestion'
+          )
+        ].forEach(
+          (el, i) => {
+
+            el.classList.toggle(
+              'active',
+              i ===
+              activeSuggestion
+            );
+
+
+            el.setAttribute(
+              'aria-selected',
+              String(
+                i ===
+                activeSuggestion
+              )
+            );
+
+          }
+        );
+
+      }
+
+      else if (
+        event.key ===
+        'Enter' &&
+        activeSuggestion >= 0
+      ) {
+
+        event.preventDefault();
+
+        chooseSuggestion(
+          activeSuggestion
+        );
+
+      }
+
+      else if (
+        event.key ===
+        'Escape'
+      ) {
+
+        hideSuggestions();
+
+      }
+
+    }
+  );
+
+
+  suggestionBox.addEventListener(
+    'mousedown',
+    event => {
+
+      const button =
+        event.target.closest(
+          '.recipient-suggestion'
+        );
+
+
+      if (!button) return;
+
+
+      event.preventDefault();
+
+
+      chooseSuggestion(
+        Number(
+          button.dataset.index
+        )
+      );
+
+    }
+  );
+
+
+  document.addEventListener(
+    'click',
+    event => {
+
+      if (
+        !event.target.closest(
+          '.recipient-suggest-wrap'
+        )
+      ) {
+
+        hideSuggestions();
+
+      }
+
+    }
+  );
+
+
+
+  /* =========================================================
+     URL PARAMETERS
+  ========================================================= */
+
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
+
+
+  const mode =
+    String(
+      params.get('mode') ||
+      'new'
+    ).toLowerCase();
+
+
+  const originalMailId =
+    params.get('id') ||
+    params.get('replyTo') ||
+    params.get('forwardTo') ||
+    '';
+
+
+  let originalMessage = null;
+
+  let originalAttachmentsData = [];
+
+  let isSending = false;
+
+
+
+  /* =========================================================
+     HELPERS
+  ========================================================= */
+
+  function showAlert(
+    message,
+    type = 'danger'
+  ) {
+
+    alertBox.textContent =
+      message;
+
+
+    alertBox.className =
+      `alert alert-${type}`;
+
+  }
+
+
+  function hideAlert() {
+
+    alertBox.className =
+      'alert d-none';
+
+    alertBox.textContent =
+      '';
+
+  }
+
+
+  function showLoading(message) {
+
+    loadingText.textContent =
+      message;
+
+    loadingBox.classList.add(
+      'show'
+    );
+
+  }
+
+
+  function hideLoading() {
+
+    loadingBox.classList.remove(
+      'show'
+    );
+
+  }
+
+
+  function cleanSubject(value) {
+
+    let s =
+      String(
+        value || ''
+      ).trim();
+
+
+    s =
+      s.replace(
+        /^(re|fw|fwd)\s*:\s*/i,
+        ''
+      );
+
+
+    return s.trim();
+
+  }
+
+
+  function replySubject(value) {
+
+    const s =
+      cleanSubject(value);
+
+
+    return s
+      ? `Re: ${s}`
+      : 'Re:';
+
+  }
+
+
+  function forwardSubject(value) {
+
+    const s =
+      cleanSubject(value);
+
+
+    return s
+      ? `Fwd: ${s}`
+      : 'Fwd:';
+
+  }
+
+
+  function escapeHtml(value) {
+
+    return String(
+      value ?? ''
+    ).replace(
+      /[&<>"']/g,
+      ch => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      }[ch])
+    );
+
+  }
+
+
+  function escapeAttr(value) {
+
+    return escapeHtml(value);
+
+  }
+
+
+  function formatSize(bytes) {
+
+    const n =
+      Number(
+        bytes || 0
+      );
+
+
+    if (!n) return '';
+
+    if (
+      n < 1024
+    ) {
+      return `${n} B`;
+    }
+
+    if (
+      n < 1024 * 1024
+    ) {
+      return `${(
+        n / 1024
+      ).toFixed(1)} KB`;
+    }
+
+    if (
+      n < 1024 *
+        1024 *
+        1024
+    ) {
+      return `${(
+        n / 1024 /
+        1024
+      ).toFixed(1)} MB`;
+    }
+
+
+    return `${(
+      n / 1024 /
+      1024 /
+      1024
+    ).toFixed(1)} GB`;
+
+  }
+
+
+  function attachmentIcon(
+    mimeType,
+    fileName
+  ) {
+
+    const mime =
+      String(
+        mimeType || ''
+      ).toLowerCase();
+
+
+    const name =
+      String(
+        fileName || ''
+      ).toLowerCase();
+
+
+    if (
+      mime.includes('pdf') ||
+      name.endsWith('.pdf')
+    ) {
+
+      return 'bi-file-earmark-pdf-fill text-danger';
+
+    }
+
+
+    if (
+      mime.startsWith('image/') ||
+      /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(
+        name
+      )
+    ) {
+
+      return 'bi-file-earmark-image-fill text-primary';
+
+    }
+
+
+    if (
+      mime.includes('word') ||
+      /\.(doc|docx)$/i.test(name)
+    ) {
+
+      return 'bi-file-earmark-word-fill text-primary';
+
+    }
+
+
+    if (
+      mime.includes('excel') ||
+      /\.(xls|xlsx|csv)$/i.test(name)
+    ) {
+
+      return 'bi-file-earmark-spreadsheet-fill text-success';
+
+    }
+
+
+    if (
+      mime.includes('zip') ||
+      /\.(zip|rar|7z)$/i.test(name)
+    ) {
+
+      return 'bi-file-earmark-zip-fill text-warning';
+
+    }
+
+
+    return 'bi-paperclip text-secondary';
+
+  }
+
+
+
+  /* =========================================================
+     MODE UI
+  ========================================================= */
+
+  function configureMode() {
+
+    if (
+      mode === 'reply'
+    ) {
+
+      cardTitle.textContent =
+        'Reply';
+
+      modeBadge.textContent =
+        'Reply';
+
+      modeBadge.className =
+        'badge text-bg-primary mode-badge';
+
+      breadcrumbMode.textContent =
+        'Reply';
+
+      document.title =
+        'MailBox | Mailbox - Reply';
+
+      return;
+
+    }
+
+
+    if (
+      mode === 'forward'
+    ) {
+
+      cardTitle.textContent =
+        'Forward Message';
+
+      modeBadge.textContent =
+        'Forward';
+
+      modeBadge.className =
+        'badge text-bg-secondary mode-badge';
+
+      breadcrumbMode.textContent =
+        'Forward';
+
+      document.title =
+        'MailBox | Mailbox - Forward';
+
+      return;
+
+    }
+
+
+    cardTitle.textContent =
+      'New Message';
+
+    modeBadge.className =
+      'badge text-bg-primary mode-badge d-none';
+
+    breadcrumbMode.textContent =
+      'Compose';
+
+    document.title =
+      'MailBox | Mailbox - Compose';
+
+  }
+
+
+
+  /* =========================================================
+     RENDER ORIGINAL ATTACHMENTS
+  ========================================================= */
+
+  function renderOriginalAttachments(
+    items
+  ) {
+
+    originalAttachmentList.innerHTML =
+      '';
+
+
+    if (
+      !Array.isArray(items) ||
+      !items.length
+    ) {
+
+      originalAttachments.classList.add(
+        'd-none'
+      );
+
+      return;
+
+    }
+
+
+    originalAttachments.classList.remove(
+      'd-none'
+    );
+
+
+    originalAttachmentList.innerHTML =
+      items.map(
+        (item, index) => {
+
+          const fileName =
+            item.fileName ||
+            item.name ||
+            `Attachment ${index + 1}`;
+
+
+          const mimeType =
+            item.mimeType ||
+            item.type ||
+            '';
+
+
+          const size =
+            formatSize(
+              item.size
+            );
+
+
+          const icon =
+            attachmentIcon(
+              mimeType,
+              fileName
+            );
+
+
+          return `
+
+            <div class="original-attachment">
+
+              <i
+                class="bi ${icon} fs-4"
+                aria-hidden="true"
+              ></i>
+
+              <div class="attachment-name">
+
+                <span
+                  title="${escapeAttr(
+                    fileName
+                  )}"
+                >
+                  ${escapeHtml(
+                    fileName
+                  )}
+                </span>
+
+                <small
+                  class="text-secondary"
+                >
+                  ${escapeHtml(
+                    size ||
+                    mimeType
+                  )}
+                </small>
+
+              </div>
+
+              <span
+                class="badge text-bg-success"
+                data-original-attachment-status="${index}"
+              >
+                Loading…
+              </span>
+
+            </div>
+
+          `;
+
+        }
+      ).join('');
+
+  }
+
+
+
+  /* =========================================================
+     HTML TO TEXT
+  ========================================================= */
+
+  function htmlToText(html) {
+
+    const div =
+      document.createElement(
+        'div'
+      );
+
+
+    div.innerHTML =
+      String(
+        html || ''
+      );
+
+
+    return div.innerText ||
+      div.textContent ||
+      '';
+
+  }
+
+
+
+  /* =========================================================
+     FORWARDED MESSAGE
+  ========================================================= */
+
+  function createForwardedMessage(
+    message
+  ) {
+
+    const senderName =
+      message.senderName ||
+      message.senderEmail ||
+      '';
+
+
+    const senderEmail =
+      message.senderEmail ||
+      '';
+
+
+    const date =
+      message.date ||
+      '';
+
+
+    const toValue =
+      message.to ||
+      '';
+
+
+    const ccValue =
+      message.cc ||
+      '';
+
+
+    const originalBody =
+      String(
+        message.body || ''
+      );
+
+
+    const textBody =
+      String(
+        message.bodyType ||
+        ''
+      ).toUpperCase() === 'HTML'
+        ? htmlToText(
+            originalBody
+          )
+        : originalBody;
+
+
+    return [
+
+      '',
+      '',
+      '---------- Forwarded message ----------',
+
+      `From: ${senderName}${
+        senderEmail
+          ? ` <${senderEmail}>`
+          : ''
+      }`,
+
+      `Date: ${date}`,
+
+      `Subject: ${
+        message.subject ||
+        '(No subject)'
+      }`,
+
+      `To: ${toValue}`,
+
+      ccValue
+        ? `Cc: ${ccValue}`
+        : '',
+
+      '',
+
+      textBody
+
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+  }
+
+
+
+  /* =========================================================
+     LOAD ORIGINAL MESSAGE
+  ========================================================= */
+
+  async function loadOriginalMessage() {
+
+    if (
+      mode === 'new' ||
+      !originalMailId
+    ) {
+      return;
+    }
+
+
+    showLoading(
+      mode === 'reply'
+        ? 'Loading message for reply…'
+        : 'Loading message for forwarding…'
+    );
+
+
+    try {
+
+      const result =
+        await MailboxAPI.get(
+          originalMailId
+        );
+
+
+      originalMessage =
+        result?.message ||
+        {};
+
+
+      originalAttachmentsData =
+        Array.isArray(
+          result?.attachments
+        )
+          ? result.attachments
+          : [];
+
+
+      if (!originalMessage) {
+
+        throw new Error(
+          'Original message could not be loaded.'
+        );
+
+      }
+
+
+      document.title =
+        `${
+          originalMessage.subject ||
+          'Message'
+        } | MailBox`;
+
+
+      if (
+        mode === 'reply'
+      ) {
+
+        to.value =
+          originalMessage.senderEmail ||
+          '';
+
+        cc.value =
+          '';
+
+        bcc.value =
+          '';
+
+        subject.value =
+          replySubject(
+            originalMessage.subject
+          );
+
+        body.value =
+          '';
+
+        attachmentStatus.textContent =
+          'Original attachments are not included automatically in a reply.';
+
+      }
+
+
+      if (
+        mode === 'forward'
+      ) {
+
+        to.value =
+          '';
+
+        cc.value =
+          '';
+
+        bcc.value =
+          '';
+
+        subject.value =
+          forwardSubject(
+            originalMessage.subject
+          );
+
+
+        body.value =
+          createForwardedMessage(
+            originalMessage
+          );
+
+
+        renderOriginalAttachments(
+          originalAttachmentsData
+        );
+
+
+        await prepareForwardAttachments(
+          originalAttachmentsData
+        );
+
+      }
+
+    } catch (err) {
+
+      console.error(
+        'Unable to load original message:',
+        err
+      );
+
+
+      showAlert(
+        err.message ||
+        'Unable to load the original message.'
+      );
+
+    } finally {
+
+      hideLoading();
+
+    }
+
+  }
+
+
+
+  /* =========================================================
+     FETCH ATTACHMENT
+  ========================================================= */
+
+  async function fetchAttachmentAsFile(
+    item
+  ) {
+
+    if (!item) {
+
+      throw new Error(
+        'Invalid attachment.'
+      );
+
+    }
+
+
+    if (
+      item.base64 ||
+      item.data
+    ) {
+
+      const base64 =
+        item.base64 ||
+        item.data;
+
+
+      const binary =
+        atob(base64);
+
+
+      const bytes =
+        new Uint8Array(
+          binary.length
+        );
+
+
+      for (
+        let i = 0;
+        i < binary.length;
+        i++
+      ) {
+
+        bytes[i] =
+          binary.charCodeAt(i);
+
+      }
+
+
+      return new File(
+        [bytes],
+
+        item.fileName ||
+        item.name ||
+        'attachment',
+
+        {
+          type:
+            item.mimeType ||
+            item.type ||
+            'application/octet-stream'
+        }
+      );
+
+    }
+
+
+    const url =
+      item.url ||
+      item.downloadUrl ||
+      item.fileUrl;
+
+
+    if (!url) {
+
+      throw new Error(
+        'Attachment URL is missing.'
+      );
+
+    }
+
+
+    const response =
+      await fetch(
+        url,
+        {
+          method: 'GET',
+          credentials: 'omit'
+        }
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        `Unable to download ${
+          item.fileName ||
+          'attachment'
+        }`
+      );
+
+    }
+
+
+    const blob =
+      await response.blob();
+
+
+    return new File(
+      [blob],
+
+      item.fileName ||
+      item.name ||
+      'attachment',
+
+      {
+        type:
+          item.mimeType ||
+          blob.type ||
+          'application/octet-stream'
+      }
+    );
+
+  }
+
+
+
+  /* =========================================================
+     PREPARE FORWARD ATTACHMENTS
+  ========================================================= */
+
+  async function prepareForwardAttachments(
+    items
+  ) {
+
+    if (
+      !Array.isArray(items) ||
+      !items.length
+    ) {
+
+      attachmentStatus.textContent =
+        'This message has no attachments.';
+
+      return;
+
+    }
+
+
+    const forwardedFiles = [];
+
+
+    for (
+      let index = 0;
+      index < items.length;
+      index++
+    ) {
+
+      const item =
+        items[index];
+
+
+      const status =
+        document.querySelector(
+          `[data-original-attachment-status="${index}"]`
+        );
+
+
+      try {
+
+        const file =
+          await fetchAttachmentAsFile(
+            item
+          );
+
+
+        forwardedFiles.push(
+          file
+        );
+
+
+        if (status) {
+
+          status.textContent =
+            'Attached';
+
+          status.className =
+            'badge text-bg-success';
+
+        }
+
+      } catch (err) {
+
+        console.warn(
+          'Unable to copy attachment:',
+          item,
+          err
+        );
+
+
+        if (status) {
+
+          status.textContent =
+            'Could not attach';
+
+          status.className =
+            'badge text-bg-warning';
+
+        }
+
+      }
+
+    }
+
+
+    if (
+      forwardedFiles.length
+    ) {
+
+      const transfer =
+        new DataTransfer();
+
+
+      for (
+        const file of forwardedFiles
+      ) {
+
+        transfer.items.add(
+          file
+        );
+
+      }
+
+
+      for (
+        const existingFile of files.files
+      ) {
+
+        transfer.items.add(
+          existingFile
+        );
+
+      }
+
+
+      files.files =
+        transfer.files;
+
+
+      attachmentStatus.textContent =
+        `${forwardedFiles.length} original attachment(s) added to this message.`;
+
+    } else {
+
+      attachmentStatus.textContent =
+        'Original attachments could not be copied automatically.';
+
+    }
+
+  }
+
+
+
+  /* =========================================================
+     READ FILES
+  ========================================================= */
+
+  async function readFiles() {
+
+    const arr = [];
+
+
+    for (
+      const file of files.files
+    ) {
+
+      const base64 =
+        await new Promise(
+          (resolve, reject) => {
+
+            const reader =
+              new FileReader();
+
+
+            reader.onload =
+              () => {
+
+                const result =
+                  String(
+                    reader.result ||
+                    ''
+                  );
+
+
+                resolve(
+                  result.split(',')[1] ||
+                  ''
+                );
+
+              };
+
+
+            reader.onerror =
+              reject;
+
+
+            reader.readAsDataURL(
+              file
+            );
+
+          }
+        );
+
+
+      arr.push({
+
+        name:
+          file.name,
+
+        size:
+          file.size,
+
+        mimeType:
+          file.type,
+
+        base64
+
+      });
+
+    }
+
+
+    return arr;
+
+  }
+
+
+
+  /* =========================================================
+     CLEAR FORM
+  ========================================================= */
+
+  function clearForm() {
+
+    to.value =
+      '';
+
+    cc.value =
+      '';
+
+    bcc.value =
+      '';
+
+    subject.value =
+      '';
+
+    body.value =
+      '';
+
+    files.value =
+      '';
+
+
+    originalAttachments.classList.add(
+      'd-none'
+    );
+
+
+    originalAttachmentList.innerHTML =
+      '';
+
+
+    attachmentStatus.textContent =
+      '';
+
+
+    hideSuggestions();
+
+  }
+
+
+
+  /* =========================================================
+     SEND PROGRESS
+  ========================================================= */
+
+  function showSendProgress(
+    message =
+      'Sending message…'
+  ) {
+
+    if (sendProgressText) {
+
+      sendProgressText.textContent =
+        message;
+
+    }
+
+
+    if (sendProgress) {
+
+      sendProgress.classList.add(
+        'show'
+      );
+
+    }
+
+  }
+
+
+  function hideSendProgress() {
+
+    if (sendProgress) {
+
+      sendProgress.classList.remove(
+        'show'
+      );
+
+    }
+
+  }
+
+
+
+  /* =========================================================
+     DISABLE ALL COMPOSE CONTROLS
+  ========================================================= */
+
+  function setSendingState(
+    sending
+  ) {
+
+    isSending =
+      Boolean(sending);
+
+
+    composeForm.classList.toggle(
+      'is-sending',
+      isSending
+    );
+
+
+    /*
+     * Every input/select/textarea inside
+     * the compose form.
+     */
+    composeForm
+      .querySelectorAll(
+        'input, textarea, select, button'
+      )
+      .forEach(
+        element => {
+
+          element.disabled =
+            isSending;
+
+        }
+      );
+
+
+    /*
+     * Footer buttons are outside the form.
+     */
+    sendBtn.disabled =
+      isSending;
+
+    draftBtn.disabled =
+      isSending;
+
+    discardBtn.disabled =
+      isSending;
+
+
+    if (isSending) {
+
+      sendBtn.classList.add(
+        'compose-footer-disabled'
+      );
+
+      draftBtn.classList.add(
+        'compose-footer-disabled'
+      );
+
+      discardBtn.classList.add(
+        'compose-footer-disabled'
+      );
+
+
+      sendButtonText.textContent =
+        'Sending…';
+
+    } else {
+
+      sendBtn.classList.remove(
+        'compose-footer-disabled'
+      );
+
+      draftBtn.classList.remove(
+        'compose-footer-disabled'
+      );
+
+      discardBtn.classList.remove(
+        'compose-footer-disabled'
+      );
+
+
+      sendButtonText.textContent =
+        'Send';
+
+    }
+
+
+    /*
+     * Prevent logout while a message
+     * is being sent.
+     */
+    if (logoutButton) {
+
+      logoutButton.disabled =
+        isSending;
+
+    }
+
+
+    /*
+     * Prevent autocomplete while sending.
+     */
+    if (isSending) {
+
+      suggestionRequestId++;
+
+      clearTimeout(
+        suggestionTimer
+      );
+
+      hideSuggestions();
+
+    }
+
+  }
+
+
+
+  /* =========================================================
+     SEND
+  ========================================================= */
+
+  sendBtn.addEventListener(
+    'click',
+    async () => {
+
+      if (isSending) {
+        return;
+      }
+
+
+      hideAlert();
+
+
+      const recipient =
+        to.value.trim();
+
+
+      if (!recipient) {
+
+        showAlert(
+          'Please enter at least one recipient.',
+          'warning'
+        );
+
+
+        to.focus();
+
+        return;
+
+      }
+
+
+      if (
+        !subject.value.trim()
+      ) {
+
+        if (
+          !window.confirm(
+            'The subject is empty. Send anyway?'
+          )
+        ) {
+
+          subject.focus();
+
+          return;
+
+        }
+
+      }
+
+
+      try {
+
+        /*
+         * Disable EVERYTHING immediately.
+         */
+        setSendingState(
+          true
+        );
+
+
+        showSendProgress(
+          'Preparing message…'
+        );
+
+
+        /*
+         * Read attachments.
+         */
+        const attachments =
+          await readFiles();
+
+
+        showSendProgress(
+          'Sending message…'
+        );
+
+
+        /*
+         * Send through existing API.
+         */
+        const result =
+          await MailboxAPI.send({
+
+            to:
+              to.value,
+
+            cc:
+              cc.value,
+
+            bcc:
+              bcc.value,
+
+            subject:
+              subject.value,
+
+            body:
+              body.value,
+
+            bodyType:
+              'TEXT',
+
+            attachments:
+              attachments
+
+          });
+
+
+        /*
+         * Hide sending animation before
+         * displaying success message.
+         */
+        hideSendProgress();
+
+
+        /*
+         * Keep the compose form disabled
+         * until the user presses OK.
+         */
+        isSending =
+          false;
+
+
+        /*
+         * Show beautiful custom success modal.
+         */
+        showSuccessModal(
+          result?.referenceNo ||
+          result?.reference ||
+          ''
+        );
+
+
+      } catch (err) {
+
+        console.error(
+          'Send failed:',
+          err
+        );
+
+
+        hideSendProgress();
+
+
+        showAlert(
+          err.message ||
+          'Unable to send message.'
+        );
+
+
+        /*
+         * Re-enable everything only
+         * when sending has failed.
+         */
+        setSendingState(
+          false
+        );
+
+      }
+
+    }
+  );
+
+
+
+  /* =========================================================
+     SAVE DRAFT
+  ========================================================= */
+
+  draftBtn.addEventListener(
+    'click',
+    async () => {
+
+      if (isSending) return;
+
+
+      hideAlert();
+
+
+      try {
+
+        draftBtn.disabled =
+          true;
+
+
+        const result =
+          await MailboxAPI.draft({
+
+            to:
+              to.value,
+
+            cc:
+              cc.value,
+
+            bcc:
+              bcc.value,
+
+            subject:
+              subject.value,
+
+            body:
+              body.value,
+
+            bodyType:
+              'TEXT'
+
+          });
+
+
+        showAlert(
+          'Draft saved successfully.' +
+          (
+            result.referenceNo
+              ? ` Reference: ${result.referenceNo}`
+              : ''
+          ),
+          'success'
+        );
+
+
+      } catch (err) {
+
+        console.error(
+          'Draft failed:',
+          err
+        );
+
+
+        showAlert(
+          err.message ||
+          'Unable to save draft.'
+        );
+
+      } finally {
+
+        draftBtn.disabled =
+          false;
+
+      }
+
+    }
+  );
+
+
+
+  /* =========================================================
+     DISCARD
+  ========================================================= */
+
+  discardBtn.addEventListener(
+    'click',
+    () => {
+
+      if (isSending) return;
+
+
+      if (
+        !window.confirm(
+          'Discard this message?'
+        )
+      ) {
+
+        return;
+
+      }
+
+
+      clearForm();
+
+
+      window.location.href =
+        'mailbox.html';
+
+    }
+  );
+
+
+
+  /* =========================================================
+     MANUAL FILE SELECTION
+  ========================================================= */
+
+  files.addEventListener(
+    'change',
+    () => {
+
+      if (isSending) return;
+
+
+      const count =
+        files.files.length;
+
+
+      if (!count) {
+
+        if (
+          mode === 'forward'
+        ) {
+
+          attachmentStatus.textContent =
+            originalAttachmentsData.length
+              ? 'Original attachments are being prepared.'
+              : '';
+
+        } else {
+
+          attachmentStatus.textContent =
+            '';
+
+        }
+
+        return;
+
+      }
+
+
+      attachmentStatus.textContent =
+        `${count} attachment(s) selected.`;
+
+    }
+  );
+
+
+
+  /* =========================================================
+     INITIALIZE
+  ========================================================= */
+
+  configureMode();
+
+  loadOriginalMessage();
+
+})();
+</script>
+
+
+
+<!-- =========================================================
+     SIDEBAR SCROLLBAR
+========================================================= -->
+
+<script>
+(() => {
+
+  const sidebarWrapper =
+    document.querySelector(
+      '.sidebar-wrapper'
+    );
+
+
+  const isMobile =
+    window.innerWidth <= 992;
+
+
+  if (
+    sidebarWrapper &&
+    globalThis
+      .OverlayScrollbarsGlobal
+      ?.OverlayScrollbars &&
+    !isMobile
+  ) {
+
+    globalThis
+      .OverlayScrollbarsGlobal
+      .OverlayScrollbars(
+        sidebarWrapper,
+        {
+          scrollbars: {
+
+            theme:
+              'os-theme-light',
+
+            autoHide:
+              'leave',
+
+            clickScroll:
+              true
+
+          }
+        }
+      );
+
+  }
+
+})();
+</script>
+
+</body>
+</html>
+---------------------mailbox-api.js----------------------
+/* =========================================================
+   INTERNAL MAILBOX API CLIENT
+   ========================================================= */
+
+const MAILBOX_API_URL =
+  window.MAILBOX_API_URL ||
+  'https://script.google.com/macros/s/AKfycbztFYkp6V7YglnFLtZ7GbEXzoctYiBilV4lA4VgLm3WFKF8lYENWdM90_zy0uC1gmdG/exec';
+
+
+const MailboxAPI = (() => {
+
+  async function request(
+    action,
+    payload = {}
+  ) {
+
+    const body =
+      Object.assign(
+        { action },
+        payload
+      );
+
+    const response =
+      await fetch(
+        MAILBOX_API_URL,
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'text/plain;charset=utf-8'
+          },
+
+          body:
+            JSON.stringify(body),
+
+          redirect: 'follow'
+        }
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        'Server error: ' +
+        response.status
+      );
+    }
+
+    const data =
+      await response.json();
+
+    if (!data.ok) {
+      throw new Error(
+        data.error ||
+        'Request failed.'
+      );
+    }
+
+    return data;
+  }
+
+
+  function token() {
+
+    return (
+      sessionStorage
+        .getItem(
+          'mailbox_token'
+        ) || ''
+    );
+  }
+
+
+  function user() {
+
+    try {
+
+      return JSON.parse(
+        sessionStorage.getItem(
+          'mailbox_user'
+        ) || 'null'
+      );
+
+    } catch (_) {
+
+      return null;
+    }
+  }
+
+
+  function setSession(data) {
+
+    sessionStorage.setItem(
+      'mailbox_token',
+      data.token
+    );
+
+    sessionStorage.setItem(
+      'mailbox_user',
+      JSON.stringify(
+        data.user
+      )
+    );
+  }
+
+
+  function clearSession() {
+
+    sessionStorage.removeItem(
+      'mailbox_token'
+    );
+
+    sessionStorage.removeItem(
+      'mailbox_user'
+    );
+  }
+
+
+  function requireLogin() {
+
+    if (!token()) {
+      location.href =
+        'login.html';
+    }
+  }
+
+
+  return {
+
+    request,
+
+    token,
+
+    user,
+
+    setSession,
+
+    clearSession,
+
+    requireLogin,
+
+
+    login:
+      (email, password) =>
+        request(
+          'login',
+          {
+            email,
+            password
+          }
+        ),
+
+
+    logout:
+      () =>
+        request(
+          'logout',
+          {
+            token:
+              token()
+          }
+        ),
+
+
+    bootstrap:
+      () =>
+        request(
+          'bootstrap',
+          {
+            token:
+              token()
+          }
+        ),
+
+
+    /*
+     * NEW PAGINATED MAILBOX ACTION
+     */
+    list:
+      (
+        folder,
+        search = '',
+        page = 1,
+        pageSize = 25
+      ) =>
+        request(
+          'mailbox',
+          {
+            token:
+              token(),
+
+            folder,
+
+            search,
+
+            page,
+
+            pageSize
+          }
+        ),
+
+
+    get:
+      mailId =>
+        request(
+          'getMessage',
+          {
+            token:
+              token(),
+            mailId
+          }
+        ),
+
+
+    suggestRecipients:
+      query =>
+        request(
+          'suggestRecipients',
+          {
+            token:
+              token(),
+            query
+          }
+        ),
+
+
+    send:
+      payload =>
+        request(
+          'sendMessage',
+          Object.assign(
+            {
+              token:
+                token()
+            },
+            payload
+          )
+        ),
+
+
+    draft:
+      payload =>
+        request(
+          'saveDraft',
+          Object.assign(
+            {
+              token:
+                token()
+            },
+            payload
+          )
+        ),
+
+
+    update:
+      payload =>
+        request(
+          'updateMessage',
+          Object.assign(
+            {
+              token:
+                token()
+            },
+            payload
+          )
+        )
+
+  };
+
+})();

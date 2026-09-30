@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -42,7 +43,9 @@
     })();
   </script>
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
   <meta name="color-scheme" content="light dark" />
   <meta name="theme-color" content="#007bff" />
 
@@ -69,6 +72,11 @@
   <link rel="stylesheet" href="../css/adminlte.css" />
 
   <style>
+
+    /* =========================================================
+       EXISTING LOADING
+    ========================================================= */
+
     .compose-loading {
       display: none;
     }
@@ -76,6 +84,11 @@
     .compose-loading.show {
       display: flex;
     }
+
+
+    /* =========================================================
+       FORWARDED MESSAGE
+    ========================================================= */
 
     .forwarded-message {
       border-left: 3px solid var(--bs-border-color);
@@ -131,64 +144,278 @@
     #mail-body {
       min-height: 16rem;
     }
-/* Email autocomplete dropdown */
-.recipient-suggest-wrap {
-  position: relative;
-}
 
-.recipient-suggestions {
-  position: absolute;
-  z-index: 1080;
-  top: 100%;
-  left: 0;
-  right: 0;
-  max-height: 280px;
-  overflow-y: auto;
-  display: none;
 
-  background: var(--bs-body-bg);
-  color: var(--bs-body-color);
-  border: 1px solid var(--bs-border-color);
-  border-radius: .375rem;
-  box-shadow: 0 .5rem 1rem rgba(0,0,0,.12);
-}
+    /* =========================================================
+       SENDING ANIMATION
+    ========================================================= */
 
-.recipient-suggestions.show {
-  display: block;
-}
+    .send-progress {
+      display: none;
+      align-items: center;
+      gap: .85rem;
+      margin-top: .75rem;
+      padding: .8rem 1rem;
+      border: 1px solid var(--bs-border-color);
+      border-radius: .5rem;
+      background: var(--bs-tertiary-bg);
+      overflow: hidden;
+    }
 
-.recipient-suggestion {
-  display: block;
-  width: 100%;
-  text-align: left;
-  border: 0;
-  padding: .6rem .75rem;
-  background: transparent;
-  color: inherit;
-}
+    .send-progress.show {
+      display: flex;
+      animation: sendPanelIn .25s ease-out;
+    }
 
-.recipient-suggestion:hover,
-.recipient-suggestion.active {
-  background: var(--bs-tertiary-bg);
-}
+    .send-plane {
+      position: relative;
+      flex: 0 0 2.5rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      background: var(--bs-primary);
+      color: #fff;
+      box-shadow: 0 .35rem 1rem rgba(13,110,253,.25);
+      animation: sendPulse 1.15s ease-in-out infinite;
+    }
 
-.recipient-suggestion small {
-  display: block;
-  color: var(--bs-secondary-color);
-}
+    .send-plane i {
+      animation: sendFly 1.1s ease-in-out infinite;
+    }
+
+    .send-bar {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .send-progress .progress {
+      height: .4rem;
+      overflow: hidden;
+    }
+
+    .send-progress .progress-bar {
+      width: 100%;
+      animation:
+        sendProgressMove 1.25s linear infinite;
+    }
+
+    @keyframes sendPanelIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes sendPulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.1);
+      }
+    }
+
+    @keyframes sendFly {
+      0%, 100% {
+        transform:
+          translate(0, 0)
+          rotate(0deg);
+      }
+
+      35% {
+        transform:
+          translate(.15rem, -.12rem)
+          rotate(-8deg);
+      }
+
+      65% {
+        transform:
+          translate(.22rem, -.05rem)
+          rotate(6deg);
+      }
+    }
+
+    @keyframes sendProgressMove {
+      0% {
+        transform: translateX(-70%);
+      }
+
+      100% {
+        transform: translateX(70%);
+      }
+    }
+
+
+    /* =========================================================
+       EMAIL AUTOCOMPLETE
+    ========================================================= */
+
+    .recipient-suggest-wrap {
+      position: relative;
+    }
+
+    .recipient-suggestions {
+      position: absolute;
+      z-index: 1080;
+      top: 100%;
+      left: 0;
+      right: 0;
+      max-height: 280px;
+      overflow-y: auto;
+      display: none;
+
+      background: var(--bs-body-bg);
+      color: var(--bs-body-color);
+      border: 1px solid var(--bs-border-color);
+      border-radius: .375rem;
+      box-shadow: 0 .5rem 1rem rgba(0,0,0,.12);
+    }
+
+    .recipient-suggestions.show {
+      display: block;
+    }
+
+    .recipient-suggestion {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: 0;
+      padding: .6rem .75rem;
+      background: transparent;
+      color: inherit;
+    }
+
+    .recipient-suggestion:hover,
+    .recipient-suggestion.active {
+      background: var(--bs-tertiary-bg);
+    }
+
+    .recipient-suggestion small {
+      display: block;
+      color: var(--bs-secondary-color);
+    }
+
+
+    /* =========================================================
+       CUSTOM SUCCESS MODAL
+    ========================================================= */
+
+    .mail-success-modal .modal-content {
+      border: 0;
+      border-radius: 1rem;
+      overflow: hidden;
+      box-shadow:
+        0 1rem 3rem rgba(0,0,0,.20);
+    }
+
+    .mail-success-icon {
+      width: 76px;
+      height: 76px;
+      margin: 0 auto 1rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(25,135,84,.12);
+      color: var(--bs-success);
+      animation: successPop .45s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .mail-success-icon i {
+      font-size: 2.5rem;
+      animation: successCheck .45s ease-out .1s both;
+    }
+
+    .mail-success-reference {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      margin-top: .75rem;
+      padding: .45rem .75rem;
+      border-radius: .5rem;
+      background: var(--bs-tertiary-bg);
+      color: var(--bs-secondary-color);
+      font-size: .875rem;
+    }
+
+    @keyframes successPop {
+      0% {
+        transform: scale(.65);
+        opacity: 0;
+      }
+
+      70% {
+        transform: scale(1.08);
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    @keyframes successCheck {
+      from {
+        transform: scale(.4) rotate(-25deg);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1) rotate(0);
+        opacity: 1;
+      }
+    }
+
+
+    /* =========================================================
+       DISABLED COMPOSE STATE
+    ========================================================= */
+
+    #compose-form.is-sending {
+      opacity: .72;
+    }
+
+    #compose-form.is-sending input,
+    #compose-form.is-sending textarea,
+    #compose-form.is-sending button,
+    #compose-form.is-sending select {
+      cursor: not-allowed;
+    }
+
+    .compose-footer-disabled {
+      cursor: not-allowed !important;
+    }
+
   </style>
 </head>
+
 
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
 
 <div class="app-wrapper">
 
-  <!-- HEADER -->
+
+  <!-- =======================================================
+       HEADER
+  ======================================================== -->
+
   <nav class="app-header navbar navbar-expand bg-body">
+
     <div class="container-fluid">
 
       <ul class="navbar-nav">
+
         <li class="nav-item">
+
           <a
             class="nav-link"
             data-lte-toggle="sidebar"
@@ -198,24 +425,45 @@
           >
             <i class="bi bi-list"></i>
           </a>
+
         </li>
+
       </ul>
+
 
       <ul class="navbar-nav ms-auto">
 
+
+        <!-- FULLSCREEN -->
+
         <li class="nav-item">
+
           <a
             class="nav-link"
             href="#"
             data-lte-toggle="fullscreen"
             aria-label="Toggle fullscreen"
           >
-            <i data-lte-icon="maximize" class="bi bi-arrows-fullscreen"></i>
-            <i data-lte-icon="minimize" class="bi bi-fullscreen-exit d-none"></i>
+
+            <i
+              data-lte-icon="maximize"
+              class="bi bi-arrows-fullscreen"
+            ></i>
+
+            <i
+              data-lte-icon="minimize"
+              class="bi bi-fullscreen-exit d-none"
+            ></i>
+
           </a>
+
         </li>
 
+
+        <!-- THEME -->
+
         <li class="nav-item dropdown">
+
           <a
             class="nav-link"
             href="#"
@@ -224,70 +472,145 @@
             data-bs-toggle="dropdown"
             aria-expanded="false"
           >
-            <i class="bi bi-sun-fill" data-lte-theme-icon="light"></i>
-            <i class="bi bi-moon-fill d-none" data-lte-theme-icon="dark"></i>
-            <i class="bi bi-circle-half d-none" data-lte-theme-icon="auto"></i>
+
+            <i
+              class="bi bi-sun-fill"
+              data-lte-theme-icon="light"
+            ></i>
+
+            <i
+              class="bi bi-moon-fill d-none"
+              data-lte-theme-icon="dark"
+            ></i>
+
+            <i
+              class="bi bi-circle-half d-none"
+              data-lte-theme-icon="auto"
+            ></i>
+
           </a>
+
 
           <ul
             class="dropdown-menu dropdown-menu-end"
             aria-labelledby="bd-theme"
           >
+
             <li>
+
               <button
                 type="button"
                 class="dropdown-item"
                 data-bs-theme-value="light"
               >
-                <i class="bi bi-sun-fill me-2"></i>Light
+
+                <i class="bi bi-sun-fill me-2"></i>
+                Light
+
               </button>
+
             </li>
 
+
             <li>
+
               <button
                 type="button"
                 class="dropdown-item"
                 data-bs-theme-value="dark"
               >
-                <i class="bi bi-moon-fill me-2"></i>Dark
+
+                <i class="bi bi-moon-fill me-2"></i>
+                Dark
+
               </button>
+
             </li>
 
+
             <li>
+
               <button
                 type="button"
                 class="dropdown-item active"
                 data-bs-theme-value="auto"
               >
-                <i class="bi bi-circle-half me-2"></i>Auto
+
+                <i class="bi bi-circle-half me-2"></i>
+                Auto
+
               </button>
+
             </li>
+
           </ul>
+
+        </li>
+
+
+        <!-- =================================================
+             LOGOUT
+        ================================================== -->
+
+        <li class="nav-item">
+
+          <button
+            id="logout-button"
+            type="button"
+            class="nav-link border-0 bg-transparent"
+            title="Logout"
+            aria-label="Logout"
+          >
+
+            <i class="bi bi-box-arrow-right text-danger"></i>
+            <span class="text-danger">
+              Logout
+            </span>
+          </button>
+
         </li>
 
       </ul>
+
     </div>
+
   </nav>
 
 
-  <!-- SIDEBAR -->
+
+  <!-- =======================================================
+       SIDEBAR
+  ======================================================== -->
+
   <aside
     class="app-sidebar bg-body-secondary shadow"
     data-bs-theme="dark"
   >
 
     <div class="sidebar-brand">
-      <a href="mailbox.html" class="brand-link">
+
+      <a
+        href="mailbox.html"
+        class="brand-link"
+      >
+
         <img
           src="../assets/img/AdminLTELogo.png"
           alt="AdminLTE Logo"
           class="brand-image opacity-75 shadow"
         />
-        <span class="brand-text fw-light">MailBox</span>
+
+        <span class="brand-text fw-light">
+          MailBox
+        </span>
+
       </a>
+
     </div>
 
+
     <div class="sidebar-search" role="search">
+
       <label
         for="sidebar-search-input"
         class="visually-hidden"
@@ -304,11 +627,16 @@
         data-lte-toggle="sidebar-search"
         data-lte-target="#navigation"
       />
+
     </div>
+
 
     <div class="sidebar-wrapper">
 
-      <nav class="mt-2" aria-label="Main navigation">
+      <nav
+        class="mt-2"
+        aria-label="Main navigation"
+      >
 
         <ul
           class="nav sidebar-menu flex-column"
@@ -319,28 +647,56 @@
 
           <li class="nav-item menu-open">
 
-            <a href="#" class="nav-link active">
+            <a
+              href="#"
+              class="nav-link active"
+            >
+
               <i class="nav-icon bi bi-envelope"></i>
+
               <p>
                 Mailbox
                 <i class="nav-arrow bi bi-chevron-right"></i>
               </p>
+
             </a>
+
 
             <ul class="nav nav-treeview">
 
               <li class="nav-item">
-                <a href="mailbox.html" class="nav-link">
+
+                <a
+                  href="mailbox.html"
+                  class="nav-link"
+                >
+
                   <i class="nav-icon bi bi-circle"></i>
-                  <p>Folders</p>
+
+                  <p>
+                    Folders
+                  </p>
+
                 </a>
+
               </li>
 
+
               <li class="nav-item">
-                <a href="compose.html" class="nav-link active">
+
+                <a
+                  href="compose.html"
+                  class="nav-link active"
+                >
+
                   <i class="nav-icon bi bi-circle"></i>
-                  <p>Compose</p>
+
+                  <p>
+                    Compose
+                  </p>
+
                 </a>
+
               </li>
 
             </ul>
@@ -356,8 +712,15 @@
   </aside>
 
 
-  <!-- MAIN -->
+
+  <!-- =======================================================
+       MAIN
+  ======================================================== -->
+
   <main class="app-main">
+
+
+    <!-- HEADER -->
 
     <div class="app-content-header">
 
@@ -366,8 +729,13 @@
         <div class="row">
 
           <div class="col-sm-6">
-            <h1 class="mb-0 fs-3">Compose Message</h1>
+
+            <h1 class="mb-0 fs-3">
+              Compose Message
+            </h1>
+
           </div>
+
 
           <div class="col-sm-6">
 
@@ -376,11 +744,15 @@
               <ol class="breadcrumb float-sm-end">
 
                 <li class="breadcrumb-item">
-                  <a href="mailbox.html">Home</a>
+                  <a href="mailbox.html">
+                    Home
+                  </a>
                 </li>
 
                 <li class="breadcrumb-item">
-                  <a href="mailbox.html">Mailbox</a>
+                  <a href="mailbox.html">
+                    Mailbox
+                  </a>
                 </li>
 
                 <li
@@ -404,11 +776,16 @@
     </div>
 
 
+
+    <!-- CONTENT -->
+
     <div class="app-content">
 
       <div class="container-fluid">
 
-        <!-- ALERT -->
+
+        <!-- NORMAL ALERT -->
+
         <div
           id="alert"
           class="alert d-none"
@@ -417,10 +794,12 @@
 
 
         <!-- LOADING -->
+
         <div
           id="compose-loading"
           class="alert alert-info compose-loading align-items-center gap-2"
         >
+
           <span
             class="spinner-border spinner-border-sm"
             aria-hidden="true"
@@ -429,10 +808,15 @@
           <span id="loading-text">
             Loading message...
           </span>
+
         </div>
 
 
+
+        <!-- CARD -->
+
         <div class="card">
+
 
           <div
             class="card-header d-flex justify-content-between align-items-center"
@@ -457,44 +841,56 @@
           </div>
 
 
+
+          <!-- FORM -->
+
           <div class="card-body">
 
-            <form id="compose-form" class="row g-3">
+            <form
+              id="compose-form"
+              class="row g-3"
+            >
+
 
               <!-- TO -->
-             <div class="col-12">
 
-  <label
-    class="form-label"
-    for="mail-to"
-  >
-    To
-  </label>
+              <div class="col-12">
 
-  <div class="recipient-suggest-wrap">
+                <label
+                  class="form-label"
+                  for="mail-to"
+                >
+                  To
+                </label>
 
-    <input
-      type="text"
-      class="form-control"
-      id="mail-to"
-      placeholder="Type a name or email address…"
-      autocomplete="off"
-      aria-autocomplete="list"
-      aria-expanded="false"
-      aria-controls="recipient-suggestions"
-    />
+                <div class="recipient-suggest-wrap">
 
-    <div
-      id="recipient-suggestions"
-      class="recipient-suggestions"
-      role="listbox"
-      aria-label="Email suggestions"
-    ></div>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="mail-to"
+                    placeholder="Type a name or email address…"
+                    autocomplete="off"
+                    aria-autocomplete="list"
+                    aria-expanded="false"
+                    aria-controls="recipient-suggestions"
+                  />
 
-  </div>
+                  <div
+                    id="recipient-suggestions"
+                    class="recipient-suggestions"
+                    role="listbox"
+                    aria-label="Email suggestions"
+                  ></div>
 
-</div>
+                </div>
+
+              </div>
+
+
+
               <!-- CC -->
+
               <div class="col-md-6">
 
                 <label
@@ -513,7 +909,9 @@
               </div>
 
 
+
               <!-- BCC -->
+
               <div class="col-md-6">
 
                 <label
@@ -532,7 +930,9 @@
               </div>
 
 
+
               <!-- SUBJECT -->
+
               <div class="col-12">
 
                 <label
@@ -551,7 +951,9 @@
               </div>
 
 
+
               <!-- MESSAGE -->
+
               <div class="col-12">
 
                 <label
@@ -568,7 +970,6 @@
                   placeholder="Write your message…"
                 ></textarea>
 
-                <!-- Forwarded content is displayed here -->
                 <div
                   id="forwarded-preview"
                   class="d-none"
@@ -577,7 +978,9 @@
               </div>
 
 
+
               <!-- ATTACHMENTS -->
+
               <div class="col-12">
 
                 <label
@@ -599,7 +1002,7 @@
                   class="form-text"
                 ></div>
 
-                <!-- Existing forwarded attachments -->
+
                 <div
                   id="original-attachments"
                   class="original-attachments d-none"
@@ -609,7 +1012,9 @@
                     Original attachments
                   </div>
 
-                  <div id="original-attachment-list"></div>
+                  <div
+                    id="original-attachment-list"
+                  ></div>
 
                 </div>
 
@@ -620,7 +1025,9 @@
           </div>
 
 
+
           <!-- FOOTER -->
+
           <div class="card-footer d-flex gap-2">
 
             <button
@@ -628,27 +1035,90 @@
               class="btn btn-primary"
               type="button"
             >
+
               <i class="bi bi-send me-1"></i>
-              Send
+
+              <span id="send-button-text">
+                Send
+              </span>
+
             </button>
+
 
             <button
               id="draft-button"
               class="btn btn-outline-secondary"
               type="button"
             >
+
               <i class="bi bi-file-earmark me-1"></i>
+
               Save draft
+
             </button>
+
 
             <button
               id="discard-button"
               class="btn btn-outline-danger ms-auto"
               type="button"
             >
+
               <i class="bi bi-x-lg me-1"></i>
+
               Discard
+
             </button>
+
+          </div>
+
+
+
+          <!-- SEND PROGRESS -->
+
+          <div class="px-3 pb-3">
+
+            <div
+              id="send-progress"
+              class="send-progress"
+              role="status"
+              aria-live="polite"
+            >
+
+              <span
+                class="send-plane"
+                aria-hidden="true"
+              >
+
+                <i class="bi bi-send-fill"></i>
+
+              </span>
+
+
+              <div class="send-bar">
+
+                <div
+                  class="small fw-semibold"
+                  id="send-progress-text"
+                >
+                  Sending message…
+                </div>
+
+                <div
+                  class="progress mt-1"
+                  aria-hidden="true"
+                >
+
+                  <div
+                    id="send-progress-bar"
+                    class="progress-bar progress-bar-striped progress-bar-animated"
+                  ></div>
+
+                </div>
+
+              </div>
+
+            </div>
 
           </div>
 
@@ -661,7 +1131,11 @@
   </main>
 
 
-  <!-- FOOTER -->
+
+  <!-- =======================================================
+       FOOTER
+  ======================================================== -->
+
   <footer class="app-footer">
 
     <div class="float-end d-none d-sm-inline">
@@ -670,12 +1144,14 @@
 
     <strong>
       Copyright &copy; 2014-2026&nbsp;
+
       <a
         href="mailbox.html"
         class="text-decoration-none"
       >
         Internal Mailbox
       </a>.
+
     </strong>
 
     All rights reserved.
@@ -684,6 +1160,97 @@
 
 </div>
 
+
+
+<!-- =========================================================
+     CUSTOM MESSAGE SENT MODAL
+========================================================= -->
+
+<div
+  class="modal fade mail-success-modal"
+  id="mail-success-modal"
+  tabindex="-1"
+  aria-labelledby="mail-success-title"
+  aria-hidden="true"
+>
+
+  <div
+    class="modal-dialog modal-dialog-centered"
+  >
+
+    <div class="modal-content">
+
+      <div class="modal-body text-center p-4 p-md-5">
+
+
+        <div
+          class="mail-success-icon"
+          aria-hidden="true"
+        >
+
+          <i class="bi bi-check-lg"></i>
+
+        </div>
+
+
+        <h3
+          id="mail-success-title"
+          class="fw-semibold mb-2"
+        >
+          Message Sent
+        </h3>
+
+
+        <p
+          class="text-secondary mb-0"
+        >
+          Your message has been successfully delivered.
+        </p>
+
+
+        <div
+          id="success-reference"
+          class="mail-success-reference"
+        >
+
+          <i class="bi bi-hash"></i>
+
+          <span>
+            Reference: —
+          </span>
+
+        </div>
+
+
+        <div class="mt-4">
+
+          <button
+            id="success-ok-button"
+            type="button"
+            class="btn btn-primary px-4"
+          >
+
+            <i class="bi bi-check2 me-1"></i>
+
+            OK
+
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<!-- =========================================================
+     LIBRARIES
+========================================================= -->
 
 <script
   src="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/browser/overlayscrollbars.browser.es6.min.js"
@@ -703,40 +1270,80 @@
 <script src="../js/adminlte.js"></script>
 
 
-<!-- MAILBOX API -->
+
+<!-- =========================================================
+     MAILBOX API
+========================================================= -->
+
 <script>
+
   window.MAILBOX_API_URL =
     window.MAILBOX_API_URL ||
-    'https://script.google.com/macros/s/AKfycbyLXay7raXF_6MRdVoVJHnI38PqWcu6pVzkwX6Yn7bWR3L30uBME6TqJN5QZTDbKU0/exec';
+    'https://script.google.com/macros/s/AKfycbztFYkp6V7YglnFLtZ7GbEXzoctYiBilV4lA4VgLm3WFKF8lYENWdM90_zy0uC1gmdG/exec';
+
 </script>
 
 <script src="mailbox-api.js"></script>
 
+
+
+<!-- =========================================================
+     COMPOSE SCRIPT
+========================================================= -->
 
 <script>
 (() => {
 
   'use strict';
 
+
+  /* =========================================================
+     LOGIN
+  ========================================================= */
+
   MailboxAPI.requireLogin();
+
 
 
   /* =========================================================
      ELEMENTS
   ========================================================= */
 
-  const to = document.getElementById('mail-to');
-  const cc = document.getElementById('mail-cc');
-  const bcc = document.getElementById('mail-bcc');
-  const subject = document.getElementById('mail-subject');
-  const body = document.getElementById('mail-body');
-  const files = document.getElementById('mail-attach');
+  const composeForm =
+    document.getElementById('compose-form');
 
-  const sendBtn = document.getElementById('send-button');
-  const draftBtn = document.getElementById('draft-button');
-  const discardBtn = document.getElementById('discard-button');
+  const to =
+    document.getElementById('mail-to');
 
-  const alertBox = document.getElementById('alert');
+  const cc =
+    document.getElementById('mail-cc');
+
+  const bcc =
+    document.getElementById('mail-bcc');
+
+  const subject =
+    document.getElementById('mail-subject');
+
+  const body =
+    document.getElementById('mail-body');
+
+  const files =
+    document.getElementById('mail-attach');
+
+  const sendBtn =
+    document.getElementById('send-button');
+
+  const draftBtn =
+    document.getElementById('draft-button');
+
+  const discardBtn =
+    document.getElementById('discard-button');
+
+  const sendButtonText =
+    document.getElementById('send-button-text');
+
+  const alertBox =
+    document.getElementById('alert');
 
   const loadingBox =
     document.getElementById('compose-loading');
@@ -764,278 +1371,610 @@
 
   const attachmentStatus =
     document.getElementById('attachment-status');
-/* =========================================================
-   TO-FIELD EMAIL AUTOCOMPLETE
-========================================================= */
 
-const suggestionBox =
-  document.getElementById('recipient-suggestions');
+  const sendProgress =
+    document.getElementById('send-progress');
 
-let suggestionItems = [];
-let activeSuggestion = -1;
-let suggestionTimer = null;
-let suggestionRequestId = 0;
+  const sendProgressText =
+    document.getElementById('send-progress-text');
 
+  const logoutButton =
+    document.getElementById('logout-button');
 
-/* Get the current recipient being typed */
+  const successModalElement =
+    document.getElementById('mail-success-modal');
 
-function currentRecipientFragment() {
+  const successReference =
+    document.getElementById('success-reference');
 
-  const value = to.value;
-
-  const comma = value.lastIndexOf(',');
-
-  return {
-    prefix: value.slice(0, comma + 1),
-    query: value.slice(comma + 1).trim()
-  };
-
-}
+  const successOkButton =
+    document.getElementById('success-ok-button');
 
 
-/* Hide dropdown */
 
-function hideSuggestions() {
+  /* =========================================================
+     SUCCESS MODAL
+  ========================================================= */
 
-  suggestionBox.classList.remove('show');
+  let successModal = null;
 
-  suggestionBox.innerHTML = '';
+  if (
+    successModalElement &&
+    globalThis.bootstrap?.Modal
+  ) {
 
-  to.setAttribute('aria-expanded', 'false');
+    successModal =
+      new bootstrap.Modal(
+        successModalElement,
+        {
+          backdrop: 'static',
+          keyboard: false
+        }
+      );
 
-  suggestionItems = [];
-
-  activeSuggestion = -1;
-
-}
-
-
-/* Render matching users */
-
-function renderSuggestions(items) {
-
-  suggestionItems = Array.isArray(items) ? items : [];
-
-  activeSuggestion = -1;
-
-  if (!suggestionItems.length) {
-    hideSuggestions();
-    return;
   }
 
-  suggestionBox.innerHTML = suggestionItems.map((item, index) => `
 
-    <button
-      type="button"
-      class="recipient-suggestion"
-      role="option"
-      data-index="${index}"
-      aria-selected="false"
-    >
+  function showSuccessModal(referenceNo) {
 
-      <span class="fw-semibold">
-        ${escapeHtml(item.name || item.email)}
-      </span>
-
-      <small>
-        ${escapeHtml(item.email)}
-        ${item.department
-          ? ' · ' + escapeHtml(item.department)
-          : ''}
-      </small>
-
-    </button>
-
-  `).join('');
-
-  suggestionBox.classList.add('show');
-
-  to.setAttribute('aria-expanded', 'true');
-
-}
+    const reference =
+      String(referenceNo || '').trim();
 
 
-/* Select an email */
+    if (successReference) {
 
-function chooseSuggestion(index) {
+      successReference.innerHTML =
+        reference
+          ? `
+              <i class="bi bi-hash"></i>
+              <span>
+                Reference: ${escapeHtml(reference)}
+              </span>
+            `
+          : `
+              <i class="bi bi-check-circle"></i>
+              <span>
+                Message processed successfully
+              </span>
+            `;
 
-  const item = suggestionItems[index];
-
-  if (!item || !item.email) return;
-
-  const fragment = currentRecipientFragment();
-
-  to.value = fragment.prefix + item.email + ', ';
-
-  hideSuggestions();
-
-  to.focus();
-
-}
+    }
 
 
-/* Request suggestions from Apps Script */
+    if (successModal) {
 
-async function lookupRecipientSuggestions(query) {
+      successModal.show();
 
-  const requestId = ++suggestionRequestId;
+    } else {
 
-  try {
+      showAlert(
+        reference
+          ? `Message sent successfully. Reference: ${reference}`
+          : 'Message sent successfully.',
+        'success'
+      );
 
-    const result =
-      await MailboxAPI.suggestRecipients(query);
+    }
 
-    if (requestId !== suggestionRequestId) return;
+  }
 
-    renderSuggestions(result.suggestions || []);
 
-  } catch (err) {
+  if (successOkButton) {
 
-    console.warn(
-      'Recipient suggestions unavailable:',
-      err
+    successOkButton.addEventListener(
+      'click',
+      () => {
+
+        if (successModal) {
+          successModal.hide();
+        }
+
+        clearForm();
+
+        window.location.href =
+          'mailbox.html';
+
+      }
     );
 
-    hideSuggestions();
+  }
+
+
+
+  /* =========================================================
+     LOGOUT
+  ========================================================= */
+
+  if (logoutButton) {
+
+    logoutButton.addEventListener(
+      'click',
+      async () => {
+
+        if (isSending) return;
+
+
+        const confirmed =
+          window.confirm(
+            'Are you sure you want to logout?'
+          );
+
+
+        if (!confirmed) return;
+
+
+        try {
+
+          if (
+            typeof MailboxAPI.logout ===
+            'function'
+          ) {
+
+            await MailboxAPI.logout();
+
+          }
+
+        } catch (err) {
+
+          console.warn(
+            'Logout API failed:',
+            err
+          );
+
+        }
+
+
+        /*
+         * Support the common local/session
+         * storage keys used by the mailbox.
+         */
+        try {
+
+          [
+            'mailboxUser',
+            'mailbox_user',
+            'MAILBOX_USER',
+            'mailboxSession',
+            'mailbox_session',
+            'MAILBOX_SESSION'
+          ].forEach(key => {
+
+            localStorage.removeItem(key);
+            sessionStorage.removeItem(key);
+
+          });
+
+        } catch (_) {}
+
+
+        window.location.href =
+          'login.html';
+
+      }
+    );
 
   }
 
-}
 
 
-/* Detect typing */
+  /* =========================================================
+     TO FIELD AUTOCOMPLETE
+  ========================================================= */
 
-to.addEventListener('input', () => {
+  const suggestionBox =
+    document.getElementById(
+      'recipient-suggestions'
+    );
 
-  clearTimeout(suggestionTimer);
+  let suggestionItems = [];
 
-  const { query } = currentRecipientFragment();
+  let activeSuggestion = -1;
 
-  if (query.length < 2) {
+  let suggestionTimer = null;
 
-    suggestionRequestId++;
+  let suggestionRequestId = 0;
+
+
+  function currentRecipientFragment() {
+
+    const value =
+      to.value;
+
+    const comma =
+      value.lastIndexOf(',');
+
+
+    return {
+
+      prefix:
+        value.slice(0, comma + 1),
+
+      query:
+        value.slice(comma + 1).trim()
+
+    };
+
+  }
+
+
+  function hideSuggestions() {
+
+    suggestionBox.classList.remove(
+      'show'
+    );
+
+    suggestionBox.innerHTML = '';
+
+    to.setAttribute(
+      'aria-expanded',
+      'false'
+    );
+
+    suggestionItems = [];
+
+    activeSuggestion = -1;
+
+  }
+
+
+  function renderSuggestions(items) {
+
+    suggestionItems =
+      Array.isArray(items)
+        ? items
+        : [];
+
+
+    activeSuggestion = -1;
+
+
+    if (!suggestionItems.length) {
+
+      hideSuggestions();
+
+      return;
+
+    }
+
+
+    suggestionBox.innerHTML =
+      suggestionItems.map(
+        (item, index) => `
+
+          <button
+            type="button"
+            class="recipient-suggestion"
+            role="option"
+            data-index="${index}"
+            aria-selected="false"
+          >
+
+            <span class="fw-semibold">
+
+              ${escapeHtml(
+                item.name ||
+                item.email
+              )}
+
+            </span>
+
+            <small>
+
+              ${escapeHtml(
+                item.email
+              )}
+
+              ${
+                item.department
+                  ? ' · ' +
+                    escapeHtml(
+                      item.department
+                    )
+                  : ''
+              }
+
+            </small>
+
+          </button>
+
+        `
+      ).join('');
+
+
+    suggestionBox.classList.add(
+      'show'
+    );
+
+
+    to.setAttribute(
+      'aria-expanded',
+      'true'
+    );
+
+  }
+
+
+  function chooseSuggestion(index) {
+
+    const item =
+      suggestionItems[index];
+
+
+    if (
+      !item ||
+      !item.email
+    ) {
+      return;
+    }
+
+
+    const fragment =
+      currentRecipientFragment();
+
+
+    to.value =
+      fragment.prefix +
+      item.email +
+      ', ';
+
 
     hideSuggestions();
 
-    return;
+    to.focus();
+
   }
 
-  suggestionTimer = setTimeout(() => {
 
-    lookupRecipientSuggestions(query);
-
-  }, 220);
-
-});
-
-
-/* Keyboard navigation */
-
-to.addEventListener('keydown', event => {
-
-  if (!suggestionBox.classList.contains('show')) return;
-
-  if (
-    event.key === 'ArrowDown' ||
-    event.key === 'ArrowUp'
+  async function lookupRecipientSuggestions(
+    query
   ) {
 
-    event.preventDefault();
+    const requestId =
+      ++suggestionRequestId;
 
-    const delta =
-      event.key === 'ArrowDown' ? 1 : -1;
 
-    activeSuggestion =
-      (
-        activeSuggestion +
-        delta +
-        suggestionItems.length
-      ) % suggestionItems.length;
+    try {
 
-    [
-      ...suggestionBox.querySelectorAll(
-        '.recipient-suggestion'
-      )
-    ].forEach((el, i) => {
+      const result =
+        await MailboxAPI.suggestRecipients(
+          query
+        );
 
-      el.classList.toggle(
-        'active',
-        i === activeSuggestion
+
+      if (
+        requestId !==
+        suggestionRequestId
+      ) {
+        return;
+      }
+
+
+      renderSuggestions(
+        Array.isArray(
+          result?.items
+        )
+          ? result.items
+          : (
+              Array.isArray(
+                result?.suggestions
+              )
+                ? result.suggestions
+                : []
+            )
       );
 
-      el.setAttribute(
-        'aria-selected',
-        String(i === activeSuggestion)
+    } catch (err) {
+
+      console.warn(
+        'Recipient suggestions unavailable:',
+        err
       );
 
-    });
+      hideSuggestions();
 
-  } else if (
-    event.key === 'Enter' &&
-    activeSuggestion >= 0
-  ) {
-
-    event.preventDefault();
-
-    chooseSuggestion(activeSuggestion);
-
-  } else if (event.key === 'Escape') {
-
-    hideSuggestions();
+    }
 
   }
 
-});
+
+  to.addEventListener(
+    'input',
+    () => {
+
+      clearTimeout(
+        suggestionTimer
+      );
 
 
-/* Mouse selection */
+      const {
+        query
+      } =
+        currentRecipientFragment();
 
-suggestionBox.addEventListener('mousedown', event => {
 
-  const button =
-    event.target.closest('.recipient-suggestion');
+      if (
+        query.length < 2
+      ) {
 
-  if (!button) return;
+        suggestionRequestId++;
 
-  event.preventDefault();
+        hideSuggestions();
 
-  chooseSuggestion(
-    Number(button.dataset.index)
+        return;
+
+      }
+
+
+      suggestionTimer =
+        setTimeout(
+          () => {
+
+            lookupRecipientSuggestions(
+              query
+            );
+
+          },
+          220
+        );
+
+    }
   );
 
-});
+
+  to.addEventListener(
+    'keydown',
+    event => {
+
+      if (
+        !suggestionBox.classList.contains(
+          'show'
+        )
+      ) {
+        return;
+      }
 
 
-/* Close when clicking outside */
+      if (
+        event.key ===
+        'ArrowDown' ||
+        event.key ===
+        'ArrowUp'
+      ) {
 
-document.addEventListener('click', event => {
+        event.preventDefault();
 
-  if (
-    !event.target.closest('.recipient-suggest-wrap')
-  ) {
-    hideSuggestions();
-  }
 
-});
+        const delta =
+          event.key ===
+          'ArrowDown'
+            ? 1
+            : -1;
+
+
+        activeSuggestion =
+          (
+            activeSuggestion +
+            delta +
+            suggestionItems.length
+          ) %
+          suggestionItems.length;
+
+
+        [
+          ...suggestionBox.querySelectorAll(
+            '.recipient-suggestion'
+          )
+        ].forEach(
+          (el, i) => {
+
+            el.classList.toggle(
+              'active',
+              i ===
+              activeSuggestion
+            );
+
+
+            el.setAttribute(
+              'aria-selected',
+              String(
+                i ===
+                activeSuggestion
+              )
+            );
+
+          }
+        );
+
+      }
+
+      else if (
+        event.key ===
+        'Enter' &&
+        activeSuggestion >= 0
+      ) {
+
+        event.preventDefault();
+
+        chooseSuggestion(
+          activeSuggestion
+        );
+
+      }
+
+      else if (
+        event.key ===
+        'Escape'
+      ) {
+
+        hideSuggestions();
+
+      }
+
+    }
+  );
+
+
+  suggestionBox.addEventListener(
+    'mousedown',
+    event => {
+
+      const button =
+        event.target.closest(
+          '.recipient-suggestion'
+        );
+
+
+      if (!button) return;
+
+
+      event.preventDefault();
+
+
+      chooseSuggestion(
+        Number(
+          button.dataset.index
+        )
+      );
+
+    }
+  );
+
+
+  document.addEventListener(
+    'click',
+    event => {
+
+      if (
+        !event.target.closest(
+          '.recipient-suggest-wrap'
+        )
+      ) {
+
+        hideSuggestions();
+
+      }
+
+    }
+  );
+
+
 
   /* =========================================================
      URL PARAMETERS
-     
-     New compose:
-       compose.html
-
-     Reply:
-       compose.html?mode=reply&id=123
-
-     Forward:
-       compose.html?mode=forward&id=123
   ========================================================= */
 
   const params =
-    new URLSearchParams(window.location.search);
+    new URLSearchParams(
+      window.location.search
+    );
+
 
   const mode =
-    String(params.get('mode') || 'new').toLowerCase();
+    String(
+      params.get('mode') ||
+      'new'
+    ).toLowerCase();
+
 
   const originalMailId =
     params.get('id') ||
@@ -1045,16 +1984,25 @@ document.addEventListener('click', event => {
 
 
   let originalMessage = null;
+
   let originalAttachmentsData = [];
+
+  let isSending = false;
+
 
 
   /* =========================================================
      HELPERS
   ========================================================= */
 
-  function showAlert(message, type = 'danger') {
+  function showAlert(
+    message,
+    type = 'danger'
+  ) {
 
-    alertBox.textContent = message;
+    alertBox.textContent =
+      message;
+
 
     alertBox.className =
       `alert alert-${type}`;
@@ -1067,35 +2015,47 @@ document.addEventListener('click', event => {
     alertBox.className =
       'alert d-none';
 
-    alertBox.textContent = '';
+    alertBox.textContent =
+      '';
 
   }
 
 
   function showLoading(message) {
 
-    loadingText.textContent = message;
+    loadingText.textContent =
+      message;
 
-    loadingBox.classList.add('show');
+    loadingBox.classList.add(
+      'show'
+    );
 
   }
 
 
   function hideLoading() {
 
-    loadingBox.classList.remove('show');
+    loadingBox.classList.remove(
+      'show'
+    );
 
   }
 
 
   function cleanSubject(value) {
 
-    let s = String(value || '').trim();
+    let s =
+      String(
+        value || ''
+      ).trim();
 
-    s = s.replace(
-      /^(re|fw|fwd)\s*:\s*/i,
-      ''
-    );
+
+    s =
+      s.replace(
+        /^(re|fw|fwd)\s*:\s*/i,
+        ''
+      );
+
 
     return s.trim();
 
@@ -1104,7 +2064,9 @@ document.addEventListener('click', event => {
 
   function replySubject(value) {
 
-    const s = cleanSubject(value);
+    const s =
+      cleanSubject(value);
+
 
     return s
       ? `Re: ${s}`
@@ -1115,7 +2077,9 @@ document.addEventListener('click', event => {
 
   function forwardSubject(value) {
 
-    const s = cleanSubject(value);
+    const s =
+      cleanSubject(value);
+
 
     return s
       ? `Fwd: ${s}`
@@ -1126,14 +2090,18 @@ document.addEventListener('click', event => {
 
   function escapeHtml(value) {
 
-    return String(value ?? '')
-      .replace(/[&<>"']/g, ch => ({
+    return String(
+      value ?? ''
+    ).replace(
+      /[&<>"']/g,
+      ch => ({
         '&': '&amp;',
         '<': '&lt;',
         '>': '&gt;',
         '"': '&quot;',
         "'": '&#039;'
-      }[ch]));
+      }[ch])
+    );
 
   }
 
@@ -1147,70 +2115,122 @@ document.addEventListener('click', event => {
 
   function formatSize(bytes) {
 
-    const n = Number(bytes || 0);
+    const n =
+      Number(
+        bytes || 0
+      );
+
 
     if (!n) return '';
 
-    if (n < 1024)
+    if (
+      n < 1024
+    ) {
       return `${n} B`;
+    }
 
-    if (n < 1024 * 1024)
-      return `${(n / 1024).toFixed(1)} KB`;
+    if (
+      n < 1024 * 1024
+    ) {
+      return `${(
+        n / 1024
+      ).toFixed(1)} KB`;
+    }
 
-    if (n < 1024 * 1024 * 1024)
-      return `${(n / 1024 / 1024).toFixed(1)} MB`;
+    if (
+      n < 1024 *
+        1024 *
+        1024
+    ) {
+      return `${(
+        n / 1024 /
+        1024
+      ).toFixed(1)} MB`;
+    }
 
-    return `${(n / 1024 / 1024 / 1024).toFixed(1)} GB`;
+
+    return `${(
+      n / 1024 /
+      1024 /
+      1024
+    ).toFixed(1)} GB`;
 
   }
 
 
-  function attachmentIcon(mimeType, fileName) {
+  function attachmentIcon(
+    mimeType,
+    fileName
+  ) {
 
     const mime =
-      String(mimeType || '').toLowerCase();
+      String(
+        mimeType || ''
+      ).toLowerCase();
+
 
     const name =
-      String(fileName || '').toLowerCase();
+      String(
+        fileName || ''
+      ).toLowerCase();
+
 
     if (
       mime.includes('pdf') ||
       name.endsWith('.pdf')
     ) {
+
       return 'bi-file-earmark-pdf-fill text-danger';
+
     }
+
 
     if (
       mime.startsWith('image/') ||
-      /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(name)
+      /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(
+        name
+      )
     ) {
+
       return 'bi-file-earmark-image-fill text-primary';
+
     }
+
 
     if (
       mime.includes('word') ||
       /\.(doc|docx)$/i.test(name)
     ) {
+
       return 'bi-file-earmark-word-fill text-primary';
+
     }
+
 
     if (
       mime.includes('excel') ||
       /\.(xls|xlsx|csv)$/i.test(name)
     ) {
+
       return 'bi-file-earmark-spreadsheet-fill text-success';
+
     }
+
 
     if (
       mime.includes('zip') ||
       /\.(zip|rar|7z)$/i.test(name)
     ) {
+
       return 'bi-file-earmark-zip-fill text-warning';
+
     }
+
 
     return 'bi-paperclip text-secondary';
 
   }
+
 
 
   /* =========================================================
@@ -1219,7 +2239,9 @@ document.addEventListener('click', event => {
 
   function configureMode() {
 
-    if (mode === 'reply') {
+    if (
+      mode === 'reply'
+    ) {
 
       cardTitle.textContent =
         'Reply';
@@ -1237,10 +2259,13 @@ document.addEventListener('click', event => {
         'MailBox | Mailbox - Reply';
 
       return;
+
     }
 
 
-    if (mode === 'forward') {
+    if (
+      mode === 'forward'
+    ) {
 
       cardTitle.textContent =
         'Forward Message';
@@ -1258,6 +2283,7 @@ document.addEventListener('click', event => {
         'MailBox | Mailbox - Forward';
 
       return;
+
     }
 
 
@@ -1276,98 +2302,134 @@ document.addEventListener('click', event => {
   }
 
 
+
   /* =========================================================
      RENDER ORIGINAL ATTACHMENTS
   ========================================================= */
 
-  function renderOriginalAttachments(items) {
+  function renderOriginalAttachments(
+    items
+  ) {
 
-    originalAttachmentList.innerHTML = '';
+    originalAttachmentList.innerHTML =
+      '';
+
 
     if (
       !Array.isArray(items) ||
       !items.length
     ) {
 
-      originalAttachments.classList.add('d-none');
+      originalAttachments.classList.add(
+        'd-none'
+      );
 
       return;
+
     }
 
 
-    originalAttachments.classList.remove('d-none');
+    originalAttachments.classList.remove(
+      'd-none'
+    );
 
 
     originalAttachmentList.innerHTML =
-      items.map((item, index) => {
+      items.map(
+        (item, index) => {
 
-        const fileName =
-          item.fileName ||
-          item.name ||
-          `Attachment ${index + 1}`;
+          const fileName =
+            item.fileName ||
+            item.name ||
+            `Attachment ${index + 1}`;
 
-        const mimeType =
-          item.mimeType ||
-          item.type ||
-          '';
 
-        const size =
-          formatSize(item.size);
+          const mimeType =
+            item.mimeType ||
+            item.type ||
+            '';
 
-        const icon =
-          attachmentIcon(
-            mimeType,
-            fileName
-          );
 
-        return `
-          <div class="original-attachment">
+          const size =
+            formatSize(
+              item.size
+            );
 
-            <i
-              class="bi ${icon} fs-4"
-              aria-hidden="true"
-            ></i>
 
-            <div class="attachment-name">
+          const icon =
+            attachmentIcon(
+              mimeType,
+              fileName
+            );
+
+
+          return `
+
+            <div class="original-attachment">
+
+              <i
+                class="bi ${icon} fs-4"
+                aria-hidden="true"
+              ></i>
+
+              <div class="attachment-name">
+
+                <span
+                  title="${escapeAttr(
+                    fileName
+                  )}"
+                >
+                  ${escapeHtml(
+                    fileName
+                  )}
+                </span>
+
+                <small
+                  class="text-secondary"
+                >
+                  ${escapeHtml(
+                    size ||
+                    mimeType
+                  )}
+                </small>
+
+              </div>
 
               <span
-                title="${escapeAttr(fileName)}"
+                class="badge text-bg-success"
+                data-original-attachment-status="${index}"
               >
-                ${escapeHtml(fileName)}
+                Loading…
               </span>
-
-              <small class="text-secondary">
-                ${escapeHtml(size || mimeType)}
-              </small>
 
             </div>
 
-            <span
-              class="badge text-bg-success"
-              data-original-attachment-status="${index}"
-            >
-              Loading…
-            </span>
+          `;
 
-          </div>
-        `;
-
-      }).join('');
+        }
+      ).join('');
 
   }
 
 
+
   /* =========================================================
-     CONVERT HTML MESSAGE TO TEXT
+     HTML TO TEXT
   ========================================================= */
 
   function htmlToText(html) {
 
     const div =
-      document.createElement('div');
+      document.createElement(
+        'div'
+      );
+
 
     div.innerHTML =
-      String(html || '');
+      String(
+        html || ''
+      );
+
 
     return div.innerText ||
       div.textContent ||
@@ -1376,58 +2438,93 @@ document.addEventListener('click', event => {
   }
 
 
+
   /* =========================================================
-     CREATE FORWARDED MESSAGE
+     FORWARDED MESSAGE
   ========================================================= */
 
-  function createForwardedMessage(message) {
+  function createForwardedMessage(
+    message
+  ) {
 
     const senderName =
       message.senderName ||
       message.senderEmail ||
       '';
 
+
     const senderEmail =
       message.senderEmail ||
       '';
+
 
     const date =
       message.date ||
       '';
 
+
     const toValue =
       message.to ||
       '';
+
 
     const ccValue =
       message.cc ||
       '';
 
-    const originalBody =
-      String(message.body || '');
 
-    let textBody =
-      String(message.bodyType || '').toUpperCase() === 'HTML'
-        ? htmlToText(originalBody)
+    const originalBody =
+      String(
+        message.body || ''
+      );
+
+
+    const textBody =
+      String(
+        message.bodyType ||
+        ''
+      ).toUpperCase() === 'HTML'
+        ? htmlToText(
+            originalBody
+          )
         : originalBody;
 
 
     return [
+
       '',
       '',
       '---------- Forwarded message ----------',
-      `From: ${senderName}${senderEmail ? ` <${senderEmail}>` : ''}`,
+
+      `From: ${senderName}${
+        senderEmail
+          ? ` <${senderEmail}>`
+          : ''
+      }`,
+
       `Date: ${date}`,
-      `Subject: ${message.subject || '(No subject)'}`,
+
+      `Subject: ${
+        message.subject ||
+        '(No subject)'
+      }`,
+
       `To: ${toValue}`,
-      ccValue ? `Cc: ${ccValue}` : '',
+
+      ccValue
+        ? `Cc: ${ccValue}`
+        : '',
+
       '',
+
       textBody
+
     ]
       .filter(Boolean)
       .join('\n');
 
   }
+
 
 
   /* =========================================================
@@ -1460,10 +2557,14 @@ document.addEventListener('click', event => {
 
 
       originalMessage =
-        result?.message || {};
+        result?.message ||
+        {};
+
 
       originalAttachmentsData =
-        Array.isArray(result?.attachments)
+        Array.isArray(
+          result?.attachments
+        )
           ? result.attachments
           : [];
 
@@ -1478,29 +2579,33 @@ document.addEventListener('click', event => {
 
 
       document.title =
-        `${originalMessage.subject || 'Message'} | MailBox`;
+        `${
+          originalMessage.subject ||
+          'Message'
+        } | MailBox`;
 
 
-      /* =====================================================
-         REPLY
-      ===================================================== */
-
-      if (mode === 'reply') {
+      if (
+        mode === 'reply'
+      ) {
 
         to.value =
           originalMessage.senderEmail ||
           '';
 
-        cc.value = '';
+        cc.value =
+          '';
 
-        bcc.value = '';
+        bcc.value =
+          '';
 
         subject.value =
           replySubject(
             originalMessage.subject
           );
 
-        body.value = '';
+        body.value =
+          '';
 
         attachmentStatus.textContent =
           'Original attachments are not included automatically in a reply.';
@@ -1508,17 +2613,18 @@ document.addEventListener('click', event => {
       }
 
 
-      /* =====================================================
-         FORWARD
-      ===================================================== */
+      if (
+        mode === 'forward'
+      ) {
 
-      if (mode === 'forward') {
+        to.value =
+          '';
 
-        to.value = '';
+        cc.value =
+          '';
 
-        cc.value = '';
-
-        bcc.value = '';
+        bcc.value =
+          '';
 
         subject.value =
           forwardSubject(
@@ -1526,10 +2632,6 @@ document.addEventListener('click', event => {
           );
 
 
-        /*
-         * Put the exact original message into
-         * the compose body.
-         */
         body.value =
           createForwardedMessage(
             originalMessage
@@ -1541,11 +2643,6 @@ document.addEventListener('click', event => {
         );
 
 
-        /*
-         * Try to physically download the original
-         * attachments and place them into the
-         * file input.
-         */
         await prepareForwardAttachments(
           originalAttachmentsData
         );
@@ -1558,6 +2655,7 @@ document.addEventListener('click', event => {
         'Unable to load original message:',
         err
       );
+
 
       showAlert(
         err.message ||
@@ -1573,23 +2671,24 @@ document.addEventListener('click', event => {
   }
 
 
+
   /* =========================================================
      FETCH ATTACHMENT
   ========================================================= */
 
-  async function fetchAttachmentAsFile(item) {
+  async function fetchAttachmentAsFile(
+    item
+  ) {
 
     if (!item) {
+
       throw new Error(
         'Invalid attachment.'
       );
+
     }
 
 
-    /*
-     * If the API already provides base64,
-     * use it directly.
-     */
     if (
       item.base64 ||
       item.data
@@ -1599,29 +2698,36 @@ document.addEventListener('click', event => {
         item.base64 ||
         item.data;
 
+
       const binary =
         atob(base64);
+
 
       const bytes =
         new Uint8Array(
           binary.length
         );
 
+
       for (
         let i = 0;
         i < binary.length;
         i++
       ) {
+
         bytes[i] =
           binary.charCodeAt(i);
+
       }
 
 
       return new File(
         [bytes],
+
         item.fileName ||
         item.name ||
         'attachment',
+
         {
           type:
             item.mimeType ||
@@ -1633,9 +2739,6 @@ document.addEventListener('click', event => {
     }
 
 
-    /*
-     * Otherwise use the attachment URL.
-     */
     const url =
       item.url ||
       item.downloadUrl ||
@@ -1664,7 +2767,10 @@ document.addEventListener('click', event => {
     if (!response.ok) {
 
       throw new Error(
-        `Unable to download ${item.fileName || 'attachment'}`
+        `Unable to download ${
+          item.fileName ||
+          'attachment'
+        }`
       );
 
     }
@@ -1676,9 +2782,11 @@ document.addEventListener('click', event => {
 
     return new File(
       [blob],
+
       item.fileName ||
       item.name ||
       'attachment',
+
       {
         type:
           item.mimeType ||
@@ -1690,11 +2798,14 @@ document.addEventListener('click', event => {
   }
 
 
+
   /* =========================================================
-     PUT FILES INTO FILE INPUT
+     PREPARE FORWARD ATTACHMENTS
   ========================================================= */
 
-  async function prepareForwardAttachments(items) {
+  async function prepareForwardAttachments(
+    items
+  ) {
 
     if (
       !Array.isArray(items) ||
@@ -1721,6 +2832,7 @@ document.addEventListener('click', event => {
       const item =
         items[index];
 
+
       const status =
         document.querySelector(
           `[data-original-attachment-status="${index}"]`
@@ -1735,7 +2847,9 @@ document.addEventListener('click', event => {
           );
 
 
-        forwardedFiles.push(file);
+        forwardedFiles.push(
+          file
+        );
 
 
         if (status) {
@@ -1772,29 +2886,25 @@ document.addEventListener('click', event => {
     }
 
 
-    /*
-     * Browser security does not allow assigning
-     * a normal array directly to input.files.
-     *
-     * DataTransfer is used to create a FileList.
-     */
-    if (forwardedFiles.length) {
+    if (
+      forwardedFiles.length
+    ) {
 
       const transfer =
         new DataTransfer();
 
 
-      for (const file of forwardedFiles) {
+      for (
+        const file of forwardedFiles
+      ) {
 
-        transfer.items.add(file);
+        transfer.items.add(
+          file
+        );
 
       }
 
 
-      /*
-       * Also preserve any files that the user
-       * may already have selected manually.
-       */
       for (
         const existingFile of files.files
       ) {
@@ -1823,8 +2933,9 @@ document.addEventListener('click', event => {
   }
 
 
+
   /* =========================================================
-     READ CURRENT FILES
+     READ FILES
   ========================================================= */
 
   async function readFiles() {
@@ -1844,18 +2955,22 @@ document.addEventListener('click', event => {
               new FileReader();
 
 
-            reader.onload = () => {
+            reader.onload =
+              () => {
 
-              const result =
-                String(
-                  reader.result || ''
+                const result =
+                  String(
+                    reader.result ||
+                    ''
+                  );
+
+
+                resolve(
+                  result.split(',')[1] ||
+                  ''
                 );
 
-              resolve(
-                result.split(',')[1] || ''
-              );
-
-            };
+              };
 
 
             reader.onerror =
@@ -1893,34 +3008,210 @@ document.addEventListener('click', event => {
   }
 
 
+
   /* =========================================================
      CLEAR FORM
   ========================================================= */
 
   function clearForm() {
 
-    to.value = '';
-    cc.value = '';
-    bcc.value = '';
-    subject.value = '';
-    body.value = '';
+    to.value =
+      '';
 
-    /*
-     * File inputs cannot always be cleared by
-     * setting files directly, but this works
-     * in normal browsers.
-     */
-    files.value = '';
+    cc.value =
+      '';
+
+    bcc.value =
+      '';
+
+    subject.value =
+      '';
+
+    body.value =
+      '';
+
+    files.value =
+      '';
+
 
     originalAttachments.classList.add(
       'd-none'
     );
 
-    originalAttachmentList.innerHTML = '';
 
-    attachmentStatus.textContent = '';
+    originalAttachmentList.innerHTML =
+      '';
+
+
+    attachmentStatus.textContent =
+      '';
+
+
+    hideSuggestions();
 
   }
+
+
+
+  /* =========================================================
+     SEND PROGRESS
+  ========================================================= */
+
+  function showSendProgress(
+    message =
+      'Sending message…'
+  ) {
+
+    if (sendProgressText) {
+
+      sendProgressText.textContent =
+        message;
+
+    }
+
+
+    if (sendProgress) {
+
+      sendProgress.classList.add(
+        'show'
+      );
+
+    }
+
+  }
+
+
+  function hideSendProgress() {
+
+    if (sendProgress) {
+
+      sendProgress.classList.remove(
+        'show'
+      );
+
+    }
+
+  }
+
+
+
+  /* =========================================================
+     DISABLE ALL COMPOSE CONTROLS
+  ========================================================= */
+
+  function setSendingState(
+    sending
+  ) {
+
+    isSending =
+      Boolean(sending);
+
+
+    composeForm.classList.toggle(
+      'is-sending',
+      isSending
+    );
+
+
+    /*
+     * Every input/select/textarea inside
+     * the compose form.
+     */
+    composeForm
+      .querySelectorAll(
+        'input, textarea, select, button'
+      )
+      .forEach(
+        element => {
+
+          element.disabled =
+            isSending;
+
+        }
+      );
+
+
+    /*
+     * Footer buttons are outside the form.
+     */
+    sendBtn.disabled =
+      isSending;
+
+    draftBtn.disabled =
+      isSending;
+
+    discardBtn.disabled =
+      isSending;
+
+
+    if (isSending) {
+
+      sendBtn.classList.add(
+        'compose-footer-disabled'
+      );
+
+      draftBtn.classList.add(
+        'compose-footer-disabled'
+      );
+
+      discardBtn.classList.add(
+        'compose-footer-disabled'
+      );
+
+
+      sendButtonText.textContent =
+        'Sending…';
+
+    } else {
+
+      sendBtn.classList.remove(
+        'compose-footer-disabled'
+      );
+
+      draftBtn.classList.remove(
+        'compose-footer-disabled'
+      );
+
+      discardBtn.classList.remove(
+        'compose-footer-disabled'
+      );
+
+
+      sendButtonText.textContent =
+        'Send';
+
+    }
+
+
+    /*
+     * Prevent logout while a message
+     * is being sent.
+     */
+    if (logoutButton) {
+
+      logoutButton.disabled =
+        isSending;
+
+    }
+
+
+    /*
+     * Prevent autocomplete while sending.
+     */
+    if (isSending) {
+
+      suggestionRequestId++;
+
+      clearTimeout(
+        suggestionTimer
+      );
+
+      hideSuggestions();
+
+    }
+
+  }
+
 
 
   /* =========================================================
@@ -1931,7 +3222,13 @@ document.addEventListener('click', event => {
     'click',
     async () => {
 
+      if (isSending) {
+        return;
+      }
+
+
       hideAlert();
+
 
       const recipient =
         to.value.trim();
@@ -1944,6 +3241,7 @@ document.addEventListener('click', event => {
           'warning'
         );
 
+
         to.focus();
 
         return;
@@ -1951,15 +3249,20 @@ document.addEventListener('click', event => {
       }
 
 
-      if (!subject.value.trim()) {
+      if (
+        !subject.value.trim()
+      ) {
 
         if (
-          !confirm(
+          !window.confirm(
             'The subject is empty. Send anyway?'
           )
         ) {
+
           subject.focus();
+
           return;
+
         }
 
       }
@@ -1967,17 +3270,34 @@ document.addEventListener('click', event => {
 
       try {
 
-        sendBtn.disabled = true;
+        /*
+         * Disable EVERYTHING immediately.
+         */
+        setSendingState(
+          true
+        );
 
-        draftBtn.disabled = true;
 
-        discardBtn.disabled = true;
+        showSendProgress(
+          'Preparing message…'
+        );
 
 
+        /*
+         * Read attachments.
+         */
         const attachments =
           await readFiles();
 
 
+        showSendProgress(
+          'Sending message…'
+        );
+
+
+        /*
+         * Send through existing API.
+         */
         const result =
           await MailboxAPI.send({
 
@@ -2000,27 +3320,34 @@ document.addEventListener('click', event => {
               'TEXT',
 
             attachments:
-
               attachments
 
           });
 
 
-        alert(
-          'Message sent successfully.\n\n' +
-          'Reference: ' +
-          (
-            result.referenceNo ||
-            ''
-          )
+        /*
+         * Hide sending animation before
+         * displaying success message.
+         */
+        hideSendProgress();
+
+
+        /*
+         * Keep the compose form disabled
+         * until the user presses OK.
+         */
+        isSending =
+          false;
+
+
+        /*
+         * Show beautiful custom success modal.
+         */
+        showSuccessModal(
+          result?.referenceNo ||
+          result?.reference ||
+          ''
         );
-
-
-        clearForm();
-
-
-        window.location.href =
-          'mailbox.html';
 
 
       } catch (err) {
@@ -2030,23 +3357,29 @@ document.addEventListener('click', event => {
           err
         );
 
+
+        hideSendProgress();
+
+
         showAlert(
           err.message ||
           'Unable to send message.'
         );
 
-      } finally {
 
-        sendBtn.disabled = false;
-
-        draftBtn.disabled = false;
-
-        discardBtn.disabled = false;
+        /*
+         * Re-enable everything only
+         * when sending has failed.
+         */
+        setSendingState(
+          false
+        );
 
       }
 
     }
   );
+
 
 
   /* =========================================================
@@ -2057,11 +3390,16 @@ document.addEventListener('click', event => {
     'click',
     async () => {
 
+      if (isSending) return;
+
+
       hideAlert();
+
 
       try {
 
-        draftBtn.disabled = true;
+        draftBtn.disabled =
+          true;
 
 
         const result =
@@ -2106,6 +3444,7 @@ document.addEventListener('click', event => {
           err
         );
 
+
         showAlert(
           err.message ||
           'Unable to save draft.'
@@ -2113,12 +3452,14 @@ document.addEventListener('click', event => {
 
       } finally {
 
-        draftBtn.disabled = false;
+        draftBtn.disabled =
+          false;
 
       }
 
     }
   );
+
 
 
   /* =========================================================
@@ -2129,12 +3470,17 @@ document.addEventListener('click', event => {
     'click',
     () => {
 
+      if (isSending) return;
+
+
       if (
-        !confirm(
+        !window.confirm(
           'Discard this message?'
         )
       ) {
+
         return;
+
       }
 
 
@@ -2148,16 +3494,17 @@ document.addEventListener('click', event => {
   );
 
 
+
   /* =========================================================
      MANUAL FILE SELECTION
-     
-     If user chooses additional files, don't
-     remove the automatically forwarded files.
   ========================================================= */
 
   files.addEventListener(
     'change',
     () => {
+
+      if (isSending) return;
+
 
       const count =
         files.files.length;
@@ -2165,7 +3512,9 @@ document.addEventListener('click', event => {
 
       if (!count) {
 
-        if (mode === 'forward') {
+        if (
+          mode === 'forward'
+        ) {
 
           attachmentStatus.textContent =
             originalAttachmentsData.length
@@ -2191,6 +3540,7 @@ document.addEventListener('click', event => {
   );
 
 
+
   /* =========================================================
      INITIALIZE
   ========================================================= */
@@ -2203,7 +3553,11 @@ document.addEventListener('click', event => {
 </script>
 
 
-<!-- SIDEBAR SCROLLBAR -->
+
+<!-- =========================================================
+     SIDEBAR SCROLLBAR
+========================================================= -->
+
 <script>
 (() => {
 
@@ -2212,13 +3566,16 @@ document.addEventListener('click', event => {
       '.sidebar-wrapper'
     );
 
+
   const isMobile =
     window.innerWidth <= 992;
 
 
   if (
     sidebarWrapper &&
-    globalThis.OverlayScrollbarsGlobal?.OverlayScrollbars &&
+    globalThis
+      .OverlayScrollbarsGlobal
+      ?.OverlayScrollbars &&
     !isMobile
   ) {
 
@@ -2228,6 +3585,7 @@ document.addEventListener('click', event => {
         sidebarWrapper,
         {
           scrollbars: {
+
             theme:
               'os-theme-light',
 
@@ -2236,6 +3594,7 @@ document.addEventListener('click', event => {
 
             clickScroll:
               true
+
           }
         }
       );

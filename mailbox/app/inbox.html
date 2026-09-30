@@ -489,7 +489,7 @@
               <li class="nav-item">
 
                 <a
-                  href="../mailbox/mailbox.html"
+                  href="mailbox.html"
                   class="nav-link active"
                 >
 
@@ -646,7 +646,7 @@
                   <li class="nav-item">
 
                     <a
-                      href="../mailbox/mailbox.html"
+                      href="mailbox.html"
                       class="nav-link mail-folder-link rounded-0 d-flex justify-content-between"
                       data-folder="INBOX"
                       data-label="Inbox"
@@ -866,7 +866,7 @@
 
                 <!-- Toolbar -->
                 <div
-                  class="d-flex align-items-center px-3 py-2 border-bottom mail-toolbar"
+                  class="d-flex align-items-center flex-wrap gap-2 px-3 py-2 border-bottom mail-toolbar"
                 >
 
                   <!-- Select All -->
@@ -888,6 +888,37 @@
                   </div>
 
 
+                  <!-- Search -->
+                  <div class="input-group input-group-sm ms-0 ms-md-3" style="max-width:320px; flex:1 1 220px;">
+
+                    <span class="input-group-text">
+                      <i class="bi bi-search" aria-hidden="true"></i>
+                    </span>
+
+                    <input
+                      type="search"
+                      class="form-control"
+                      id="mail-search"
+                      placeholder="Search mail..."
+                      autocomplete="off"
+                      spellcheck="false"
+                      aria-label="Search mail"
+                    >
+
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      id="mail-search-clear"
+                      title="Clear search"
+                      aria-label="Clear search"
+                      style="display:none;"
+                    >
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+
+                  </div>
+
+
                   <!-- Toolbar Buttons -->
                   <div class="btn-group btn-group-sm ms-3">
 
@@ -899,6 +930,28 @@
                       aria-label="Refresh"
                     >
                       <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+
+
+                    <button
+                      class="btn btn-outline-secondary"
+                      type="button"
+                      title="Mark as read"
+                      id="toolbar-read"
+                      disabled
+                    >
+                      <i class="bi bi-envelope-open"></i>
+                    </button>
+
+
+                    <button
+                      class="btn btn-outline-secondary"
+                      type="button"
+                      title="Mark as unread"
+                      id="toolbar-unread"
+                      disabled
+                    >
+                      <i class="bi bi-envelope"></i>
                     </button>
 
 
@@ -934,13 +987,57 @@
                   </div>
 
 
-                  <!-- Range -->
+                  <!-- Range / pagination -->
                   <span
                     class="ms-auto text-secondary small message-range"
                     id="message-range"
                   >
                     0 of 0
                   </span>
+
+                  <div class="d-flex align-items-center gap-1 ms-2">
+
+                    <select
+                      id="mail-page-size"
+                      class="form-select form-select-sm"
+                      style="width:auto;"
+                      title="Messages per page"
+                      aria-label="Messages per page"
+                    >
+                      <option value="25">25</option>
+                      <option value="50">50</option>
+                    </select>
+
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-secondary"
+                      id="mail-prev-page"
+                      title="Previous page"
+                      aria-label="Previous page"
+                      disabled
+                    >
+                      <i class="bi bi-chevron-left"></i>
+                    </button>
+
+                    <span
+                      id="mail-page-number"
+                      class="text-secondary small px-1"
+                    >
+                      1 / 1
+                    </span>
+
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-secondary"
+                      id="mail-next-page"
+                      title="Next page"
+                      aria-label="Next page"
+                      disabled
+                    >
+                      <i class="bi bi-chevron-right"></i>
+                    </button>
+
+                  </div>
 
                 </div>
 
@@ -1067,11 +1164,11 @@
 
 
 <!-- ===========================================================
-     MAILBOX API
+     MAILBOX API 
      =========================================================== -->
 <script>
   window.MAILBOX_API_URL =
-    'https://script.google.com/macros/s/AKfycby-YQZngcKrKxSKwHoZ_e7fIyOfUvuF66x3dWJRod84DN8L9FiTQYvaajxtOZg0yh7z/exec';
+    'https://script.google.com/macros/s/AKfycbztFYkp6V7YglnFLtZ7GbEXzoctYiBilV4lA4VgLm3WFKF8lYENWdM90_zy0uC1gmdG/exec';
 </script>
 
 <script src="mailbox-api.js"></script>
@@ -1103,11 +1200,44 @@
   const messageRange =
     document.getElementById('message-range');
 
+  const pageSizeSelect =
+    document.getElementById('mail-page-size');
+
+  const previousPageButton =
+    document.getElementById('mail-prev-page');
+
+  const nextPageButton =
+    document.getElementById('mail-next-page');
+
+  const pageNumber =
+    document.getElementById('mail-page-number');
+
   const selectAll =
     document.getElementById('select-all');
 
   const refreshButton =
     document.getElementById('refresh-button');
+
+  const searchInput =
+    document.getElementById('mail-search');
+
+  const searchClearButton =
+    document.getElementById('mail-search-clear');
+
+  const toolbarArchive =
+    document.getElementById('toolbar-archive');
+
+  const toolbarSpam =
+    document.getElementById('toolbar-spam');
+
+  const toolbarDelete =
+    document.getElementById('toolbar-delete');
+
+  const toolbarRead =
+    document.getElementById('toolbar-read');
+
+  const toolbarUnread =
+    document.getElementById('toolbar-unread');
 
   const folderTitle =
     document.getElementById('folder-title');
@@ -1183,6 +1313,143 @@
   let currentLabel = '';
 
   let isLoading = false;
+
+  let currentPage = 1;
+  let currentPageSize = 25;
+  let totalPages = 1;
+  let totalMessages = 0;
+
+  /* =========================================================
+     SILENT AUTO REFRESH
+     ---------------------------------------------------------
+     Refreshes the currently selected folder every 10 seconds.
+     No loading spinner, page jump, popup, or button animation
+     is triggered by the background refresh.
+     ========================================================= */
+
+  const SILENT_REFRESH_INTERVAL = 10000;
+
+  let silentRefreshTimer = null;
+  let silentRefreshRunning = false;
+  let lastSilentSignature = '';
+  let pageIsVisible = !document.hidden;
+
+  function messageSignature(messages) {
+    return (Array.isArray(messages) ? messages : [])
+      .map(message => [
+        message?.mailId || '',
+        message?.date || '',
+        message?.subject || '',
+        message?.senderEmail || '',
+        message?.senderName || '',
+        message?.isRead ? '1' : '0',
+        message?.isStarred ? '1' : '0',
+        message?.label || '',
+        message?.body || ''
+      ].join('¦'))
+      .join('§');
+  }
+
+  function updateSilentSignature(messages) {
+    lastSilentSignature = messageSignature(messages);
+  }
+
+  async function silentRefresh() {
+    if (
+      silentRefreshRunning ||
+      isLoading ||
+      !pageIsVisible ||
+      !MailboxAPI.user()
+    ) {
+      return;
+    }
+
+    silentRefreshRunning = true;
+
+    try {
+      const searchValue =
+        searchInput ? searchInput.value || '' : '';
+
+      const data = await MailboxAPI.list(
+        currentFolder,
+        searchValue,
+        currentPage,
+        currentPageSize
+      );
+
+      const freshMessages =
+        Array.isArray(data?.messages)
+          ? data.messages
+          : [];
+
+      const freshSignature =
+        messageSignature(freshMessages);
+
+      /*
+       * Do nothing when the returned mail data has not changed.
+       * This is what makes the refresh silent.
+       */
+      if (freshSignature === lastSilentSignature) {
+        return;
+      }
+
+      /*
+       * Preserve the current page, folder and label. Only redraw
+       * when the server actually returned different mail data.
+       */
+      currentMessages = freshMessages;
+
+      renderMessages(currentMessages);
+      renderLabels(currentMessages);
+      updatePagination(data);
+
+      updateSilentSignature(currentMessages);
+
+    } catch (error) {
+      /*
+       * Background refresh must never replace the user's mail
+       * list with an error screen. A session error is handled
+       * quietly by sending the user to login.
+       */
+      if (/session/i.test(error?.message || '')) {
+        MailboxAPI.clearSession();
+        window.location.href = 'login.html';
+      }
+    } finally {
+      silentRefreshRunning = false;
+    }
+  }
+
+  function startSilentRefresh() {
+    stopSilentRefresh();
+
+    silentRefreshTimer =
+      window.setInterval(
+        silentRefresh,
+        SILENT_REFRESH_INTERVAL
+      );
+  }
+
+  function stopSilentRefresh() {
+    if (silentRefreshTimer !== null) {
+      window.clearInterval(silentRefreshTimer);
+      silentRefreshTimer = null;
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    pageIsVisible = !document.hidden;
+
+    if (pageIsVisible) {
+      /*
+       * Immediately check once when the user returns to the tab,
+       * then continue with the normal 10-second interval.
+       */
+      silentRefresh();
+    }
+  });
+
+  window.addEventListener('beforeunload', stopSilentRefresh);
 
 
   /* =========================================================
@@ -1313,6 +1580,9 @@
 
     selectAll.checked = false;
     selectAll.disabled = true;
+    updateToolbarState();
+    if (previousPageButton) previousPageButton.disabled = true;
+    if (nextPageButton) nextPageButton.disabled = true;
 
   }
 
@@ -1675,6 +1945,86 @@
 
 
   /* =========================================================
+     SELECTED MESSAGE IDS
+     ========================================================= */
+
+  function selectedMessageIds() {
+
+    return Array.from(
+      messageList.querySelectorAll('.msg-check:checked')
+    )
+      .map(checkbox => checkbox.dataset.id)
+      .filter(Boolean);
+
+  }
+
+
+  function updateToolbarState() {
+
+    const hasSelection =
+      selectedMessageIds().length > 0;
+
+    [
+      toolbarArchive,
+      toolbarSpam,
+      toolbarDelete,
+      toolbarRead,
+      toolbarUnread
+    ].forEach(button => {
+      if (button) button.disabled = !hasSelection;
+    });
+
+  }
+
+
+  async function applyToSelected(changes) {
+
+    const ids = selectedMessageIds();
+
+    if (!ids.length) return;
+
+    const buttons = [
+      toolbarArchive,
+      toolbarSpam,
+      toolbarDelete,
+      toolbarRead,
+      toolbarUnread
+    ].filter(Boolean);
+
+    buttons.forEach(button => button.disabled = true);
+
+    try {
+
+      await Promise.all(
+        ids.map(mailId =>
+          MailboxAPI.update(
+            Object.assign({ mailId }, changes)
+          )
+        )
+      );
+
+      await load(currentPage);
+
+    } catch (error) {
+
+      if (/session/i.test(error?.message || '')) {
+        MailboxAPI.clearSession();
+        window.location.href = 'login.html';
+        return;
+      }
+
+      showError(error);
+
+    } finally {
+
+      updateToolbarState();
+
+    }
+
+  }
+
+
+  /* =========================================================
      RENDER MESSAGES
      ========================================================= */
 
@@ -1892,6 +2242,21 @@
 
     selectAll.disabled = false;
     selectAll.checked = false;
+    updateToolbarState();
+
+    messageList
+      .querySelectorAll('.msg-check')
+      .forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+          const boxes = Array.from(
+            messageList.querySelectorAll('.msg-check')
+          );
+          selectAll.checked =
+            boxes.length > 0 &&
+            boxes.every(box => box.checked);
+          updateToolbarState();
+        });
+      });
 
 
     /* =======================================================
@@ -1957,68 +2322,108 @@
 
 
   /* =========================================================
+     PAGINATION
+     ========================================================= */
+
+  function updatePagination(data) {
+
+    const page = Number(data?.page || 1);
+    const pageSize = Number(data?.pageSize || currentPageSize || 25);
+    const total = Number(data?.total || 0);
+    const pages = Math.max(Number(data?.totalPages || 1), 1);
+
+    currentPage = page;
+    currentPageSize = pageSize === 50 ? 50 : 25;
+    totalPages = pages;
+    totalMessages = total;
+
+    if (pageSizeSelect) {
+      pageSizeSelect.value = String(currentPageSize);
+    }
+
+    if (pageNumber) {
+      pageNumber.textContent = `${currentPage} / ${totalPages}`;
+    }
+
+    if (messageRange) {
+      if (!total) {
+        messageRange.textContent = '0 of 0';
+      } else {
+        const start = ((currentPage - 1) * currentPageSize) + 1;
+        const end = Math.min(currentPage * currentPageSize, total);
+        messageRange.textContent = `${start}–${end} of ${total}`;
+      }
+    }
+
+    if (previousPageButton) {
+      previousPageButton.disabled = currentPage <= 1 || isLoading || total === 0;
+    }
+
+    if (nextPageButton) {
+      nextPageButton.disabled = currentPage >= totalPages || isLoading || total === 0;
+    }
+  }
+
+
+  /* =========================================================
      LOAD MESSAGES
      ========================================================= */
 
-  async function load() {
+  async function load(page = currentPage) {
 
-    if (isLoading) {
-      return;
-    }
+    if (isLoading) return;
 
     showLoading();
 
-
     try {
+
+      const searchValue =
+        searchInput ? searchInput.value || '' : '';
 
       const data =
         await MailboxAPI.list(
           currentFolder,
-          ''
+          searchValue,
+          page,
+          currentPageSize
         );
-
 
       currentMessages =
         Array.isArray(data?.messages)
           ? data.messages
           : [];
 
+      renderMessages(currentMessages);
+      renderLabels(currentMessages);
+      updatePagination(data);
 
-      renderMessages(
-        currentMessages
-      );
-
-
-      renderLabels(
-        currentMessages
-      );
-
+      updateSilentSignature(currentMessages);
 
     } catch (error) {
 
       isLoading = false;
 
-      if (
-        /session/i.test(
-          error?.message || ''
-        )
-      ) {
-
+      if (/session/i.test(error?.message || '')) {
         MailboxAPI.clearSession();
-
-        window.location.href =
-          'login.html';
-
+        window.location.href = 'login.html';
         return;
-
       }
 
-      showError(
-        error
-      );
+      showError(error);
+
+    } finally {
+
+      isLoading = false;
+
+      if (previousPageButton) {
+        previousPageButton.disabled = currentPage <= 1 || totalMessages === 0;
+      }
+
+      if (nextPageButton) {
+        nextPageButton.disabled = currentPage >= totalPages || totalMessages === 0;
+      }
 
     }
-
   }
 
 
@@ -2059,6 +2464,8 @@
           currentFolder =
             folder;
 
+          currentPage = 1;
+
 
           currentLabel =
             '';
@@ -2088,76 +2495,136 @@
      SEARCH
      ========================================================= */
 
-  const search =
-    document.querySelector(
-      'input[placeholder^="Search mail"]'
-    );
+  let searchTimer;
 
+  function runSearch() {
 
-  if (search) {
+    clearTimeout(searchTimer);
 
-    let searchTimer;
+    searchTimer = setTimeout(async () => {
 
+      currentPage = 1;
+      currentLabel = '';
+      updateToolbarState();
 
-    search.addEventListener(
-      'input',
-      () => {
-
-        clearTimeout(
-          searchTimer
-        );
-
-
-        searchTimer =
-          setTimeout(
-            async () => {
-
-              showLoading();
-
-
-              try {
-
-                const data =
-                  await MailboxAPI.list(
-                    currentFolder,
-                    search.value || ''
-                  );
-
-
-                currentMessages =
-                  Array.isArray(
-                    data?.messages
-                  )
-                    ? data.messages
-                    : [];
-
-
-                renderMessages(
-                  currentMessages
-                );
-
-
-                renderLabels(
-                  currentMessages
-                );
-
-
-              } catch (error) {
-
-                showError(
-                  error
-                );
-
-              }
-
-            },
-            250
-          );
-
+      try {
+        await load(1);
+      } catch (error) {
+        showError(error);
       }
-    );
+
+    }, 300);
 
   }
+
+
+  searchInput?.addEventListener('input', () => {
+
+    if (searchClearButton) {
+      searchClearButton.style.display =
+        searchInput.value.trim() ? '' : 'none';
+    }
+
+    runSearch();
+
+  });
+
+
+  searchInput?.addEventListener('keydown', event => {
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      searchInput.value = '';
+      if (searchClearButton) searchClearButton.style.display = 'none';
+      runSearch();
+    }
+
+  });
+
+
+  searchClearButton?.addEventListener('click', () => {
+
+    searchInput.value = '';
+    searchClearButton.style.display = 'none';
+    searchInput.focus();
+    runSearch();
+
+  });
+
+
+  document.addEventListener('keydown', event => {
+
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      searchInput?.focus();
+    }
+
+  });
+
+
+  /* =========================================================
+     PAGINATION CONTROLS
+     ========================================================= */
+
+  previousPageButton?.addEventListener('click', async () => {
+    if (currentPage <= 1 || isLoading) return;
+    await load(currentPage - 1);
+  });
+
+  nextPageButton?.addEventListener('click', async () => {
+    if (currentPage >= totalPages || isLoading) return;
+    await load(currentPage + 1);
+  });
+
+  pageSizeSelect?.addEventListener('change', async () => {
+    currentPageSize = Number(pageSizeSelect.value) === 50 ? 50 : 25;
+    currentPage = 1;
+    await load(1);
+  });
+
+
+  /* =========================================================
+     TOOLBAR ACTIONS
+     ========================================================= */
+
+  toolbarArchive?.addEventListener('click', () =>
+    applyToSelected({
+      Folder: 'ARCHIVE',
+      Is_Archived: 'YES',
+      Is_Spam: 'NO',
+      Is_Deleted: 'NO'
+    })
+  );
+
+
+  toolbarSpam?.addEventListener('click', () => {
+    if (!window.confirm('Move the selected message(s) to Spam?')) return;
+    applyToSelected({
+      Folder: 'SPAM',
+      Is_Spam: 'YES',
+      Is_Archived: 'NO',
+      Is_Deleted: 'NO'
+    });
+  });
+
+
+  toolbarDelete?.addEventListener('click', () => {
+    if (!window.confirm('Move the selected message(s) to Trash?')) return;
+    applyToSelected({
+      Folder: 'TRASH',
+      Is_Deleted: 'YES'
+    });
+  });
+
+
+  toolbarRead?.addEventListener('click', () =>
+    applyToSelected({ Is_Read: 'YES' })
+  );
+
+
+  toolbarUnread?.addEventListener('click', () =>
+    applyToSelected({ Is_Read: 'NO' })
+  );
 
 
   /* =========================================================
@@ -2204,6 +2671,8 @@
               selectAll.checked;
           }
         );
+
+      updateToolbarState();
 
     }
   );
@@ -2284,8 +2753,12 @@
 
   renderLabels([]);
 
+  updateToolbarState();
 
-  load();
+
+  load().finally(() => {
+    startSilentRefresh();
+  });
 
 
 })();
