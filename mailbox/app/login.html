@@ -15,9 +15,7 @@
 <link rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 
-<!-- Start fetching the next page while the user is typing. -->
-
-<link rel="prefetch" href="mailbox.html">
+<!-- Avoid competing with the login API request; mailbox loads after authentication. -->
 
 <style>
 :root{
@@ -812,7 +810,7 @@ body{
    ========================================================= */
 
 const MAILBOX_API_URL =
-  'https://script.google.com/macros/s/AKfycbztFYkp6V7YglnFLtZ7GbEXzoctYiBilV4lA4VgLm3WFKF8lYENWdM90_zy0uC1gmdG/exec';
+  'https://script.google.com/macros/s/AKfycbw4mqHyFR665ZueNNR-YYT7FtyXjQOeKFlJXXKXZtBoHWeDE45wCBipPeITgUqhsmLd/exec';
 
 
 const SESSION_TOKEN_KEY = 'mailbox_token';
@@ -1133,7 +1131,7 @@ form.addEventListener(
 
 
     setBusy(true);
-
+    const loginStartedAt = performance.now();
 
     try{
 
@@ -1142,6 +1140,7 @@ form.addEventListener(
           email,
           password
         );
+      console.info('[Mailbox login] API completed in ' + Math.round(performance.now() - loginStartedAt) + ' ms.');
 
 
       saveSession(result);

@@ -284,8 +284,8 @@ $('logoutBtn').addEventListener('click',async()=>{try{await MailboxAPI.logout()}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('successModal').classList.contains('show'))$('successModal').classList.remove('show');else if($('composeModal').classList.contains('show'))closeCompose();else if($('readPane').classList.contains('mobile-show'))closeRead()}});
 
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(currentPage,{silent:true})});
-async function silentRefresh(){if(document.hidden){silentTimer=setTimeout(silentRefresh,10000);return}try{const key=cacheKey(currentFolder,currentPage);const data=await MailboxAPI.list(currentFolder,$('searchInput').value.trim(),currentPage,pageSize);folderCache.set(key,{data,time:Date.now()});const sig=signature(data.messages||[]);if(sig!==signature(currentMessages)){currentMessages=data.messages||[];currentPage=data.page||currentPage;totalPages=data.totalPages||1;renderList();updatePager(data)}}catch(_){}finally{silentTimer=setTimeout(silentRefresh,10000)}}
-function startSilent(){clearTimeout(silentTimer);silentTimer=setTimeout(silentRefresh,10000)}
+async function silentRefresh(){if(document.hidden){silentTimer=setTimeout(silentRefresh,45000);return}try{const key=cacheKey(currentFolder,currentPage);const data=await MailboxAPI.list(currentFolder,$('searchInput').value.trim(),currentPage,pageSize);folderCache.set(key,{data,time:Date.now()});const sig=signature(data.messages||[]);if(sig!==signature(currentMessages)){currentMessages=data.messages||[];currentPage=data.page||currentPage;totalPages=data.totalPages||1;renderList();updatePager(data)}}catch(_){}finally{silentTimer=setTimeout(silentRefresh,45000)}}
+function startSilent(){clearTimeout(silentTimer);silentTimer=setTimeout(silentRefresh,45000)}
 
 function initSplitter(){
  const handle=$('paneSplitter'),main=document.querySelector('.main'),mailArea=document.querySelector('.mail-area');
